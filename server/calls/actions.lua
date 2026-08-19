@@ -1131,7 +1131,16 @@ function actions.hangup(source, payload)
     end
 
     local s = channel and sessions[channel]
-    if not s then return ok() end
+    if not s then
+        -- The channel is gone, but this phone still believes it is in the call - exactly the state
+        -- left behind when the other side hung up and the `ended` push never landed. Answering a
+        -- bare ok() is what made that permanent: the phone asked to leave, was told "fine", and
+        -- was never told the call was over, so it sat on the call screen with no way out. Tell it.
+        if channel then
+            TriggerClientEvent('sd-phone:client:call:ended', source, { channel = channel, reason = 'hangup' })
+        end
+        return ok()
+    end
 
     -- A third party hanging up is the same thing as declining the invite.
     if s.pending and s.pending.src == source then
@@ -1142,7 +1151,12 @@ function actions.hangup(source, payload)
     -- hanging up ends it for everyone, which is the rule the recents logging already assumes.
     if leaveConference(s, source, 'hangup') then return ok() end
 
-    if s.caller.src ~= source and s.callee.src ~= source then return fail('Not your call') end
+    if s.caller.src ~= source and s.callee.src ~= source then
+        -- Same reasoning as the missing-session branch above: the channel is real but not theirs,
+        -- so whatever their phone is showing is wrong. A bare failure would leave it showing it.
+        TriggerClientEvent('sd-phone:client:call:ended', source, { channel = channel, reason = 'hangup' })
+        return fail('Not your call')
+    end
 
     endCall(channel, 'hangup', source)
     return ok()

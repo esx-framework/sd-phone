@@ -101,14 +101,17 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
     useNuiEvent('sd-phone:video:accept',  useCallback(() => { setVideoInitiator(true); setVideoPhase('active'); }, []));
     useNuiEvent('sd-phone:video:stop',    useCallback(() => setVideoPhase('off'), []));
 
-    useEffect(() => {
-        let active = true;
+    const reconcile = useCallback(() => {
+        const before = useCallStore.getState().channel;
         void getCurrentCall().then(cur => {
-            if (!active || !cur) return;
-            useCallStore.getState().hydrate(cur);
+            if (useCallStore.getState().channel !== before) return;
+            useCallStore.getState().reconcile(cur);
         });
-        return () => { active = false; };
     }, []);
+
+    useEffect(reconcile, [reconcile]);
+
+    useNuiEvent('sd-phone:open', reconcile);
 
     useEffect(() => {
         if (!phase || phase === 'active') return;

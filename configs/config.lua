@@ -11,6 +11,7 @@ local config = {
     Debug  = false,
 
     -- Per-group settings (one file each).
+    Framework   = require 'configs.framework',    -- ox_core group type mapping (other frameworks need none)
     Phone       = require 'configs.phone',        -- open/close, keybind, safety blocks
     Lockscreen  = require 'configs.lockscreen',    -- wallpaper, clock format
     Apps        = require 'configs.apps',          -- dock, wallpaper, app catalog + enable flags
@@ -60,7 +61,8 @@ local config = {
 -- client). Merged in server-side only, reachable as config.ApiKeys; on the client this stays nil
 -- and no client code reads it.
 if IsDuplicityVersion() then
-    config.ApiKeys = require 'configs.server.apikeys'
+    config.ApiKeys  = require 'configs.server.apikeys'
+    config.Webhooks = require 'configs.server.webhooks'
 end
 
 return config

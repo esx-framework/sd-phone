@@ -24,6 +24,7 @@ interface CallState {
     roster:    (d: Roster) => void;
     ended:     () => void;
     hydrate:   (cur: CurrentCall) => void;
+    reconcile: (cur: CurrentCall | null) => void;
 }
 
 const RESET: Pick<CallState, 'phase' | 'channel' | 'name' | 'number' | 'startedAt' | 'video' | 'others' | 'pending'> = {
@@ -47,4 +48,5 @@ export const useCallStore = create<CallState>((set, get) => ({
         others:    cur.others ?? [],
         pending:   cur.pending ?? null,
     }),
+    reconcile: (cur) => (cur ? get().hydrate(cur) : get().ended()),
 }));

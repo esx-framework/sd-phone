@@ -15,10 +15,17 @@ local garages = {}
 local G = config.Garages or { Enabled = false }
 
 ---@type { table: string, idCol: string } Framework ownership table: QBCore/Qbox key owned
----vehicles by citizenid in `player_vehicles`, ESX by owner identifier in `owned_vehicles`.
-local BASE = framework.name == 'esx'
-    and { table = 'owned_vehicles',  idCol = 'owner' }
-    or  { table = 'player_vehicles', idCol = 'citizenid' }
+---vehicles by citizenid in `player_vehicles`, ESX by owner identifier in `owned_vehicles`, and
+---ox_core by charId in its own `vehicles`. Written as an if-chain rather than the ternary this
+---used to be: an unrecognised framework must not silently inherit the QBCore table.
+local BASE
+if framework.name == 'esx' then
+    BASE = { table = 'owned_vehicles',  idCol = 'owner' }
+elseif framework.name == 'ox' then
+    BASE = { table = 'vehicles',        idCol = 'owner' }
+else
+    BASE = { table = 'player_vehicles', idCol = 'citizenid' }
+end
 
 -- Profile fields: garage/state columns are tried in order, first present wins; `stored`/`impound`
 -- are the state values meaning parked / impounded; `impoundCol` names a separate truthy flag;

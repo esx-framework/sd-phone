@@ -2,9 +2,12 @@
 local framework  = require 'bridge.shared.framework'
 ---@type table Player bridge (bridge.server.player): framework-native player object resolution.
 local player_mod = require 'bridge.server.player'
+---@type table|nil ox_core helpers (bridge.shared.oxcore); nil on every other framework.
+local ox         = framework.name == 'ox' and require 'bridge.shared.oxcore' or nil
 
----@type table Gang module; the table returned at end of file. QBCore/QBox gang lookups; every
----helper returns its zero/false default on ESX.
+---@type table Gang module; the table returned at end of file. QBCore/QBox gang lookups, and on
+---ox_core the groups whose type is listed in configs/framework.lua GangTypes; every helper returns
+---its zero/false default on ESX, which has no gangs.
 local gang = {}
 
 ---The player's current gang name (QBCore only). Nil when unresolvable or on ESX.
@@ -14,6 +17,7 @@ function gang.getName(source)
     local p = player_mod.get(source)
     if not p then return nil end
     if framework.qb then return p.PlayerData.gang and p.PlayerData.gang.name or nil end
+    if framework.name == 'ox' then return (ox.groupByTypes(source, ox.gangTypes)) end
     return nil
 end
 
@@ -26,6 +30,10 @@ function gang.getGrade(source)
     if not p then return 0 end
     if framework.qb then
         return p.PlayerData.gang and p.PlayerData.gang.grade and p.PlayerData.gang.grade.level or 0
+    end
+    if framework.name == 'ox' then
+        local _, grade = ox.groupByTypes(source, ox.gangTypes)
+        return grade
     end
     return 0
 end
@@ -46,6 +54,10 @@ function gang.has(source, gangName, minGrade)
         if data and data.name == gangName then
             return (data.grade and data.grade.level or 0) >= minGrade
         end
+    elseif framework.name == 'ox' then
+        -- By name, like job.has: holding the group is the question, not whether it is active.
+        local grade = ox.call(source, 'getGroup', gangName)
+        return type(grade) == 'number' and grade >= minGrade
     end
     return false
 end

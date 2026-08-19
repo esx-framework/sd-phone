@@ -334,7 +334,7 @@ roster.dismiss = access.audited('roster.dismiss', function(src, payload, me)
     local ok, refusal = access.belowMe(src, member.citizenid)
     if not ok then return util.fail(refusal) end
 
-    if not society.fire(member.citizenid, UNEMPLOYED) then
+    if not society.fire(member.citizenid, UNEMPLOYED, me.job) then
         return util.fail('That officer has to be online to be dismissed')
     end
 

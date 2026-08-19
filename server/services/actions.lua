@@ -462,7 +462,7 @@ function actions.fire(src, payload)
     if info.grade >= job.getGrade(src) then return fail("You can't fire someone of equal or higher rank") end
 
     if info.activeHere then
-        if not society.fire(targetCid, UNEMPLOYED) then return fail('That player must be online to be fired') end
+        if not society.fire(targetCid, UNEMPLOYED, myJob) then return fail('That player must be online to be fired') end
         if info.saved then jobstore.removeSaved(targetCid, myJob) end
     else
         if info.saved then jobstore.removeSaved(targetCid, myJob) end

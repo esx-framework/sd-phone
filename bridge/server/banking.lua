@@ -225,6 +225,15 @@ function banking.addOffline(citizenid, amount)
                 { amount, citizenid })
         end)
         return ok and (tonumber(affected) or 0) > 0
+    elseif framework.name == 'ox' then
+        -- ox_core keeps balances in its own `accounts` table rather than on the character row;
+        -- the character's default account is the one the phone treats as their bank.
+        local ok, affected = pcall(function()
+            return MySQL.update.await(
+                'UPDATE accounts SET balance = balance + ? WHERE owner = ? AND isDefault = 1',
+                { amount, tonumber(citizenid) })
+        end)
+        return ok and (tonumber(affected) or 0) > 0
     end
     return false
 end

@@ -10,16 +10,29 @@ local garages = require 'bridge.server.garages'
 local records = {}
 
 ---@type { table: string, idCol: string } Framework citizen table: QBCore/QBox key characters by
----citizenid in `players`, ESX by identifier in `users`.
-local PEOPLE = framework.name == 'esx'
-    and { table = 'users',   idCol = 'identifier' }
-    or  { table = 'players', idCol = 'citizenid' }
+---citizenid in `players`, ESX by identifier in `users`, ox_core by charId in `characters`.
+---
+---ox_core also HAS a `users` table, but it is the account (one per player, many characters), not
+---the character - reaching ESX's branch here would read the wrong rows entirely.
+local PEOPLE
+if framework.name == 'esx' then
+    PEOPLE = { table = 'users',      idCol = 'identifier' }
+elseif framework.name == 'ox' then
+    PEOPLE = { table = 'characters', idCol = 'charId' }
+else
+    PEOPLE = { table = 'players',    idCol = 'citizenid' }
+end
 
 ---@type { table: string, idCol: string } Framework ownership table, picked the same way
 ---bridge/server/garages.lua picks it.
-local VEHICLES = framework.name == 'esx'
-    and { table = 'owned_vehicles',  idCol = 'owner' }
-    or  { table = 'player_vehicles', idCol = 'citizenid' }
+local VEHICLES
+if framework.name == 'esx' then
+    VEHICLES = { table = 'owned_vehicles',  idCol = 'owner' }
+elseif framework.name == 'ox' then
+    VEHICLES = { table = 'vehicles',        idCol = 'owner' }
+else
+    VEHICLES = { table = 'player_vehicles', idCol = 'citizenid' }
+end
 
 ---@type string[] Columns a model name may live in, in preference order. `vehicle` is last on
 ---purpose: qb/QBox keep a plain name there, but ESX keeps the whole properties blob under the same
