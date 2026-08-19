@@ -16,8 +16,8 @@ local G = config.Garages or { Enabled = false }
 
 ---@type { table: string, idCol: string } Framework ownership table: QBCore/Qbox key owned
 ---vehicles by citizenid in `player_vehicles`, ESX by owner identifier in `owned_vehicles`, and
----ox_core by charId in its own `vehicles`. Written as an if-chain rather than the ternary this
----used to be: an unrecognised framework must not silently inherit the QBCore table.
+---ox_core by charId in its own `vehicles`. An if-chain, not a ternary: an unrecognised framework
+---must not silently inherit the QBCore table.
 local BASE
 if framework.name == 'esx' then
     BASE = { table = 'owned_vehicles',  idCol = 'owner' }

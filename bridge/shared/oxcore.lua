@@ -142,8 +142,8 @@ end
 ---The player's group for the first of `types` they hold one of. Returns nil when they hold none.
 ---
 ---ox_core grades are 1-BASED, and grade 0 means "not in the group" (setGroup with 0 removes it).
----The grade is passed through untranslated: shifting it would break comparisons against the same
----grade numbers configured elsewhere on the server.
+---Passed through untranslated: shifting it would break comparisons against the grade numbers
+---configured elsewhere on the server.
 ---@param source number player server id
 ---@param types string[] group types, in preference order
 ---@return string|nil name, integer grade

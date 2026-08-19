@@ -92,10 +92,8 @@ RegisterNetEvent('sd-phone:client:call:connected', function(data)
 end)
 
 RegisterNetEvent('sd-phone:client:call:ended', function(data)
-    -- The push goes first, and the mic reset cannot stop it. This is the only call relay that did
-    -- work before pushing, and that work reaches into the voice script: anything it raised took
-    -- the "call is over" message down with it and left the phone on the call screen. Un-muting a
-    -- mic matters less than the UI knowing the call ended.
+    -- Push first: the mic reset reaches into the voice script, and anything it raises must not
+    -- take the end of the call down with it.
     pushCall('sd-phone:call:ended', data)
     if micMuted then pcall(setMicMuted, false) end
 end)

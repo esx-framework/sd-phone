@@ -1132,10 +1132,8 @@ function actions.hangup(source, payload)
 
     local s = channel and sessions[channel]
     if not s then
-        -- The channel is gone, but this phone still believes it is in the call - exactly the state
-        -- left behind when the other side hung up and the `ended` push never landed. Answering a
-        -- bare ok() is what made that permanent: the phone asked to leave, was told "fine", and
-        -- was never told the call was over, so it sat on the call screen with no way out. Tell it.
+        -- The channel is gone but the phone still thinks it is in the call, so end it there
+        -- rather than answering a bare ok() it cannot act on.
         if channel then
             TriggerClientEvent('sd-phone:client:call:ended', source, { channel = channel, reason = 'hangup' })
         end
@@ -1152,8 +1150,7 @@ function actions.hangup(source, payload)
     if leaveConference(s, source, 'hangup') then return ok() end
 
     if s.caller.src ~= source and s.callee.src ~= source then
-        -- Same reasoning as the missing-session branch above: the channel is real but not theirs,
-        -- so whatever their phone is showing is wrong. A bare failure would leave it showing it.
+        -- The channel is real but not theirs, so whatever their phone is showing is wrong.
         TriggerClientEvent('sd-phone:client:call:ended', source, { channel = channel, reason = 'hangup' })
         return fail('Not your call')
     end

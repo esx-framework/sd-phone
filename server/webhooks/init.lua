@@ -11,8 +11,7 @@ local cfg = config.Webhooks or {}
 local MAX_DESCRIPTION = 2000
 
 ---@type integer Milliseconds between outbound sends. Discord rate-limits a webhook to roughly 30
----requests a minute and answers 429 past that, so posts are spaced rather than fired at once: a
----busy evening should arrive late, never not at all.
+---requests a minute and answers 429 past that, so posts are spaced rather than fired at once.
 local SEND_GAP = 2200
 
 ---@type table<string, { colour: integer, label: string }> Per-app embed dressing, so both feeds
@@ -43,10 +42,9 @@ local function httpUrl(url)
     return type(url) == 'string' and url:find('^https?://') ~= nil
 end
 
----Clips a string to a BYTE budget without splitting a UTF-8 character. Discord counts bytes and
----rejects invalid UTF-8 outright, and `#` and `sub` in Lua are byte-wise, so a naive cut through
----the middle of a Cyrillic, Turkish or CJK character - or an emoji - would lose the whole post
----rather than the tail of it. The ellipsis is itself three bytes and is budgeted for.
+---Clips a string to a BYTE budget without splitting a UTF-8 character. Discord rejects invalid
+---UTF-8 outright, and `#` and `sub` are byte-wise, so a naive cut mid-character loses the whole
+---post. The ellipsis is itself three bytes and is budgeted for.
 ---@param s string
 ---@param maxBytes integer
 ---@return string
@@ -62,8 +60,7 @@ local function clip(s, maxBytes)
     return s:sub(1, cut) .. '…'
 end
 
----Sends one queued payload and schedules the next. Failures are reported once and dropped: a
----webhook is a mirror, and retrying a post nobody is waiting on is not worth a backlog.
+---Sends one queued payload and schedules the next. Failures are reported once and dropped.
 local function drain()
     draining = true
     CreateThread(function()
@@ -139,8 +136,8 @@ local function embedFor(app, data)
     return payload
 end
 
----Mirrors one post, if that app has a webhook configured. Never raises: this runs off the back of
----a post that has already been written, and a broken webhook must not reach back into it.
+---Mirrors one post, if that app has a webhook configured. Never raises: the post is already
+---written, and a broken webhook must not reach back into it.
 ---@param app string
 ---@param url any
 ---@param data table
