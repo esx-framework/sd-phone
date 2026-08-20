@@ -1,0 +1,217 @@
+---@type table Bodycam config (configs/bodycam.lua): the enable switch and the eligible jobs.
+local CFG = require 'configs.bodycam'
+
+---@type boolean Whether cameras exist on this server at all. With this off nothing below runs: no
+---event handler, no thread, no NUI message.
+local ENABLED = CFG.Enabled == true
+
+---@type integer Follow-cam view mode that puts the player in first person. The bodycam uses the
+---player's OWN view mode rather than a scripted camera, because the capture is the frame this
+---client is already rendering: a scripted cam pointed anywhere else would move the officer's own
+---screen there too.
+local FIRST_PERSON_VIEW <const> = 4
+
+---@type integer Milliseconds between re-announcements of a live demand to the NUI. The phone page
+---loads its app chunks lazily, so a demand can arrive before the broadcaster module exists; a
+---repeat is one small message and it is what makes the start reliable rather than racy.
+local ANNOUNCE_MS <const> = 4000
+
+---@type integer Milliseconds between view-mode re-assertions while broadcasting. Getting in and
+---out of a vehicle swaps which of the two follow cams is in charge, so first person has to be
+---re-applied rather than set once.
+local VIEW_MS <const> = 1000
+
+---@type integer Byte-per-second pacing on a media chunk travelling to the server.
+local CHUNK_BPS <const> = 512 * 1024
+
+---@type table|nil The demand the server currently has on this client, nil when it wants nothing.
+local demand = nil
+---@type boolean Whether the officer's own camera surface (Camera app, video call) holds the game
+---view. While it does the bodycam yields rather than fighting the single-consumer renderer.
+local yielded = false
+---@type integer|nil The on-foot view mode saved before first person was forced.
+local savedPedView = nil
+---@type integer|nil The in-vehicle view mode saved before first person was forced.
+local savedVehicleView = nil
+---@type boolean Whether the view-mode thread is already running.
+local viewThreadUp = false
+---@type boolean Whether the demand re-announcement thread is already running.
+local announceThreadUp = false
+
+---Hands the current demand to the NUI. Idempotent on the page's side: a repeat carrying the same
+---generation is ignored there, so re-announcing costs nothing but reliability.
+local function announce()
+    SendNUIMessage({
+        action = 'sd-phone:mdt:cameraDemand',
+        data   = demand and {
+            on      = demand.on == true and not yielded,
+            gen     = demand.gen,
+            quality = demand.quality,
+            enc     = demand.enc,
+        } or { on = false },
+    })
+end
+
+---Puts the officer into first person, remembering what they were on so it can be given back.
+local function takeFirstPerson()
+    if savedPedView == nil then
+        savedPedView = GetFollowPedCamViewMode()
+    end
+    if savedVehicleView == nil then
+        savedVehicleView = GetFollowVehicleCamViewMode()
+    end
+    SetFollowPedCamViewMode(FIRST_PERSON_VIEW)
+    SetFollowVehicleCamViewMode(FIRST_PERSON_VIEW)
+end
+
+---Gives the officer back the view they were on before the broadcast started.
+local function releaseFirstPerson()
+    if savedPedView ~= nil then
+        SetFollowPedCamViewMode(savedPedView)
+        savedPedView = nil
+    end
+    if savedVehicleView ~= nil then
+        SetFollowVehicleCamViewMode(savedVehicleView)
+        savedVehicleView = nil
+    end
+end
+
+---Whether the officer should be in first person right now.
+---@return boolean
+local function wantsFirstPerson()
+    return CFG.FirstPerson ~= false and demand ~= nil and demand.on == true and not yielded
+end
+
+---Holds the view mode for as long as the broadcast wants it, then hands it back and exits. One
+---thread at a time, and none at all while nobody is watching.
+local function ensureViewThread()
+    if viewThreadUp then return end
+    viewThreadUp = true
+
+    CreateThread(function()
+        while wantsFirstPerson() do
+            takeFirstPerson()
+            Wait(VIEW_MS)
+        end
+        releaseFirstPerson()
+        viewThreadUp = false
+    end)
+end
+
+---Repeats a live demand until it is withdrawn, so the broadcaster page picks it up whenever it
+---finishes loading its app chunks. One thread at a time, and none while nobody is watching.
+local function ensureAnnounceThread()
+    if announceThreadUp then return end
+    announceThreadUp = true
+
+    CreateThread(function()
+        while demand ~= nil and demand.on == true do
+            Wait(ANNOUNCE_MS)
+            if demand ~= nil and demand.on == true then announce() end
+        end
+        announceThreadUp = false
+    end)
+end
+
+if ENABLED then
+    ---Server push: start or stop publishing this client's view. The whole point of the push is
+    ---that an officer nobody is watching never receives one, so their client holds no renderer, no
+    ---encoder and no timers.
+    ---@param payload table { on, gen, quality, enc, firstPerson }
+    RegisterNetEvent('sd-phone:client:mdt:cameraDemand', function(payload)
+        if type(payload) ~= 'table' or payload.on ~= true then
+            demand = nil
+            announce()
+            return
+        end
+
+        demand = {
+            on      = true,
+            gen     = payload.gen,
+            quality = payload.quality,
+            enc     = type(payload.enc) == 'table' and payload.enc or nil,
+        }
+        announce()
+        ensureAnnounceThread()
+        if payload.firstPerson ~= false then ensureViewThread() end
+
+        -- Re-state the yield with every demand. A session the server had forgotten comes back
+        -- believing the camera is idle, and without this the tile would sit on "connecting" for
+        -- as long as the officer's own camera surface holds the renderer.
+        if yielded then
+            TriggerServerEvent('sd-phone:server:mdt:cameraState', { busy = true, unsupported = false })
+        end
+    end)
+
+    ---React -> Lua: the broadcaster page asking what the server currently wants, for the case
+    ---where the demand landed before the page had loaded this app's chunk.
+    RegisterNUICallback('sd-phone:mdt:cameraSync', function(_, cb)
+        cb({
+            success = true,
+            data    = demand and {
+                on      = demand.on == true and not yielded,
+                gen     = demand.gen,
+                quality = demand.quality,
+                enc     = demand.enc,
+            } or { on = false },
+        })
+    end)
+
+    ---React -> Lua: one encoded segment on its way to the relay. Latent, so a segment is paced
+    ---onto the wire instead of blocking the net thread.
+    ---@param payload table { gen, chunk, init?, mime? }
+    RegisterNUICallback('sd-phone:mdt:cameraChunk', function(payload, cb)
+        local chunk = type(payload) == 'table' and payload.chunk or nil
+        if type(chunk) == 'string' and chunk ~= '' then
+            TriggerLatentServerEvent('sd-phone:server:mdt:cameraChunk', CHUNK_BPS, {
+                gen   = payload.gen,
+                chunk = chunk,
+                init  = payload.init == true,
+                mime  = payload.mime,
+            })
+        end
+        cb({ success = true })
+    end)
+
+    ---React -> Lua: the page reporting that it cannot capture at all, so the terminal shows a
+    ---reason on the tile rather than a feed that never arrives.
+    ---@param payload table { unsupported? }
+    RegisterNUICallback('sd-phone:mdt:cameraState', function(payload, cb)
+        TriggerServerEvent('sd-phone:server:mdt:cameraState', {
+            busy        = yielded,
+            unsupported = type(payload) == 'table' and payload.unsupported == true,
+        })
+        cb({ success = true })
+    end)
+
+    ---The officer's own camera surface taking or releasing the game view. The live renderer binds
+    ---one canvas at a time, so the bodycam stands down for the Camera app and a video call rather
+    ---than stealing the feed back from under them.
+    ---@param on boolean whether a camera surface is now active
+    AddEventHandler('sd-phone:client:cameraMode', function(on)
+        local busy = on == true
+        if busy == yielded then return end
+        yielded = busy
+
+        TriggerServerEvent('sd-phone:server:mdt:cameraState', { busy = yielded, unsupported = false })
+        announce()
+        if wantsFirstPerson() then ensureViewThread() end
+    end)
+
+    ---Reports the class of the vehicle the officer is in, which decides whether a dashcam tile
+    ---appears for it. Driven by the cache rather than a poll, so an officer on foot costs nothing.
+    lib.onCache('vehicle', function(vehicle)
+        TriggerServerEvent('sd-phone:server:mdt:cameraVehicle', {
+            class = vehicle and GetVehicleClass(vehicle) or nil,
+        })
+    end)
+
+    ---Hands the view back if the resource stops mid-broadcast, so an officer is not left stuck in
+    ---first person by a restart.
+    ---@param resource string name of the resource that stopped
+    AddEventHandler('onResourceStop', function(resource)
+        if resource ~= GetCurrentResourceName() then return end
+        demand = nil
+        releaseFirstPerson()
+    end)
+end

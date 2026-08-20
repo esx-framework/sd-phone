@@ -14,6 +14,11 @@ local player  = require 'bridge.server.player'
 ---@type table MDT config (configs/mdt.lua): departments, permission thresholds, boss bypass.
 local MDT = config.Mdt
 
+---@type boolean Whether bodycams are switched on (configs/bodycam.lua). Read here so a build that
+---ships the Cameras key cannot grant it while the feature is off: the section would render, every
+---handler behind it would refuse, and the officer would land on an empty grid with no explanation.
+local CAMERAS_ENABLED = (require 'configs.bodycam').Enabled == true
+
 ---@type table Access module; the table returned at end of file. The whole permission concern:
 ---identity resolution, the grade-threshold check, the chain-of-command guard, and the two wrappers
 ---every handler is registered through. No handler anywhere checks a permission by hand.
@@ -21,8 +26,25 @@ local access = {}
 
 ---@type table[] Configured departments, in file order.
 local DEPARTMENTS = MDT.Departments or {}
----@type table<string, number> Permission key -> minimum grade. An absent key is denied.
-local PERMISSIONS = MDT.Permissions or {}
+---@type table<string, number> Keys this build ships that a configs/mdt.lua written before them
+---cannot name. `access.grants` only walks keys it can see a threshold for, so without a fallback a
+---section added in a release would be denied at every grade and never render at all, on an install
+---whose config the owner has customised and does not want overwritten. A key the config DOES name
+---always wins.
+local SHIPPED_PERMISSIONS = {
+    ['weapons.view'] = 0,
+    ['weapons.edit'] = 1,
+    ['cameras.view'] = 1,
+}
+
+---@type table<string, number> Permission key -> minimum grade. An absent key is denied. Built as a
+---copy rather than as a reference to the config table, so the fallbacks above cannot leak back into
+---configs/mdt.lua for anything else that reads it.
+local PERMISSIONS = {}
+for key, minimum in pairs(SHIPPED_PERMISSIONS) do PERMISSIONS[key] = minimum end
+for key, minimum in pairs(MDT.Permissions or {}) do PERMISSIONS[key] = minimum end
+-- A disabled feature is not grantable at any grade, whatever the config names.
+if not CAMERAS_ENABLED then PERMISSIONS['cameras.view'] = nil end
 ---@type boolean Whether a boss of their department holds every key.
 local BOSS_BYPASS = MDT.BossBypass ~= false
 
@@ -42,6 +64,9 @@ local KEY_DOMAIN = {
     ['persons.edit']        = { leo = true },
     ['vehicles.view']       = { leo = true },
     ['vehicles.edit']       = { leo = true },
+    ['weapons.view']        = { leo = true },
+    ['weapons.edit']        = { leo = true },
+    ['cameras.view']        = { leo = true },
     ['warrants.issue']      = { leo = true },
     ['warrants.close']      = { leo = true },
     ['jail.view']           = { leo = true },

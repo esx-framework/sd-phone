@@ -14,6 +14,8 @@ local ACTIONS = {
     'dispatch:state', 'dispatch:setStatus', 'dispatch:attach', 'dispatch:detach', 'dispatch:locate',
     'persons:search', 'persons:get', 'persons:notes', 'persons:flags', 'persons:mugshot',
     'vehicles:search', 'vehicles:get', 'vehicles:update',
+    'weapons:search', 'weapons:get', 'weapons:create', 'weapons:update',
+    'cameras:list', 'cameras:watch', 'cameras:unwatch',
     'reports:list', 'reports:get', 'reports:save', 'reports:delete',
     'cases:list', 'cases:get', 'cases:save', 'cases:delete', 'cases:note', 'cases:assign', 'cases:linkReport',
     'warrants:list', 'warrants:get', 'warrants:issue', 'warrants:close', 'warrants:void',
@@ -43,6 +45,7 @@ local VEHICLE_ACTIONS = {
     ['vehicles:get']    = true,
     ['persons:get']     = true,
     ['patients:get']    = true,
+    ['cameras:list']    = true,
 }
 
 ---@type integer How deep the walk looks for vehicle rows. The MDT nests them a couple of levels at
@@ -114,4 +117,16 @@ end)
 ---@param data table { citizenid, wanted }
 RegisterNetEvent('sd-phone:client:mdt:warrant', function(data)
     SendNUIMessage({ action = 'sd-phone:mdt:warrant', data = data })
+end)
+
+---Server push: one media segment from a unit's camera, addressed to this terminal only.
+---@param data table { citizenid, gen, chunk, init, mime? }
+RegisterNetEvent('sd-phone:client:mdt:cameraChunk', function(data)
+    SendNUIMessage({ action = 'sd-phone:mdt:cameraChunk', data = data })
+end)
+
+---Server push: a camera this terminal was watching has gone off the air.
+---@param data table { citizenid, reason }
+RegisterNetEvent('sd-phone:client:mdt:cameraOff', function(data)
+    SendNUIMessage({ action = 'sd-phone:mdt:cameraOff', data = data })
 end)

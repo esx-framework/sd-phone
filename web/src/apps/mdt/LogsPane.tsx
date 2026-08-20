@@ -24,6 +24,7 @@ const REF_SECTION: Record<string, MdtSection> = {
 };
 
 const ENTITY_SECTION: Record<string, MdtSection> = {
+    weapon:  'weapons',
     report:  'reports',
     case:    'cases',
     warrant: 'warrants',
@@ -35,6 +36,7 @@ const ENTITY_SECTION: Record<string, MdtSection> = {
 };
 
 const VERBS: Record<string, string> = {
+    view:     'Watched',
     save:     'Filed',
     create:   'Created',
     edit:     'Edited',
@@ -58,6 +60,8 @@ const VERBS: Record<string, string> = {
 };
 
 const NOUNS: Record<string, string> = {
+    weapons:   'firearm record',
+    cameras:   'a unit camera',
     reports:   'report',
     cases:     'case',
     warrants:  'warrant',
@@ -144,6 +148,8 @@ export function LogsPane() {
     const typeOptions = [
         { value: '',         label: t('mdt.allEntities', 'All records') },
         { value: 'report',   label: t('mdt.entityReport', 'Reports') },
+        { value: 'weapon',   label: t('mdt.entityWeapon', 'Weapons') },
+        { value: 'camera',   label: t('mdt.entityCamera', 'Cameras') },
         { value: 'case',     label: t('mdt.entityCase', 'Cases') },
         { value: 'warrant',  label: t('mdt.entityWarrant', 'Warrants') },
         { value: 'person',   label: t('mdt.entityPerson', 'Persons') },

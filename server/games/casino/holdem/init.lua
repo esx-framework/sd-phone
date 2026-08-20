@@ -19,11 +19,24 @@ local TICK_MS = 250
 local ACT_WINDOW, ACT_MAX = 10000, 40
 ---@type integer Minimum gap between sit attempts per character (ms); each one is a wallet debit.
 local SIT_COOLDOWN = 1000
+---@type integer Minimum gap between table creations per character (ms). The per-player cap already
+---stops a flood, but this keeps a stuck button from spending the floor allowance on retries.
+local CREATE_COOLDOWN = 5000
 
 lib.callback.register('sd-phone:server:games:holdemTables', function(src)
     if not APP_ENABLED then return util.fail('The casino is closed') end
     if not shared.cidOf(src) then return util.fail('Player not found') end
-    return util.ok({ tables = holdem.tables() })
+    return util.ok({ tables = holdem.tables(), create = holdem.createLimits() })
+end)
+
+lib.callback.register('sd-phone:server:games:holdemCreate', function(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+    if not APP_ENABLED then return util.fail('The casino is closed') end
+    local cid = shared.cidOf(src); if not cid then return util.fail('Player not found') end
+    if not util.cooldown(cid, 'games:holdemCreate', CREATE_COOLDOWN) then return util.fail('Slow down') end
+    local tableId, message = holdem.create(cid, shared.nameOf(src), payload)
+    if not tableId then return util.fail(message or 'Could not open the table') end
+    return util.ok({ tableId = tableId })
 end)
 
 lib.callback.register('sd-phone:server:games:holdemSit', function(src, payload)

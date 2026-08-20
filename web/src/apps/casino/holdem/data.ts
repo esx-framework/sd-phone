@@ -11,7 +11,29 @@ export interface HoldemPot { amount: number; eligible: number[] }
 export interface HoldemStatePush { tableId: string; handId: number; street: HoldemStreet; button: number; actor: number | null; deadline: number; now: number; board: Card[]; pots: HoldemPot[]; seats: HoldemSeat[]; legal: HoldemLegal | null; handRank: string | null; sb: number; bb: number }
 export interface HoldemHandEnd { tableId: string; handId: number; pots: HoldemPot[]; awards: { seat: number; amount: number }[]; shown: { seat: number; hole: Card[]; best: Card[]; cat: string }[] }
 
-export interface HoldemTableInfo { id: string; name: string; sb: number; bb: number; minBuyIn: number; maxBuyIn: number; seated: number; playing: boolean }
+export interface HoldemTableInfo { id: string; name: string; sb: number; bb: number; minBuyIn: number; maxBuyIn: number; seated: number; playing: boolean; custom: boolean; ownerName: string | null }
+export interface HoldemCreateLimits { enabled: boolean; nameMax: number; blinds: number[]; bbRatioMax: number; minBuyInBB: number; maxBuyInBB: number }
+export interface HoldemCreateOpts { name: string; sb: number; bb: number; minBuyIn: number; maxBuyIn: number }
+export interface HoldemLobby { tables: HoldemTableInfo[]; create: HoldemCreateLimits }
+
+export const NO_CREATE: HoldemCreateLimits = { enabled: false, nameMax: 24, blinds: [], bbRatioMax: 2, minBuyInBB: 20, maxBuyInBB: 400 };
+
+export function normalizeLobby(data: Partial<HoldemLobby> | null | undefined): HoldemLobby {
+    const limits = data?.create;
+    return {
+        tables: (data?.tables ?? []).map(x => ({ ...x, custom: x.custom === true, ownerName: x.ownerName ?? null })),
+        create: limits
+            ? {
+                enabled:    limits.enabled === true,
+                nameMax:    limits.nameMax ?? NO_CREATE.nameMax,
+                blinds:     Array.isArray(limits.blinds) ? limits.blinds : [],
+                bbRatioMax: limits.bbRatioMax ?? NO_CREATE.bbRatioMax,
+                minBuyInBB: limits.minBuyInBB ?? NO_CREATE.minBuyInBB,
+                maxBuyInBB: limits.maxBuyInBB ?? NO_CREATE.maxBuyInBB,
+            }
+            : NO_CREATE,
+    };
+}
 
 export function potTotal(pots: HoldemPot[]): number {
     let n = 0;

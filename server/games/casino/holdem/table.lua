@@ -32,14 +32,49 @@ local HAND_GAP = 3000
 ---@type integer Poll gap while a table is idle (ms) before it looks for players again.
 local IDLE_GAP = 1000
 
----@type table[] Table definitions, from config. Three persistent rooms rather than player-created
+---@type table[] Table definitions, from config. The house rooms are persistent rather than
 ---lobbies: hands run continuously and players sit and stand, which is what a casino floor does and
----what removes every line of invite / ready / rematch machinery.
+---what removes every line of invite / ready / rematch machinery. Player-opened tables below are
+---the same object with an owner on it, so they inherit all of that behaviour for free.
 local DEFS = C.Tables or {
     { id = 'low',  name = 'Sandy Shores', sb = 25,  bb = 50,   minBuyIn = 2000,  maxBuyIn = 10000 },
     { id = 'mid',  name = 'Vinewood',     sb = 100, bb = 200,  minBuyIn = 8000,  maxBuyIn = 40000 },
     { id = 'high', name = 'Diamond',      sb = 500, bb = 1000, minBuyIn = 40000, maxBuyIn = 200000 },
 }
+
+---@type table Player-table settings (config.Casino.Holdem.PlayerTables), hoisted with defaults for
+---the same reason ACTION_SECONDS is: a config written before this section existed still boots.
+local PT = C.PlayerTables or {}
+---@type boolean Whether players may open tables of their own at all.
+local PT_ENABLED = PT.Enabled ~= false
+---@type integer Tables one character may have open at a time.
+local PT_MAX_PER_PLAYER = math.max(1, math.floor(PT.MaxPerPlayer or 1))
+---@type integer Player tables allowed on the floor at once; the house rooms do not count.
+local PT_MAX_TOTAL = math.max(1, math.floor(PT.MaxTotal or 8))
+---@type integer Smallest small blind a player may pick.
+local PT_MIN_BLIND = math.max(1, math.floor(PT.MinBlind or 5))
+---@type integer Largest small blind a player may pick.
+local PT_MAX_BLIND = math.max(PT_MIN_BLIND, math.floor(PT.MaxBlind or 2500))
+---@type integer Floor on the min buy-in, counted in big blinds. Twenty big blinds is the shortest
+---stack that can still play a hand rather than shove it.
+local PT_MIN_BUYIN_BB = math.max(2, math.floor(PT.MinBuyInBB or 20))
+---@type integer Ceiling on the max buy-in, counted in big blinds.
+local PT_MAX_BUYIN_BB = math.max(PT_MIN_BUYIN_BB, math.floor(PT.MaxBuyInBB or 400))
+---@type integer Characters kept from the name the creator typed.
+local PT_NAME_MAX = math.max(3, math.floor(PT.NameMax or 24))
+---@type integer How long a player table may sit with every chair empty (ms) before it is closed.
+local PT_EMPTY_MS = math.max(30000, math.floor((tonumber(PT.EmptyMinutes) or 5) * 60000))
+---@type integer Largest multiple of the small blind a big blind may be set to. Two is the real
+---game and three is as far as a straddled table ever stretches; past that it is a different game
+---and the numbers on the lobby row stop meaning what a player reads them to mean.
+local PT_BB_MAX_RATIO = 3
+---@type integer[] Small blinds the create sheet offers, the standard ladder trimmed to the config
+---range. The server owns the ladder so the phone can only ever offer a stake this file accepts.
+local PT_BLIND_LADDER = {}
+for _, step in ipairs({ 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 }) do
+    if step >= PT_MIN_BLIND and step <= PT_MAX_BLIND then PT_BLIND_LADDER[#PT_BLIND_LADDER + 1] = step end
+end
+if #PT_BLIND_LADDER == 0 then PT_BLIND_LADDER[1] = PT_MIN_BLIND end
 
 ---@type table<string, string> Street to the one that follows it.
 local NEXT_STREET = { preflop = 'flop', flop = 'turn', turn = 'river' }
@@ -59,6 +94,9 @@ local order = {}
 ---@type table<string, string> citizenid -> the table id they are seated at. One seat per character
 ---across the whole casino: two seats would let one player act on both sides of the same pot.
 local seated = {}
+---@type integer Serial behind player table ids. Never reused inside a session, so a table that has
+---just been closed cannot have a stale phone still pointed at its id find the new one in its place.
+local nextTableId = 0
 
 holdem.rooms = rooms
 
@@ -72,8 +110,13 @@ local function emptySeat(i)
     }
 end
 
-for n = 1, #DEFS do
-    local def = DEFS[n]
+---Builds a room. House rooms and player rooms differ only in the owner fields, so every rule below
+---this line reads one shape and no path has to ask which kind of table it is holding.
+---@param def table definition { id, name, sb, bb, minBuyIn, maxBuyIn }
+---@param owner string|nil citizenid of the player who opened it, nil for a house room
+---@param ownerName string|nil display name of that player
+---@return table T
+local function newRoom(def, owner, ownerName)
     local T = {
         id = tostring(def.id), name = tostring(def.name or def.id),
         sb = math.floor(def.sb or 25), bb = math.floor(def.bb or 50),
@@ -81,8 +124,14 @@ for n = 1, #DEFS do
         seats = {}, button = 0, handId = 0, street = 'idle', board = {}, shoe = nil,
         betToCall = 0, minRaise = 0, actor = nil, deadline = 0, nextStartAt = 0,
         pots = {}, frozen = false, escrow = 0, lastAggressor = nil,
+        owner = owner, ownerName = ownerName, emptySince = nil,
     }
     for i = 1, SEATS do T.seats[i] = emptySeat(i) end
+    return T
+end
+
+for n = 1, #DEFS do
+    local T = newRoom(DEFS[n], nil, nil)
     rooms[T.id] = T
     order[#order + 1] = T
 end
@@ -836,6 +885,125 @@ function holdem.sync(cid, tableId, src)
     return holdem.view(T, cid), nil
 end
 
+---@param v any client-supplied number
+---@param fallback integer used when the client sent something that is not a finite number
+---@return integer n
+local function intOr(v, fallback)
+    local n = tonumber(v)
+    if not n or n ~= n or n == math.huge or n == -math.huge then return fallback end
+    return math.floor(n)
+end
+
+---@param n integer value
+---@param lo integer floor
+---@param hi integer ceiling
+---@return integer clamped
+local function clamp(n, lo, hi)
+    if n < lo then return lo end
+    if n > hi then return hi end
+    return n
+end
+
+---Trims a client-supplied table name down to something safe to print on a lobby row. Control
+---characters go (one newline is enough to break the row apart), colour codes go (a table could
+---otherwise repaint the list around it), whitespace runs collapse, and what is left is cut to
+---PT_NAME_MAX whole characters. The cut counts characters and not bytes: slicing a multi-byte
+---sequence in half produces a string the JSON encoder cannot represent, which would take the whole
+---lobby reply down rather than just one name.
+---@param raw any client-supplied name
+---@param fallback string name used when nothing printable survives
+---@return string name
+local function cleanName(raw, fallback)
+    local text = type(raw) == 'string' and raw or ''
+    text = text:gsub('%^%d', ' '):gsub('%c', ' ')
+    if not utf8.len(text) then text = text:gsub('[\128-\255]', '') end
+    text = text:gsub('%s+', ' '):gsub('^ ', ''):gsub(' $', '')
+
+    local len = utf8.len(text) or #text
+    if len > PT_NAME_MAX then
+        local cut = utf8.offset(text, PT_NAME_MAX + 1)
+        text = (cut and text:sub(1, cut - 1) or text:sub(1, PT_NAME_MAX)):gsub(' $', '')
+    end
+    if text == '' then return fallback end
+    return text
+end
+
+---@param cid string|nil citizenid to count tables for, nil to count only the floor total
+---@return integer mine tables this character owns
+---@return integer total player tables open
+local function countPlayerTables(cid)
+    local mine, total = 0, 0
+    for n = 1, #order do
+        local T = order[n]
+        if T.owner then
+            total = total + 1
+            if cid and T.owner == cid then mine = mine + 1 end
+        end
+    end
+    return mine, total
+end
+
+---@return table limits the bounds the create sheet is allowed to offer
+function holdem.createLimits()
+    return {
+        enabled = PT_ENABLED,
+        nameMax = PT_NAME_MAX,
+        blinds = PT_BLIND_LADDER,
+        bbRatioMax = PT_BB_MAX_RATIO,
+        minBuyInBB = PT_MIN_BUYIN_BB,
+        maxBuyInBB = PT_MAX_BUYIN_BB,
+    }
+end
+
+---Opens a table on the settings a player asked for. Nothing in `opts` is believed: every number is
+---clamped into the config bounds and the name is sanitised, so the worst a tampered phone can do is
+---open a table it could have opened through the sheet anyway. The blind ratio is held near 2x
+---because the lobby row shows one stake line and a 40x big blind would make that line a lie, and
+---the buy-in is squared onto whole big blinds so a stack always covers a round number of them.
+---@param cid string citizenid of the creator
+---@param ownerName string display name of the creator
+---@param opts any client-supplied { name, sb, bb, minBuyIn, maxBuyIn }
+---@return string|nil id the new table id, nil on refusal
+---@return string? message refusal reason
+function holdem.create(cid, ownerName, opts)
+    if not PT_ENABLED then return nil, 'Players cannot open tables here' end
+    opts = type(opts) == 'table' and opts or {}
+
+    local mine, total = countPlayerTables(cid)
+    if mine >= PT_MAX_PER_PLAYER then
+        return nil, PT_MAX_PER_PLAYER == 1
+            and 'You already have a table open. Close that one first.'
+            or ('You already have %d tables open'):format(mine)
+    end
+    if total >= PT_MAX_TOTAL then
+        return nil, 'The floor is full right now, try again when a table closes'
+    end
+
+    local sb = clamp(intOr(opts.sb, PT_MIN_BLIND), PT_MIN_BLIND, PT_MAX_BLIND)
+    local bb = clamp(intOr(opts.bb, sb * 2), sb * 2, sb * PT_BB_MAX_RATIO)
+    local floorBuyIn, ceilBuyIn = bb * PT_MIN_BUYIN_BB, bb * PT_MAX_BUYIN_BB
+    local minBuyIn = clamp(intOr(opts.minBuyIn, floorBuyIn), floorBuyIn, ceilBuyIn)
+    minBuyIn = math.max(floorBuyIn, minBuyIn - (minBuyIn % bb))
+    local maxBuyIn = clamp(intOr(opts.maxBuyIn, minBuyIn * 4), minBuyIn, ceilBuyIn)
+    maxBuyIn = math.max(minBuyIn, maxBuyIn - (maxBuyIn % bb))
+
+    local owner = tostring(ownerName or 'A player')
+    local id
+    repeat
+        nextTableId = nextTableId + 1
+        id = ('pt%d'):format(nextTableId)
+    until not rooms[id]
+
+    local T = newRoom({
+        id = id, name = cleanName(opts.name, owner .. "'s table"),
+        sb = sb, bb = bb, minBuyIn = minBuyIn, maxBuyIn = maxBuyIn,
+    }, cid, owner)
+    T.emptySince = GetGameTimer()
+    rooms[id] = T
+    order[#order + 1] = T
+    return id, nil
+end
+
 ---@return table[] tables the lobby list
 function holdem.tables()
     local out = {}
@@ -851,9 +1019,39 @@ function holdem.tables()
             id = T.id, name = T.name, sb = T.sb, bb = T.bb,
             minBuyIn = T.minBuyIn, maxBuyIn = T.maxBuyIn,
             seated = nSeated, playing = nPlaying,
+            custom = T.owner ~= nil, ownerName = T.ownerName,
         }
     end
     return out
+end
+
+---Closes player tables nobody is sitting at. A table opened for a game that never filled would
+---otherwise stay on the lobby list for the rest of the session, and the list would only ever grow.
+---House rooms are skipped, and a table is only removed with every chair empty, so this can never
+---take a stack or a live pot with it.
+---@param now integer game timer (ms)
+local function sweepPlayerTables(now)
+    for n = #order, 1, -1 do
+        local T = order[n]
+        if T.owner then
+            local busy = false
+            for i = 1, SEATS do
+                if T.seats[i].cid then
+                    busy = true
+                    break
+                end
+            end
+            if busy then
+                T.emptySince = nil
+            else
+                T.emptySince = T.emptySince or now
+                if now - T.emptySince >= PT_EMPTY_MS then
+                    rooms[T.id] = nil
+                    table.remove(order, n)
+                end
+            end
+        end
+    end
 end
 
 ---One pass of the table clock: expired action timers first, then hands that are due to start. The
@@ -886,6 +1084,7 @@ function holdem.tick()
             end
         end
     end
+    sweepPlayerTables(now)
 end
 
 ---Empties every table and hands back what each character had on it, stack and live pot alike. A

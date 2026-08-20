@@ -23,13 +23,13 @@ function menuGroups(): readonly MenuGroup[] {
             id:       'operations',
             header:   t('mdt.menuOperations', 'Operations'),
             tone:     null,
-            sections: ['home', 'dispatch', 'chat', 'phone'],
+            sections: ['home', 'dispatch', 'cameras', 'chat', 'phone'],
         },
         {
             id:       'records',
             header:   t('mdt.menuRecords', 'Records'),
             tone:     '#0A84FF',
-            sections: ['profiles', 'patients', 'vehicles', 'warrants', 'jail'],
+            sections: ['profiles', 'patients', 'vehicles', 'weapons', 'warrants', 'jail'],
         },
         {
             id:       'paperwork',

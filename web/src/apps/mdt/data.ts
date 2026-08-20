@@ -8,6 +8,8 @@ export type MdtSection =
     | 'dispatch'
     | 'profiles'
     | 'vehicles'
+    | 'weapons'
+    | 'cameras'
     | 'reports'
     | 'cases'
     | 'warrants'
@@ -27,7 +29,7 @@ export type MdtSection =
 export type DepartmentType = 'leo' | 'ems' | 'doj';
 
 export const LEO_SECTIONS: readonly MdtSection[] = [
-    'home', 'dispatch', 'profiles', 'vehicles', 'reports', 'cases',
+    'home', 'dispatch', 'cameras', 'profiles', 'vehicles', 'weapons', 'reports', 'cases',
     'warrants', 'offences', 'sops', 'employees', 'affairs', 'chat', 'jail', 'phone', 'logs',
 ] as const;
 
@@ -55,6 +57,9 @@ export type MdtPermission =
     | 'profiles.view'
     | 'vehicles.view'
     | 'vehicles.edit'
+    | 'weapons.view'
+    | 'weapons.edit'
+    | 'cameras.view'
     | 'reports.view'
     | 'reports.create'
     | 'reports.edit.own'
@@ -108,6 +113,8 @@ export const SECTION_PERMISSION: Record<MdtSection, MdtPermission> = {
     dispatch:  'dispatch.view',
     profiles:  'persons.view',
     vehicles:  'vehicles.view',
+    weapons:   'weapons.view',
+    cameras:   'cameras.view',
     reports:   'reports.view',
     cases:     'cases.view',
     warrants:  'warrants.view',
@@ -309,6 +316,66 @@ export interface VehicleDetail extends VehicleRow {
     image?:     string;
     updatedBy?: string;
     updatedAt?: number;
+}
+
+export type WeaponStatus = 'registered' | 'stolen' | 'seized' | 'destroyed';
+export type WeaponClass = 'pistol' | 'smg' | 'rifle' | 'shotgun' | 'sniper' | 'melee' | 'other';
+
+export const WEAPON_STATUSES: readonly WeaponStatus[] =
+    ['registered', 'stolen', 'seized', 'destroyed'] as const;
+export const WEAPON_CLASSES: readonly WeaponClass[] =
+    ['pistol', 'smg', 'rifle', 'shotgun', 'sniper', 'melee', 'other'] as const;
+
+export interface WeaponRow {
+    serial:       string;
+    name:         string;
+    class:        WeaponClass;
+    owner:        string | null;
+    ownerName:    string | null;
+    status:       WeaponStatus;
+    bolo:         boolean;
+    registeredAt: number;
+}
+
+export interface WeaponDetail extends WeaponRow {
+    notes:        string;
+    ballistics:   boolean;
+    registeredBy: string | null;
+    updatedBy:    string | null;
+    updatedAt:    number | null;
+}
+
+export type CameraKind = 'bodycam' | 'dashcam';
+export type CameraQuality = 'preview' | 'full';
+export type CameraStatus = 'live' | 'starting' | 'busy' | 'unsupported' | 'ready';
+
+export interface CameraTile {
+    id:        string;
+    kind:      CameraKind;
+    citizenid: string;
+    officer:   string;
+    callsign:  string | null;
+    rank:      string | null;
+    unit:      string | null;
+    plate:     string | null;
+    model:     string | null;
+    status:    CameraStatus;
+    viewers:   number;
+    self:      boolean;
+}
+
+export interface CameraGrid {
+    cameras:     CameraTile[];
+    previews:    boolean;
+    idleSeconds: number;
+}
+
+export interface CameraStream {
+    cameraId: string;
+    gen:      number;
+    mime:     string | null;
+    status:   CameraStatus;
+    viewers:  number;
 }
 
 export interface Charge {

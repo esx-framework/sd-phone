@@ -8,6 +8,7 @@ import { MenuRootProvider } from '@/ui/menuRoot';
 import { NavContext } from '@/hooks/useIosPush';
 import type { DepartmentType, MdtSection } from './data';
 import { AffairsPane } from './AffairsPane';
+import { CamerasPane } from './CamerasPane';
 import { CasesPane } from './CasesPane';
 import { ChatPane } from './ChatPane';
 import { CourtPane } from './CourtPane';
@@ -31,14 +32,18 @@ import { ProtocolsPane } from './ProtocolsPane';
 import { ReportsPane } from './ReportsPane';
 import { VehiclesPane } from './VehiclesPane';
 import { WarrantsPane } from './WarrantsPane';
+import { WeaponsPane } from './WeaponsPane';
 import { MDT_ACCENT, MDT_STATUS_RESERVE, mdtBackdrop } from './mdtTheme';
 import { MdtSessionProvider, useMdtSession, useMdtSessionState } from './useMdtSession';
+
 
 function pane(section: MdtSection) {
     switch (section) {
         case 'dispatch':  return <DispatchPane />;
         case 'profiles':  return <ProfilesPane />;
         case 'vehicles':  return <VehiclesPane />;
+        case 'weapons':   return <WeaponsPane />;
+        case 'cameras':   return <CamerasPane />;
         case 'reports':   return <ReportsPane />;
         case 'cases':     return <CasesPane />;
         case 'warrants':  return <WarrantsPane />;

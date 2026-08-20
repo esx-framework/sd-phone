@@ -12,7 +12,7 @@ local ACTIONS = {
     -- No crashWatch here: the subscription is gated on the phone being open, and that gate lives in
     -- client/apps/casino.lua. A second ungated route would just overwrite it.
     'crashBet', 'crashCashout',
-    'holdemTables', 'holdemSit', 'holdemLeave', 'holdemAct', 'holdemSync',
+    'holdemTables', 'holdemCreate', 'holdemSit', 'holdemLeave', 'holdemAct', 'holdemSync',
 }
 
 -- Thin delegates into the games engine (server/games/engine.lua).

@@ -14,6 +14,7 @@ schema.tables = {
     'phone_mdt_profile_sessions',
     'phone_mdt_person_records',
     'phone_mdt_vehicles',
+    'phone_mdt_weapons',
     'phone_mdt_offences',
     'phone_mdt_reports',
     'phone_mdt_report_charges',
@@ -151,6 +152,29 @@ function schema.ensureSchema()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ]])
     migrations.apply('phone_mdt_vehicles')
+
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS phone_mdt_weapons (
+            `serial`        VARCHAR(32) NOT NULL,
+            `name`          VARCHAR(96) NOT NULL,
+            `class`         VARCHAR(16) NOT NULL DEFAULT 'other',
+            `owner`         VARCHAR(64) NULL,
+            `owner_name`    VARCHAR(96) NULL,
+            `status`        VARCHAR(16) NOT NULL DEFAULT 'registered',
+            `bolo`          TINYINT(1)  NOT NULL DEFAULT 0,
+            `ballistics`    TINYINT(1)  NOT NULL DEFAULT 0,
+            `notes`         TEXT        NULL,
+            `registered_by` VARCHAR(64) NULL,
+            `registered_at` INT         NOT NULL,
+            `updated_by`    VARCHAR(64) NULL,
+            `updated_at`    INT         NOT NULL,
+            PRIMARY KEY (`serial`),
+            KEY idx_owner (`owner`, `registered_at`),
+            KEY idx_status (`status`, `registered_at`),
+            KEY idx_filed (`registered_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ]])
+    migrations.apply('phone_mdt_weapons')
 
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS phone_mdt_reports (

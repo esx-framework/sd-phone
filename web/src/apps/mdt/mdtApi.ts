@@ -6,6 +6,10 @@ import {
     type AuditRow,
     type Bulletin,
     type Call,
+    type CameraGrid,
+    type CameraQuality,
+    type CameraStream,
+    type CameraTile,
     type CaseDetail,
     type CaseRole,
     type CaseStatus,
@@ -35,6 +39,10 @@ import {
     type VehicleDetail,
     type VehicleRow,
     type VehicleStatus,
+    type WeaponClass,
+    type WeaponDetail,
+    type WeaponRow,
+    type WeaponStatus,
     type Department,
     type DepartmentType,
     type CourtDetail,
@@ -115,6 +123,7 @@ const DEV_BOOTSTRAP: MdtBootstrap = {
     grants: [
         'home.view', 'phone.view', 'persons.view', 'persons.edit', 'profiles.view',
         'vehicles.view', 'vehicles.edit',
+        'weapons.view', 'weapons.edit', 'cameras.view',
         'reports.view', 'reports.create', 'reports.edit.own', 'reports.edit.any', 'reports.delete',
         'cases.view', 'cases.create', 'cases.edit', 'cases.delete',
         'warrants.view', 'warrants.issue', 'warrants.close',
@@ -267,6 +276,15 @@ let DEV_VEHICLES: VehicleDetail[] = [
     { plate: '55TDW903', model: 'Phoenix', owner: 'GRC18760', ownerName: 'Andre Garcia', status: 'expired', stolen: false, bolo: false, garage: 'Vespucci', stored: true, notes: 'Registration lapsed. Owner advised at the roadside.', points: 2 },
     { plate: '62HVN447', model: 'Packer', owner: 'TLM33927', ownerName: 'Ruth Tillman', status: 'valid', stolen: false, bolo: false, garage: 'Elysian Island', stored: true, notes: '', points: 0 },
     { plate: '30QSF715', model: 'Comet', owner: 'ODN55310', ownerName: 'Priya Odenkirk', status: 'impounded', stolen: false, bolo: false, garage: 'Impound', stored: false, notes: 'Held pending the collision investigation on Power Street.', points: 0 },
+];
+
+let DEV_WEAPONS: WeaponDetail[] = [
+    { serial: 'LS-4471-A', name: 'Combat Pistol', class: 'pistol', owner: 'KRV20884', ownerName: 'Marcus Kerrigan', status: 'stolen', bolo: true, registeredAt: now - 240 * DAY, notes: 'Reported taken in the Strawberry burglary. Casings from the Rob’s Liquor scene are a probable match.', ballistics: true, registeredBy: 'Grace Hartley', updatedBy: 'Dana Whitlock', updatedAt: now - 2 * HOUR },
+    { serial: 'LS-1180-C', name: 'Pump Shotgun', class: 'shotgun', owner: 'MRN91223', ownerName: 'Elena Moreno', status: 'registered', bolo: false, registeredAt: now - 610 * DAY, notes: '', ballistics: false, registeredBy: 'Grace Hartley', updatedBy: null, updatedAt: null },
+    { serial: 'LS-8802-K', name: 'Micro SMG', class: 'smg', owner: 'BSH70145', ownerName: 'Cody Bashir', status: 'seized', bolo: false, registeredAt: now - 95 * DAY, notes: 'Seized at the Mirror Park stop and lodged in the property store pending the charge.', ballistics: true, registeredBy: 'Miles Okafor', updatedBy: 'Miles Okafor', updatedAt: now - 9 * HOUR },
+    { serial: 'LS-2306-R', name: 'Carbine Rifle', class: 'rifle', owner: null, ownerName: null, status: 'stolen', bolo: true, registeredAt: now - 40 * DAY, notes: 'Recovered from a canal culvert off Elysian Island. No owner on the registry, serial partially filed.', ballistics: true, registeredBy: 'Dana Whitlock', updatedBy: null, updatedAt: null },
+    { serial: 'LS-5539-T', name: 'Heavy Sniper', class: 'sniper', owner: 'TLM33927', ownerName: 'Ruth Tillman', status: 'registered', bolo: false, registeredAt: now - 820 * DAY, notes: 'Held on a range permit. Renewal due.', ballistics: false, registeredBy: 'Grace Hartley', updatedBy: null, updatedAt: null },
+    { serial: 'LS-7714-M', name: 'Machete', class: 'melee', owner: 'ODN55310', ownerName: 'Priya Odenkirk', status: 'destroyed', bolo: false, registeredAt: now - 300 * DAY, notes: 'Destroyed at the property store after the case closed.', ballistics: false, registeredBy: 'Miles Okafor', updatedBy: 'Grace Hartley', updatedAt: now - 30 * DAY },
 ];
 
 function charge(code: string, citizenid: string, name: string, count: number): Charge {
@@ -530,6 +548,37 @@ function vehicleRow(v: VehicleDetail): VehicleRow {
     };
 }
 
+function weaponRow(w: WeaponDetail): WeaponRow {
+    return {
+        serial: w.serial, name: w.name, class: w.class, owner: w.owner, ownerName: w.ownerName,
+        status: w.status, bolo: w.bolo, registeredAt: w.registeredAt,
+    };
+}
+
+function pinWeaponRow(row: WeaponRow): WeaponRow {
+    return {
+        serial:       row.serial,
+        name:         row.name ?? '',
+        class:        row.class ?? 'other',
+        owner:        row.owner ?? null,
+        ownerName:    row.ownerName ?? null,
+        status:       row.status ?? 'registered',
+        bolo:         row.bolo === true,
+        registeredAt: row.registeredAt ?? 0,
+    };
+}
+
+function pinWeapon(weapon: WeaponDetail): WeaponDetail {
+    return {
+        ...pinWeaponRow(weapon),
+        notes:        weapon.notes ?? '',
+        ballistics:   weapon.ballistics === true,
+        registeredBy: weapon.registeredBy ?? null,
+        updatedBy:    weapon.updatedBy ?? null,
+        updatedAt:    weapon.updatedAt ?? null,
+    };
+}
+
 function hydratePerson(p: PersonDetail): PersonDetail {
     const warrants = DEV_WARRANTS.filter(w => w.citizenid === p.citizenid);
     const priors: PersonDetail['priors'] = [];
@@ -717,6 +766,154 @@ export async function mdtUpdateVehicle(plate: string, patch: VehiclePatch): Prom
         return next;
     }
     return (await apiData<{ vehicle: VehicleDetail }>('sd-phone:mdt:vehicles:update', { plate, ...patch }))?.vehicle ?? null;
+}
+
+export interface WeaponQuery {
+    query?:  string;
+    status?: WeaponStatus | 'all';
+    page?:   number;
+}
+
+export async function mdtWeapons(opts: WeaponQuery = {}): Promise<Page<WeaponRow>> {
+    const page = opts.page ?? 1;
+    if (!isFiveM) {
+        const hits = DEV_WEAPONS.filter(w => {
+            if (opts.status && opts.status !== 'all' && w.status !== opts.status) return false;
+            if (!opts.query || opts.query.trim().length < 2) return true;
+            return matches(opts.query, w.serial, w.name, w.ownerName ?? '');
+        });
+        return paginate(hits.map(weaponRow), page);
+    }
+    const res = await apiData<Page<WeaponRow>>('sd-phone:mdt:weapons:search', { ...opts, page });
+    if (!res) return emptyPage<WeaponRow>();
+    return { ...res, rows: (res.rows ?? []).map(pinWeaponRow) };
+}
+
+export async function mdtWeapon(serial: string): Promise<WeaponDetail | null> {
+    if (!isFiveM) return DEV_WEAPONS.find(w => w.serial === serial) ?? null;
+    const res = await apiData<{ weapon: WeaponDetail }>('sd-phone:mdt:weapons:get', { serial });
+    return res?.weapon ? pinWeapon(res.weapon) : null;
+}
+
+export interface WeaponInput {
+    serial: string;
+    name:   string;
+    class:  WeaponClass;
+    owner:  string;
+    notes:  string;
+}
+
+export async function mdtRegisterWeapon(input: WeaponInput): Promise<WeaponDetail | string> {
+    if (!isFiveM) {
+        const serial = input.serial.trim().toUpperCase();
+        if (DEV_WEAPONS.some(w => w.serial === serial)) return 'That serial is already on the registry';
+        const owner = input.owner.trim();
+        const next: WeaponDetail = {
+            serial,
+            name:         input.name.trim(),
+            class:        input.class,
+            owner:        owner || null,
+            ownerName:    DEV_PERSONS.find(p => p.citizenid === owner)?.name ?? (owner || null),
+            status:       'registered',
+            bolo:         false,
+            registeredAt: Math.floor(Date.now() / 1000),
+            notes:        input.notes,
+            ballistics:   false,
+            registeredBy: DEV_BOOTSTRAP.me.name,
+            updatedBy:    null,
+            updatedAt:    null,
+        };
+        DEV_WEAPONS = [next, ...DEV_WEAPONS];
+        return next;
+    }
+    const res = await apiCall<{ weapon: WeaponDetail }>('sd-phone:mdt:weapons:create', input);
+    if (!res.success || !res.data) return res.message ?? '';
+    return pinWeapon(res.data.weapon);
+}
+
+export interface WeaponPatch {
+    status?:     WeaponStatus;
+    bolo?:       boolean;
+    ballistics?: boolean;
+    notes?:      string;
+    owner?:      string;
+}
+
+export async function mdtUpdateWeapon(serial: string, patch: WeaponPatch): Promise<WeaponDetail | null> {
+    if (!isFiveM) {
+        const at = DEV_WEAPONS.findIndex(w => w.serial === serial);
+        if (at < 0) return null;
+        const owner = patch.owner === undefined ? DEV_WEAPONS[at].owner : (patch.owner || null);
+        const next: WeaponDetail = {
+            ...DEV_WEAPONS[at], ...patch,
+            owner,
+            ownerName: owner ? DEV_PERSONS.find(p => p.citizenid === owner)?.name ?? owner : null,
+            updatedAt: Math.floor(Date.now() / 1000),
+            updatedBy: DEV_BOOTSTRAP.me.name,
+        };
+        DEV_WEAPONS = DEV_WEAPONS.map((w, i) => (i === at ? next : w));
+        return next;
+    }
+    const res = await apiData<{ weapon: WeaponDetail }>('sd-phone:mdt:weapons:update', { serial, ...patch });
+    return res?.weapon ? pinWeapon(res.weapon) : null;
+}
+
+const DEV_CAMERAS: CameraTile[] = [
+    { id: 'bodycam:WHT44012', kind: 'bodycam', citizenid: 'WHT44012', officer: 'Dana Whitlock', callsign: 'LS-114', rank: 'Sergeant', unit: 'LSPD', plate: null, model: null, status: 'ready', viewers: 0, self: true },
+    { id: 'bodycam:OKF10233', kind: 'bodycam', citizenid: 'OKF10233', officer: 'Miles Okafor', callsign: 'LS-207', rank: 'Officer II', unit: 'LSPD', plate: null, model: null, status: 'live', viewers: 1, self: false },
+    { id: 'dashcam:OKF10233', kind: 'dashcam', citizenid: 'OKF10233', officer: 'Miles Okafor', callsign: 'LS-207', rank: 'Officer II', unit: 'LSPD', plate: '20LSPD07', model: 'Police Cruiser', status: 'live', viewers: 1, self: false },
+    { id: 'bodycam:HRT88104', kind: 'bodycam', citizenid: 'HRT88104', officer: 'Grace Hartley', callsign: 'LS-301', rank: 'Lieutenant', unit: 'LSPD', plate: null, model: null, status: 'busy', viewers: 0, self: false },
+    { id: 'bodycam:REY55018', kind: 'bodycam', citizenid: 'REY55018', officer: 'Tomas Reyes', callsign: 'LS-412', rank: 'Officer I', unit: 'LSPD', plate: null, model: null, status: 'unsupported', viewers: 0, self: false },
+];
+
+function pinCamera(tile: CameraTile): CameraTile {
+    return {
+        id:        tile.id,
+        kind:      tile.kind === 'dashcam' ? 'dashcam' : 'bodycam',
+        citizenid: tile.citizenid,
+        officer:   tile.officer ?? '',
+        callsign:  tile.callsign ?? null,
+        rank:      tile.rank ?? null,
+        unit:      tile.unit ?? null,
+        plate:     tile.plate ?? null,
+        model:     tile.model ?? null,
+        status:    tile.status ?? 'ready',
+        viewers:   tile.viewers ?? 0,
+        self:      tile.self === true,
+    };
+}
+
+export async function mdtCameras(): Promise<CameraGrid> {
+    if (!isFiveM) return { cameras: DEV_CAMERAS.map(pinCamera), previews: true, idleSeconds: 15 };
+    const res = await apiData<CameraGrid>('sd-phone:mdt:cameras:list');
+    if (!res) return { cameras: [], previews: false, idleSeconds: 15 };
+    return {
+        cameras:     (res.cameras ?? []).map(pinCamera),
+        previews:    res.previews === true,
+        idleSeconds: res.idleSeconds ?? 15,
+    };
+}
+
+export async function mdtCameraWatch(cameraId: string, quality: CameraQuality, reprime = false): Promise<CameraStream | string> {
+    if (!isFiveM) {
+        const tile = DEV_CAMERAS.find(c => c.id === cameraId);
+        if (!tile) return 'That unit is no longer on the air';
+        return { cameraId, gen: 1, mime: null, status: tile.status, viewers: tile.viewers };
+    }
+    const res = await apiCall<CameraStream>('sd-phone:mdt:cameras:watch', { cameraId, quality, reprime });
+    if (!res.success || !res.data) return res.message ?? '';
+    return {
+        cameraId: res.data.cameraId ?? cameraId,
+        gen:      res.data.gen ?? 0,
+        mime:     res.data.mime ?? null,
+        status:   res.data.status ?? 'ready',
+        viewers:  res.data.viewers ?? 0,
+    };
+}
+
+export async function mdtCameraUnwatch(cameraId?: string): Promise<void> {
+    if (!isFiveM) return;
+    await apiCall('sd-phone:mdt:cameras:unwatch', cameraId ? { cameraId } : {});
 }
 
 export async function mdtReports(opts: { query?: string; type?: ReportType | 'All'; page?: number } = {}): Promise<Page<ReportSummary>> {

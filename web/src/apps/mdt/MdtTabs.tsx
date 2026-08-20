@@ -12,6 +12,7 @@ function draftLabels(): Partial<Record<MdtSection, string>> {
     return {
         reports: t('mdt.tabNewReport', 'New report'),
         cases:   t('mdt.tabNewCase', 'New case'),
+        weapons: t('mdt.tabNewWeapon', 'New weapon'),
     };
 }
 

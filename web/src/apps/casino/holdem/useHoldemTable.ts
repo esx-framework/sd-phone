@@ -28,6 +28,7 @@ export interface HoldemTableCtl {
     error:      string | null;
     busy:       boolean;
     clearError: () => void;
+    fail:       (message: string) => void;
     sit:        (seat: number, buyIn: number) => Promise<boolean>;
     leave:      () => Promise<number | null>;
     act:        (action: HoldemAction, to?: number) => void;
@@ -125,6 +126,7 @@ export function useHoldemTable(tableId: string | null): HoldemTableCtl {
     }, []);
 
     const clearError = useCallback(() => setError(null), []);
+    const fail = useCallback((message: string) => setError(message), []);
 
-    return { state, handEnd, error, busy, clearError, sit, leave, act };
+    return { state, handEnd, error, busy, clearError, fail, sit, leave, act };
 }

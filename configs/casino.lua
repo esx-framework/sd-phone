@@ -39,5 +39,19 @@ return {
             { id = 'mid',  name = 'Vinewood',     sb = 100, bb = 200,  minBuyIn = 8000,  maxBuyIn = 40000 },
             { id = 'high', name = 'Diamond',      sb = 500, bb = 1000, minBuyIn = 40000, maxBuyIn = 200000 },
         },
+        -- Tables players open themselves, alongside the house rooms above. Every value a player
+        -- sends is clamped into these bounds server-side, so widening a bound here is the only way
+        -- to widen what a table can be set to.
+        PlayerTables = {
+            Enabled      = true,
+            MaxPerPlayer = 1,     -- tables one character may have open at a time
+            MaxTotal     = 8,     -- player tables on the floor at once, house rooms not counted
+            MinBlind     = 5,     -- smallest small blind that can be picked
+            MaxBlind     = 2500,  -- largest small blind that can be picked
+            MinBuyInBB   = 20,    -- floor on the min buy in, counted in big blinds
+            MaxBuyInBB   = 400,   -- ceiling on the max buy in, counted in big blinds
+            NameMax      = 24,    -- characters kept from the name the creator typed
+            EmptyMinutes = 5,     -- an empty player table is closed after this long
+        },
     },
 }

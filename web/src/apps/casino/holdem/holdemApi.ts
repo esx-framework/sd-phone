@@ -1,15 +1,22 @@
 import { apiCall } from '@/core/api';
 import { isFiveM } from '@/core/nui';
 
-import type { HoldemAction, HoldemStatePush, HoldemTableInfo } from './data';
+import type { HoldemAction, HoldemCreateOpts, HoldemLobby, HoldemStatePush } from './data';
+import { normalizeLobby } from './data';
 import { devHoldem } from './devTable';
 
 export interface HoldemReply<T> { ok: boolean; message?: string; data?: T }
 
-export async function tablesApi(): Promise<HoldemTableInfo[]> {
+export async function tablesApi(): Promise<HoldemLobby> {
     if (!isFiveM) return devHoldem.tables();
-    const res = await apiCall<{ tables: HoldemTableInfo[] }>('sd-phone:games:holdemTables');
-    return res.success && res.data ? res.data.tables : [];
+    const res = await apiCall<HoldemLobby>('sd-phone:games:holdemTables');
+    return normalizeLobby(res.success ? res.data : null);
+}
+
+export async function createApi(opts: HoldemCreateOpts): Promise<HoldemReply<{ tableId: string }>> {
+    if (!isFiveM) return devHoldem.create(opts);
+    const res = await apiCall<{ tableId: string }>('sd-phone:games:holdemCreate', opts);
+    return { ok: res.success, message: res.message, data: res.data };
 }
 
 export async function syncApi(tableId: string): Promise<HoldemStatePush | null> {

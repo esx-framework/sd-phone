@@ -1,7 +1,7 @@
 import {
-    BookText, Car, ClipboardList, Eraser, FileText, FolderOpen, Gavel, HeartPulse, IdCard, Landmark,
-    LayoutDashboard, Lock, MessageSquare, RadioTower, Scale, ScrollText, ShieldQuestion,
-    Smartphone, Users, type LucideIcon,
+    BookText, Car, ClipboardList, Crosshair, Eraser, FileText, FolderOpen, Gavel, HeartPulse, IdCard,
+    Landmark, LayoutDashboard, Lock, MessageSquare, RadioTower, Scale, ScrollText, ShieldQuestion,
+    Smartphone, Users, Video, type LucideIcon,
 } from 'lucide-react';
 
 import { t } from '@/i18n';
@@ -19,6 +19,8 @@ export function navItems(): Record<MdtSection, MdtNavItem> {
         dispatch:  { id: 'dispatch',  label: t('mdt.navDispatch', 'Dispatch'),   icon: RadioTower },
         profiles:  { id: 'profiles',  label: t('mdt.navProfiles', 'Profiles'),   icon: IdCard },
         vehicles:  { id: 'vehicles',  label: t('mdt.navVehicles', 'Vehicles'),   icon: Car },
+        weapons:   { id: 'weapons',   label: t('mdt.navWeapons', 'Weapons'),     icon: Crosshair },
+        cameras:   { id: 'cameras',   label: t('mdt.navCameras', 'Cameras'),     icon: Video },
         reports:   { id: 'reports',   label: t('mdt.navReports', 'Reports'),     icon: FileText },
         cases:     { id: 'cases',     label: t('mdt.navCases', 'Cases'),         icon: FolderOpen },
         warrants:  { id: 'warrants',  label: t('mdt.navWarrants', 'Warrants'),   icon: Gavel },

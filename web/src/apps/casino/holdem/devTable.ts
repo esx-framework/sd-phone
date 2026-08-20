@@ -2,8 +2,8 @@ import { RANKS, SUITS, type Card } from '@/apps/casino/cards';
 import { writeJson } from '@/lib/storage';
 
 import type {
-    HoldemAction, HoldemHandEnd, HoldemLegal, HoldemPot, HoldemSeat, HoldemStatePush,
-    HoldemStreet, HoldemTableInfo, SeatState,
+    HoldemAction, HoldemCreateLimits, HoldemCreateOpts, HoldemHandEnd, HoldemLegal, HoldemLobby,
+    HoldemPot, HoldemSeat, HoldemStatePush, HoldemStreet, HoldemTableInfo, SeatState,
 } from './data';
 
 const CHIP_KEY = 'sd-phone:casino-chips:v1';
@@ -12,10 +12,18 @@ const ACTION_MS = 20000;
 const NEXT_HAND_MS = 3400;
 
 export const DEV_TABLES: HoldemTableInfo[] = [
-    { id: 'low',  name: 'Sandy Shores', sb: 25,  bb: 50,   minBuyIn: 2000,  maxBuyIn: 10000,  seated: 0, playing: false },
-    { id: 'mid',  name: 'Vinewood',     sb: 100, bb: 200,  minBuyIn: 8000,  maxBuyIn: 40000,  seated: 0, playing: false },
-    { id: 'high', name: 'Diamond',      sb: 500, bb: 1000, minBuyIn: 40000, maxBuyIn: 200000, seated: 0, playing: false },
+    { id: 'low',  name: 'Sandy Shores', sb: 25,  bb: 50,   minBuyIn: 2000,  maxBuyIn: 10000,  seated: 0, playing: false, custom: false, ownerName: null },
+    { id: 'mid',  name: 'Vinewood',     sb: 100, bb: 200,  minBuyIn: 8000,  maxBuyIn: 40000,  seated: 0, playing: false, custom: false, ownerName: null },
+    { id: 'high', name: 'Diamond',      sb: 500, bb: 1000, minBuyIn: 40000, maxBuyIn: 200000, seated: 0, playing: false, custom: false, ownerName: null },
 ];
+
+const DEV_CREATE: HoldemCreateLimits = {
+    enabled: true, nameMax: 24, blinds: [5, 10, 25, 50, 100, 250, 500, 1000, 2500], bbRatioMax: 3,
+    minBuyInBB: 20, maxBuyInBB: 400,
+};
+
+const devMade: HoldemTableInfo[] = [];
+let devMadeId = 0;
 
 const BOT_NAMES = ['Lester', 'Trevor', 'Paige', 'Lamar', 'Tanisha', 'Karim', 'Solomon', 'Maude'];
 
@@ -591,15 +599,17 @@ let watching: string | null = null;
 let pushedHand = 0;
 
 function roomFor(tableId: string): DevRoom | null {
-    const info = DEV_TABLES.find(x => x.id === tableId);
+    const info = DEV_TABLES.find(x => x.id === tableId) ?? devMade.find(x => x.id === tableId);
     if (!info) return null;
     const found = rooms.get(tableId);
     if (found) return found;
     const engine = createDevEngine(tableId, info.sb, info.bb);
-    const first = 1 + Math.floor(Math.random() * 2);
-    const shift = Math.floor(Math.random() * BOT_NAMES.length);
-    for (let n = 0; n < 3; n++) {
-        engine.sit(((first - 1 + n * 2) % SEATS) + 1, BOT_NAMES[(shift + n) % BOT_NAMES.length], info.minBuyIn * 2, true);
+    if (!info.custom) {
+        const first = 1 + Math.floor(Math.random() * 2);
+        const shift = Math.floor(Math.random() * BOT_NAMES.length);
+        for (let n = 0; n < 3; n++) {
+            engine.sit(((first - 1 + n * 2) % SEATS) + 1, BOT_NAMES[(shift + n) % BOT_NAMES.length], info.minBuyIn * 2, true);
+        }
     }
     const room: DevRoom = { engine, info: { ...info }, seat: null };
     rooms.set(tableId, room);
@@ -626,8 +636,8 @@ function ensureLoop(): void {
 }
 
 export const devHoldem = {
-    tables(): HoldemTableInfo[] {
-        return DEV_TABLES.map(info => {
+    tables(): HoldemLobby {
+        const tables = [...DEV_TABLES, ...devMade].map(info => {
             const room = rooms.get(info.id);
             return {
                 ...info,
@@ -635,6 +645,21 @@ export const devHoldem = {
                 playing: room ? room.engine.street !== 'idle' : false,
             };
         });
+        return { tables, create: DEV_CREATE };
+    },
+    create(opts: HoldemCreateOpts): { ok: boolean; message?: string; data?: { tableId: string } } {
+        if (devMade.length >= 1) return { ok: false, message: 'You already have a table open. Close that one first.' };
+        const sb = Math.max(1, Math.floor(opts.sb));
+        const bb = Math.min(sb * DEV_CREATE.bbRatioMax, Math.max(sb * 2, Math.floor(opts.bb)));
+        const minBuyIn = Math.max(bb * DEV_CREATE.minBuyInBB, Math.floor(opts.minBuyIn / bb) * bb);
+        const maxBuyIn = Math.min(bb * DEV_CREATE.maxBuyInBB, Math.max(minBuyIn, Math.floor(opts.maxBuyIn / bb) * bb));
+        devMadeId += 1;
+        const id = `pt${devMadeId}`;
+        devMade.push({
+            id, name: opts.name.trim().slice(0, DEV_CREATE.nameMax) || 'Your table',
+            sb, bb, minBuyIn, maxBuyIn, seated: 0, playing: false, custom: true, ownerName: 'You',
+        });
+        return { ok: true, data: { tableId: id } };
     },
     sync(tableId: string): HoldemStatePush | null {
         const room = roomFor(tableId);
