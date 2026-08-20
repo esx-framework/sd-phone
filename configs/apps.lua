@@ -83,7 +83,7 @@ return {
         { id = 'wordle', label = 'Penta', icon = 'wordle', route = '/wordle', accent = '#6AAA64', base = false, enabled = true },
         { id = 'flappy', label = 'Flappy', icon = 'flappy', route = '/flappy', accent = '#4EC0CA', base = false, enabled = true },
         { id = 'blocks', label = 'Blocks', icon = 'blocks', route = '/blocks', accent = '#7C4DFF', base = false, enabled = true },
-        { id = 'blackjack', label = 'Blackjack', icon = 'blackjack', route = '/blackjack', accent = '#157347', base = false, enabled = true },
+        { id = 'casino', label = 'Casino', icon = 'casino', route = '/casino', accent = '#0F5132', base = false, enabled = true },
         { id = 'climber', label = 'Climber', icon = 'climber', route = '/climber', accent = '#8BC34A', base = false, enabled = true },
         { id = 'connectfour', label = 'Connect 4', icon = 'connectfour', route = '/connectfour', accent = '#1E66D0', base = false, enabled = true },
         { id = 'chess', label = 'Chess', icon = 'chess', route = '/chess', accent = '#3B3B3B', base = false, enabled = true },

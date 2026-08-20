@@ -957,6 +957,39 @@ export function BlackjackIcon() {
     );
 }
 
+export function CasinoIcon() {
+    const cx = 30;
+    const cy = 28;
+    const inner = 6;
+    const outer = 13;
+    const pt = (r: number, deg: number) => {
+        const a = ((deg - 90) * Math.PI) / 180;
+        return `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+    };
+    const wedges = Array.from({ length: 8 }, (_, i) => (
+        <path
+            key={i}
+            d={`M${pt(inner, i * 45)} L${pt(outer, i * 45)} A${outer} ${outer} 0 0 1 ${pt(outer, (i + 1) * 45)} L${pt(inner, (i + 1) * 45)} A${inner} ${inner} 0 0 0 ${pt(inner, i * 45)} Z`}
+            fill={i % 2 === 0 ? '#C1272D' : '#141414'}
+        />
+    ));
+    return (
+        <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
+            <defs>
+                <LinearGrad id="csn"  top="#1B8A54" mid="#0F5F3A" bot="#073E27" angle={150} />
+                <LinearGrad id="csng" top="#F0D48A" mid="#D4AF5F" bot="#A97F31" angle={160} />
+            </defs>
+            <rect width={S} height={S} fill="url(#csn)" />
+            <circle cx={cx} cy={cy} r="16.5" fill="rgba(0,0,0,0.22)" />
+            {wedges}
+            <circle cx={cx} cy={cy} r="15" fill="none" stroke="url(#csng)" strokeWidth="4" />
+            <circle cx={cx} cy={cy} r="4" fill="url(#csng)" />
+            <circle cx="43" cy="45" r="9" fill="#F3F6F4" stroke="rgba(0,0,0,0.18)" strokeWidth="0.9" />
+            <circle cx="43" cy="45" r="6.5" fill="none" stroke="#C1272D" strokeWidth="3" strokeDasharray="4 3" />
+        </svg>
+    );
+}
+
 export function ClimberIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
@@ -1424,6 +1457,7 @@ const ICON_MAP: Record<string, IconComponent> = {
     flappy:      FlappyIcon,
     blocks:      BlocksIcon,
     blackjack:   BlackjackIcon,
+    casino:      CasinoIcon,
     climber:     ClimberIcon,
     connectfour: ConnectFourIcon,
     chess:       ChessIcon,

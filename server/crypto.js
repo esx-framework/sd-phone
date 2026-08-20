@@ -90,3 +90,5 @@ registerExport('sdCryptoHashPassword', hashPassword);
 registerExport('sdCryptoVerifyPassword', verifyPassword);
 registerExport('sdCryptoEncrypt', encrypt);
 registerExport('sdCryptoDecrypt', decrypt);
+registerExport('sdCryptoSha256', (s) => crypto.createHash('sha256').update(String(s), 'utf8').digest('hex'));
+registerExport('sdCryptoRandomHex', (n) => crypto.randomBytes(Math.min(64, Math.max(1, Number(n) || 32))).toString('hex'));

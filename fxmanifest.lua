@@ -44,6 +44,7 @@ files {
     'web/build/assets/*.woff2',
     'web/build/assets/*.woff',
     'web/build/assets/*.mp3',
+    'web/build/assets/*.ogg',
 }
 
 dependencies {

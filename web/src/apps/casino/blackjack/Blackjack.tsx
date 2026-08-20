@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Coins, Cpu, Layers, Minus, Plus, Trophy, Wallet } from 'lucide-react';
+import { Coins, Layers, Minus, Plus, Wallet } from 'lucide-react';
 
 import { t } from '@/i18n';
 
 import { AlertDialog } from '@/ui/AlertDialog';
-import { BlackjackIcon } from '@/shell/AppIconSVG';
 import {
     type Card, type Outcome,
     SUIT_GLYPH,
@@ -12,19 +11,16 @@ import {
 } from './logic';
 import { type BjResult, bjDeal, bjDouble, bjHit, bjStand } from './blackjackApi';
 import { isFiveM } from '@/core/nui';
-import { Leaderboard } from '@/apps/_games/Leaderboard';
-import { Cashier } from '@/apps/_games/Cashier';
-import { loadChips } from '@/apps/_games/chipsApi';
-import { loadLeaderboard, loadStats, recordResultApi, type GameLeaderboard, type GameStats } from '@/apps/_games/statsApi';
+import { GameHeader } from '@/apps/_games/GameHeader';
+import { recordResultApi } from '@/apps/_games/statsApi';
 import { readJson, writeJson } from '@/lib/storage';
+import type { CasinoGameProps } from '../casinoApi';
+import { PAD_B } from '../theme';
+import { MuteButton } from '../MuteButton';
+import { playBigWin, playCardDeal, playCardFlip, playLose, playPush, playWin } from '../sfx';
 
-interface Props { onClose: () => void; }
-
-const SB_H = 54;
 const GAME = 'blackjack';
-const ACCENT = '#1C8A4E';
 
-// Face-down placeholder for the dealer hole while the player acts; the real hole arrives on resolve.
 const HOLE_CARD: Card = { rank: 'A', suit: 'S' };
 
 const BET_KEY = 'sd-phone:blackjack:lastbet';
@@ -43,30 +39,17 @@ const FELT = {
     push:     '#CFE9D8',
 };
 
-type Screen = 'home' | 'solo' | 'leaderboard' | 'cashier';
 type Phase = 'betting' | 'playing' | 'dealer' | 'result';
 
 const CHIP_STEPS = [5, 25, 100, 1000];
 
-export function Blackjack({ onClose: _onClose }: Props) {
-    const [screen, setScreen] = useState<Screen>('home');
-
-    const [chips, setChips] = useState(0);
-    const [bank,  setBank]  = useState(0);
-    const chipsRef = useRef(0); chipsRef.current = chips;
+export function Blackjack({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
+    const chipsRef = useRef(chips); chipsRef.current = chips;
     const [lastBet, setLastBet] = useState(() => initialBet());
     useEffect(() => { writeJson(BET_KEY, lastBet); }, [lastBet]);
 
-    const syncChips = useCallback(() => { void loadChips().then(s => { setChips(s.chips); setBank(s.bank); }); }, []);
-
-    const [stats, setStats] = useState<GameStats>(() => ({ cpu: { wins: 0, losses: 0, draws: 0 }, online: { wins: 0, losses: 0, draws: 0 }, won: 0, lost: 0 }));
-    const [leaderboard, setLeaderboard] = useState<GameLeaderboard | null>(null);
-    const [lbLoading, setLbLoading] = useState(false);
-
-    useEffect(() => { void loadStats(GAME).then(setStats); syncChips(); }, [syncChips]);
-
     const [phase,   setPhase]   = useState<Phase>('betting');
-    const [bet,     setBet]     = useState<number>(() => initialBet());
+    const [bet,     setBet]     = useState<number>(() => openingBet(initialBet(), chips));
     const [player,  setPlayer]  = useState<Card[]>([]);
     const [dealer,  setDealer]  = useState<Card[]>([]);
     const [holeUp,  setHoleUp]  = useState(false);
@@ -84,29 +67,24 @@ export function Blackjack({ onClose: _onClose }: Props) {
     function setBetMax() { setBet(chipsRef.current); }
     function setBetTo(n: number) { setBet(Math.max(0, Math.min(chipsRef.current, Math.floor(n) || 0))); }
 
-    function enterSolo() {
-        timers.current.forEach(clearTimeout); timers.current = [];
-        setPhase('betting'); setPlayer([]); setDealer([]); setHoleUp(false); setDoubled(false); setOutcome(null); setPayout(0);
-        setBet(openingBet(lastBet, chipsRef.current));
-        setScreen('solo');
-    }
-
-    // Shows a resolved hand: the server records stats in-game, so we just refresh; dev records locally.
     function finishResult(res: BjResult) {
         setOutcome(res.outcome ?? null);
         setPayout(res.net ?? 0);
-        if (res.chips !== undefined) setChips(res.chips);
+        if (res.chips !== undefined) onChips(res.chips);
         setPhase('result');
-        if (!isFiveM && res.outcome) void recordResultApi(GAME, 'cpu', statResultFor(res.outcome), res.net ?? 0).then(st => { if (st) setStats(st); });
-        else void loadStats(GAME).then(setStats);
+        const net = res.net ?? 0;
+        if (res.outcome === 'blackjack') playBigWin();
+        else if (net > 0) playWin();
+        else if (net < 0) playLose();
+        else playPush();
+        if (!isFiveM && res.outcome) void recordResultApi(GAME, 'cpu', statResultFor(res.outcome), res.net ?? 0);
     }
 
-    // Animates the server-resolved dealer hand: flip the hole, step any dealer draws, then the result.
     function revealResolution(res: BjResult) {
         setPlayer(res.player);
         const full = res.dealer;
         const busted = isBust(res.player);
-        if (!busted) setPhase('dealer');   // a player bust keeps the (dead) play controls, as before
+        if (!busted) setPhase('dealer');
         setDealer(full.slice(0, 2));
         if (busted || full.length <= 2) {
             after(busted ? 460 : 520, () => { setHoleUp(true); after(busted ? 420 : 460, () => finishResult(res)); });
@@ -123,6 +101,7 @@ export function Blackjack({ onClose: _onClose }: Props) {
     }
 
     async function deal() {
+        playCardDeal();
         if (acting.current) return;
         const wager = Math.min(bet, chipsRef.current); if (wager <= 0) return;
         acting.current = true;
@@ -130,19 +109,20 @@ export function Blackjack({ onClose: _onClose }: Props) {
         acting.current = false;
         if (!res) return;
         setLastBet(wager); setBet(res.bet ?? wager);
-        if (res.chips !== undefined) setChips(res.chips);
+        if (res.chips !== undefined) onChips(res.chips);
         setPlayer(res.player); setHoleUp(false); setDoubled(false); setOutcome(null); setPayout(0);
         setDealer([res.dealer[0], HOLE_CARD]); setPhase('playing');
         if (res.phase === 'result') after(320, () => revealResolution(res));
     }
     async function hit() {
+        playCardFlip();
         if (acting.current || phase !== 'playing') return;
         acting.current = true;
         const res = await bjHit();
         acting.current = false;
         if (!res) return;
         setPlayer(res.player);
-        if (res.chips !== undefined) setChips(res.chips);
+        if (res.chips !== undefined) onChips(res.chips);
         if (res.phase === 'result') after(320, () => revealResolution(res));
     }
     async function stand() {
@@ -160,38 +140,29 @@ export function Blackjack({ onClose: _onClose }: Props) {
         if (!res) return;
         setDoubled(true);
         if (res.bet !== undefined) setBet(res.bet);
-        if (res.chips !== undefined) setChips(res.chips);
+        if (res.chips !== undefined) onChips(res.chips);
         setPlayer(res.player);
         after(440, () => revealResolution(res));
     }
     function soloNewHand() {
         setPhase('betting'); setPlayer([]); setDealer([]); setHoleUp(false); setDoubled(false); setOutcome(null);
-        // From the chosen stake, not the hand just played: doubling raises that hand's wager, and
-        // carrying it over made the bet climb on its own after every double.
         setBet(openingBet(lastBet, chipsRef.current));
     }
 
-    function openLeaderboard() { setScreen('leaderboard'); setLbLoading(true); void loadLeaderboard(GAME).then(d => { setLeaderboard(d); setLbLoading(false); }); }
-
-    function goHome() {
+    function leave() {
         timers.current.forEach(clearTimeout); timers.current = [];
-        setScreen('home');
-        void loadStats(GAME).then(setStats); syncChips();
+        onBack();
     }
 
     const inPlay = phase === 'playing' || phase === 'dealer';
-    const title = screen === 'leaderboard' ? t('blackjack.leaderboard', 'Leaderboard') : screen === 'cashier' ? t('blackjack.cashier', 'Cashier') : t('blackjack.title', 'Blackjack');
-    const totalGames = stats.cpu.wins + stats.cpu.losses + stats.cpu.draws;
-    const winRate = totalGames > 0 ? Math.round((stats.cpu.wins / totalGames) * 100) : 0;
 
-    function onBack() {
-        if (screen === 'leaderboard' || screen === 'cashier') { setScreen('home'); syncChips(); return; }
-        if (screen === 'solo' && inPlay) { setConfirmLeave(true); return; }
-        goHome();
+    function guardedBack() {
+        if (inPlay) { setConfirmLeave(true); return; }
+        leave();
     }
 
     return (
-        <div className="absolute inset-0 z-10 flex flex-col select-none" style={{ background: `radial-gradient(120% 80% at 50% 12%, ${FELT.bgTop} 0%, ${FELT.bgMid} 46%, ${FELT.bgBot} 100%)`, color: '#fff' }}>
+        <>
             <style>{`
                 @keyframes bj-deal { 0% { transform: translateY(-120px) translateX(40px) rotate(-12deg) scale(0.9); opacity: 0; } 100% { transform: translateY(0) translateX(0) rotate(0deg) scale(1); opacity: 1; } }
                 @keyframes bj-badge-in { 0% { transform: translateY(8px) scale(0.92); opacity: 0; } 60% { transform: translateY(0) scale(1.04); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
@@ -199,156 +170,33 @@ export function Blackjack({ onClose: _onClose }: Props) {
                 @keyframes bj-net { 0% { transform: translateY(0); opacity: 0; } 25% { transform: translateY(-6px); opacity: 1; } 100% { transform: translateY(-26px); opacity: 0; } }
             `}</style>
 
-            <div className="shrink-0" style={{ height: SB_H }} />
+            <GameHeader title={t('blackjack.title', 'Blackjack')} accent={FELT.gold} onBack={guardedBack} right={<MuteButton accent={FELT.gold} />} />
 
-            {screen !== 'home' && (
-                <div className="relative z-10 flex shrink-0 items-center justify-center px-5 pb-1 pt-1">
-                    <button type="button" onClick={onBack} aria-label={t('blackjack.back', 'Back')} className="absolute left-3 flex items-center text-[#E8C463] active:opacity-60">
-                        <ChevronLeft className="h-[30px] w-[30px]" strokeWidth={2.4} />
-                    </button>
-                    <h1 className="text-[20px] font-extrabold tracking-tight" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.35)' }}>{title}</h1>
-                </div>
-            )}
-            {screen === 'solo' && (
-                <div className="flex shrink-0 items-center justify-center gap-1.5 pb-0.5">
-                    <Coins className="h-[17px] w-[17px]" strokeWidth={2.5} style={{ color: FELT.gold }} />
-                    <span className="text-[18px] font-extrabold tabular-nums" style={{ color: FELT.gold }}>{fmtChips(chips)}</span>
-                    <span className="ml-0.5 text-[12px] font-semibold text-white/50">{t('blackjack.chips', 'chips')}</span>
-                </div>
-            )}
+            <button type="button" onClick={onCashier} className="flex shrink-0 items-center justify-center gap-1.5 pb-0.5 active:opacity-70">
+                <Coins className="h-[17px] w-[17px]" strokeWidth={2.5} style={{ color: FELT.gold }} />
+                <span className="text-[18px] font-extrabold tabular-nums" style={{ color: FELT.gold }}>{fmtChips(chips)}</span>
+                <span className="ml-0.5 text-[12px] font-semibold text-white/55">{t('blackjack.chips', 'chips')}</span>
+            </button>
 
-            <div key={screen} className="flex min-h-0 flex-1 flex-col animate-swipe-in-left">
-                {screen === 'home' && (
-                    <Home stats={stats} chips={chips} winRate={winRate} onSolo={enterSolo} onLeaderboard={openLeaderboard} onCashier={() => setScreen('cashier')} />
-                )}
-
-                {screen === 'cashier' && (
-                    <Cashier chips={chips} bank={bank} accent={ACCENT} game={GAME} onChange={s => { setChips(s.chips); setBank(s.bank); }} />
-                )}
-
-                {screen === 'leaderboard' && (
-                    <Leaderboard data={leaderboard} loading={lbLoading} accent={ACCENT} variant="chips" />
-                )}
-
-                {screen === 'solo' && (
-                    <SoloTable
-                        phase={phase} bet={bet} chips={chips} player={player} dealer={dealer} holeUp={holeUp} outcome={outcome} payout={payout}
-                        canDouble={phase === 'playing' && player.length === 2 && !doubled && chips >= bet}
-                        doubleBlocked={phase === 'playing' && player.length === 2 && !doubled && chips < bet ? 'chips' : null}
-                        onAdjust={adjustBet} onMax={setBetMax} onSet={setBetTo} onDeal={deal}
-                        onHit={hit} onStand={stand} onDouble={doubleDown} onNewHand={soloNewHand} onCashier={() => setScreen('cashier')}
-                    />
-                )}
-            </div>
+            <SoloTable
+                phase={phase} bet={bet} chips={chips} player={player} dealer={dealer} holeUp={holeUp} outcome={outcome} payout={payout}
+                canDouble={phase === 'playing' && player.length === 2 && !doubled && chips >= bet}
+                doubleBlocked={phase === 'playing' && player.length === 2 && !doubled && chips < bet ? 'chips' : null}
+                onAdjust={adjustBet} onMax={setBetMax} onSet={setBetTo} onDeal={deal}
+                onHit={hit} onStand={stand} onDouble={doubleDown} onNewHand={soloNewHand} onCashier={onCashier}
+            />
 
             {confirmLeave && (
                 <AlertDialog
+                    forceDark
                     title={t('blackjack.leaveTitle', 'Leave Table?')}
                     message={t('blackjack.leaveMessage', 'You will forfeit your current bet for this hand.')}
                     confirmLabel={t('blackjack.leave', 'Leave')} cancelLabel={t('blackjack.stay', 'Stay')} destructive
                     onCancel={() => setConfirmLeave(false)}
-                    onConfirm={() => { setConfirmLeave(false); goHome(); }}
+                    onConfirm={() => { setConfirmLeave(false); leave(); }}
                 />
             )}
-        </div>
-    );
-}
-
-function Home({ stats, chips, winRate, onSolo, onLeaderboard, onCashier }: {
-    stats: GameStats; chips: number; winRate: number;
-    onSolo: () => void; onLeaderboard: () => void; onCashier: () => void;
-}) {
-    return (
-        <div className="flex flex-1 flex-col px-5 pt-2">
-            <div className="mx-auto h-[60px] w-[60px] overflow-hidden rounded-[14px] [&>svg]:block [&>svg]:h-full [&>svg]:w-full" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.45)' }}>
-                <BlackjackIcon />
-            </div>
-            <h1 className="mt-2 text-center text-[28px] font-extrabold tracking-tight text-white">{t('blackjack.title', 'Blackjack')}</h1>
-
-            <button type="button" onClick={onCashier} className="mx-auto mt-2.5 flex items-center gap-1.5 active:opacity-70">
-                <Coins className="h-[19px] w-[19px]" strokeWidth={2.5} style={{ color: FELT.gold }} />
-                <span className="text-[22px] font-extrabold tabular-nums" style={{ color: FELT.gold }}>{fmtChips(chips)}</span>
-                <span className="ml-0.5 text-[13px] font-semibold text-white/50">{t('blackjack.chips', 'chips')}</span>
-            </button>
-
-            <div className="mt-5 rounded-[18px] p-4" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                <div className="mb-1 flex items-center gap-2 text-[15px] font-bold text-white">
-                    <Cpu className="h-[18px] w-[18px]" strokeWidth={2.2} /> {t('blackjack.solo', 'Solo')}
-                </div>
-                <p className="mb-3 text-[13px] text-white/55">{t('blackjack.soloDesc', 'Play one-on-one against the dealer.')}</p>
-                <button type="button" onClick={onSolo} className="w-full rounded-[14px] py-3 text-center text-[17px] font-bold text-white active:opacity-80" style={{ background: ACCENT }}>{t('blackjack.play', 'Play')}</button>
-            </div>
-
-            <div className="mt-3 rounded-[18px] px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <div className="mb-2 text-[15px] font-bold text-white">{t('blackjack.payouts', 'Payouts')}</div>
-                <PayoutRow label={t('blackjack.payoutWin', 'Win')} sub={t('blackjack.payoutWinSub', 'Beat the dealer')} result={t('blackjack.betTimes2', 'Bet × 2')} example="100 → 200" />
-                <PayoutRow label={t('blackjack.payoutBjLabel', 'Blackjack')} sub={t('blackjack.payoutBjSub', '21 on your first two cards')} result={t('blackjack.betTimes25', 'Bet × 2.5')} example="100 → 250" highlight />
-                <PayoutRow label={t('blackjack.payoutPush', 'Push')} sub={t('blackjack.payoutPushSub', 'Tie with the dealer')} result={t('blackjack.betBack', 'Bet back')} example="100 → 100" />
-                <p className="mt-2 text-[13px] text-white/55">{t('blackjack.dealerStops', 'The dealer stops drawing at 17.')}</p>
-            </div>
-
-            <div className="mt-auto flex flex-col gap-3">
-                <div className="flex gap-3">
-                    <button type="button" onClick={onCashier} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] py-3.5 text-[15px] font-bold text-white active:opacity-80" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <Wallet className="h-[18px] w-[18px]" strokeWidth={2.2} style={{ color: FELT.gold }} /> {t('blackjack.cashier', 'Cashier')}
-                        <ChevronRight className="h-[16px] w-[16px] text-white/40" strokeWidth={2.4} />
-                    </button>
-                    <button type="button" onClick={onLeaderboard} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] py-3.5 text-[15px] font-bold text-white active:opacity-80" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <Trophy className="h-[18px] w-[18px] text-[#FFD54F]" strokeWidth={2.2} /> {t('blackjack.leaderboard', 'Leaderboard')}
-                        <ChevronRight className="h-[16px] w-[16px] text-white/40" strokeWidth={2.4} />
-                    </button>
-                </div>
-
-                <div className="rounded-[16px] px-4 py-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <div className="mb-2 flex items-center justify-between">
-                        <span className="text-[12px] font-semibold uppercase tracking-wide text-white/40">{t('blackjack.record', 'Record')}</span>
-                        <span className="text-[12px] font-semibold text-white/40">{t('blackjack.winRate', '{winRate}% win rate', { winRate })}</span>
-                    </div>
-                    <StatRow label={t('blackjack.solo', 'Solo')} t={stats.cpu} Icon={Cpu} />
-                    <div className="my-2 h-px bg-white/10" />
-                    <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-[15px] font-bold text-white/85">
-                            <Coins className="h-[17px] w-[17px]" strokeWidth={2.2} style={{ color: FELT.gold }} /> {t('blackjack.chipsRow', 'Chips')}
-                        </span>
-                        <span className="flex items-center gap-3.5 text-[14px] font-semibold">
-                            <span><span className="font-extrabold text-[#9CCC65]">+{fmtChips(stats.won)}</span> {t('blackjack.won', 'won')}</span>
-                            <span><span className="font-extrabold text-[#FF8A80]">-{fmtChips(stats.lost)}</span> {t('blackjack.lost', 'lost')}</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div className="pb-10" />
-        </div>
-    );
-}
-
-function StatRow({ label, t, Icon }: { label: string; t: { wins: number; losses: number; draws: number }; Icon: typeof Cpu }) {
-    return (
-        <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[15px] font-bold text-white/85">
-                <Icon className="h-[17px] w-[17px] text-white/55" strokeWidth={2.2} />{label}
-            </span>
-            <span className="flex items-center gap-3.5 text-[14px] font-semibold text-white/80">
-                <span><span className="font-extrabold text-[#9CCC65]">{t.wins}</span> W</span>
-                <span><span className="font-extrabold text-[#FF8A80]">{t.losses}</span> L</span>
-                <span><span className="font-extrabold text-white">{t.draws}</span> D</span>
-            </span>
-        </div>
-    );
-}
-
-function PayoutRow({ label, sub, result, example, highlight }: { label: string; sub: string; result: string; example: string; highlight?: boolean }) {
-    return (
-        <div className="flex items-center justify-between py-1.5">
-            <span className="flex min-w-0 flex-col">
-                <span className="text-[15px] font-bold text-white">{label}</span>
-                <span className="text-[13px] text-white/55">{sub}</span>
-            </span>
-            <span className="flex flex-col items-end">
-                <span className="text-[15px] font-extrabold tabular-nums" style={{ color: highlight ? FELT.gold : '#fff' }}>{result}</span>
-                <span className="text-[13px] tabular-nums text-white/55">{example}</span>
-            </span>
-        </div>
+        </>
     );
 }
 
@@ -378,7 +226,7 @@ function SoloTable({ phase, bet, chips, player, dealer, holeUp, outcome, payout,
                     <HandRow label={t('blackjack.you', 'You')} cards={player} hideHole={false} total={pVal} showTotal={player.length > 0} soft={handValue(player).soft} emphasize={isBlackjack(player)} />
                 </div>
             </div>
-            <div className="shrink-0 px-4" style={{ paddingBottom: 'calc(var(--safe-bottom) + 30px)' }}>
+            <div className="shrink-0 px-4" style={{ paddingBottom: PAD_B }}>
                 {phase === 'betting'
                     ? <BetControls bet={bet} chips={chips} onAdjust={onAdjust} onMax={onMax} onSet={onSet} onDeal={onDeal} onCashier={onCashier} />
                     : phase === 'playing'
@@ -529,8 +377,6 @@ function PlayControls({ onHit, onStand, onDouble, canDouble, doubleBlocked }: {
                 <ActionButton label={t('blackjack.stand', 'Stand')} onClick={onStand} tone="gold" />
                 <ActionButton label={t('blackjack.double', 'Double')} onClick={onDouble} tone="dark" disabled={!canDouble} />
             </div>
-            {/* Doubling needs a second wager equal to the first, and the first is already on the
-                table - so a large bet silently greys the button out. Say which it is. */}
             {doubleBlocked === 'chips' && (
                 <div className="text-center text-[12px] text-ios-gray">
                     {t('blackjack.doubleNeedsChips', 'Not enough chips left to double')}

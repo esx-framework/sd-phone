@@ -58,7 +58,7 @@ export function devInjectMockData(): () => void {
             { id: 'wordle',     label: 'Penta',       icon: 'wordle',     route: '/wordle',     accent: '#6AAA64' },
             { id: 'flappy',     label: 'Flappy',      icon: 'flappy',     route: '/flappy',     accent: '#4EC0CA' },
             { id: 'blocks',     label: 'Blocks',      icon: 'blocks',     route: '/blocks',     accent: '#7C4DFF' },
-            { id: 'blackjack',  label: 'Blackjack',   icon: 'blackjack',  route: '/blackjack',  accent: '#157347' },
+            { id: 'casino',     label: 'Casino',      icon: 'casino',     route: '/casino',     accent: '#0F5132' },
             { id: 'climber',    label: 'Climber',     icon: 'climber',    route: '/climber',    accent: '#8BC34A' },
             { id: 'connectfour', label: 'Connect 4',  icon: 'connectfour', route: '/connectfour', accent: '#1E66D0' },
             { id: 'chess',      label: 'Chess',       icon: 'chess',      route: '/chess',      accent: '#3B3B3B' },

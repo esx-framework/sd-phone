@@ -79,7 +79,7 @@ const APP_REGISTRY = {
     wordle:      entry(() => import('@/apps/wordle/Wordle').then(m => ({ default: m.Wordle }))),
     flappy:      entry(() => import('@/apps/flappy/Flappy').then(m => ({ default: m.Flappy }))),
     blocks:      entry(() => import('@/apps/blocks/Blocks').then(m => ({ default: m.Blocks }))),
-    blackjack:   entry(() => import('@/apps/blackjack/Blackjack').then(m => ({ default: m.Blackjack }))),
+    casino:      entry(() => import('@/apps/casino/Casino').then(m => ({ default: m.Casino }))),
     climber:     entry(() => import('@/apps/climber/Climber').then(m => ({ default: m.Climber }))),
     connectfour: entry(() => import('@/apps/connectfour/ConnectFour').then(m => ({ default: m.ConnectFour }))),
     chess:       entry(() => import('@/apps/chess/Chess').then(m => ({ default: m.Chess }))),

@@ -24,10 +24,11 @@ local CONVERT_COOLDOWN = 2000
 ---@return string|nil citizenid for a server-trusted src (nil when offline)
 local function cidOf(src) return player.getIdentifier(src) end
 
----Wallet-log category for a chip conversion; unknown or missing game ids collapse to 'blackjack'.
+---Wallet-log category for a chip conversion. Legacy blackjack rows keep their own category so old
+---Wallet history still renders; every other conversion (the Casino cashier) logs as 'casino'.
 ---@param game string|nil originating game id
 ---@return string category
-local function categoryOf(game) return game == 'blackjack' and game or 'blackjack' end
+local function categoryOf(game) return game == 'blackjack' and 'blackjack' or 'casino' end
 
 ---Creates the chip-wallet table if it doesn't exist. Runs once at boot.
 function chips.ensureSchema()
@@ -86,6 +87,31 @@ function chips.remove(cid, n)
         { n, cid, n })
     if not affected or affected == 0 then return nil end
     return chips.get(cid)
+end
+
+---Credits many characters at once in a single statement, and reads nothing back. Written for
+---resource shutdown, where escrowed casino stacks have to reach the database before the state
+---holding them is destroyed: one query has a chance of landing, a loop of add + get does not.
+---@param rows table<string, integer> citizenid -> chips to credit
+---@return integer credited number of characters written
+function chips.creditMany(rows)
+    local values, params, n = {}, {}, 0
+    for cid, amount in pairs(rows or {}) do
+        local chunk = toAmount(amount)
+        if type(cid) == 'string' and cid ~= '' and chunk > 0 then
+            n = n + 1
+            values[n] = '(?, ?)'
+            params[#params + 1] = cid
+            params[#params + 1] = math.min(CHIP_CEILING, chunk)
+        end
+    end
+    if n == 0 then return 0 end
+    params[#params + 1] = CHIP_CEILING
+    MySQL.update.await(([[
+        INSERT INTO phone_casino_chips (citizenid, chips) VALUES %s
+        ON DUPLICATE KEY UPDATE chips = LEAST(chips + VALUES(chips), ?)
+    ]]):format(table.concat(values, ', ')), params)
+    return n
 end
 
 ---Buys chips with bank money (1:1), debit-before-credit. Logs a -amount Wallet transaction.

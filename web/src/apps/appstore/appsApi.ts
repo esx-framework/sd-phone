@@ -137,6 +137,38 @@ function sanitiseWidgets(v: unknown, density: Density): WidgetPlacement[] {
         && fitsIn(w as WidgetPlacement, cols, rows));
 }
 
+const LEGACY_APP_IDS: Record<string, string> = { blackjack: 'casino' };
+
+function healLegacyIds(layout: SavedLayout): SavedLayout {
+    const all: string[] = [
+        ...layout.slots.filter((s): s is string => typeof s === 'string'),
+        ...layout.folders.flatMap(f => (Array.isArray(f.appIds) ? f.appIds.filter(x => typeof x === 'string') : [])),
+        ...(layout.dock ?? []),
+    ];
+    if (!all.some(id => LEGACY_APP_IDS[id] !== undefined)) return layout;
+
+    const taken = new Set(all.filter(id => LEGACY_APP_IDS[id] === undefined));
+    const claimed = new Set<string>();
+    const heal = (id: string): string | null => {
+        const next = LEGACY_APP_IDS[id];
+        if (next === undefined) return id;
+        if (taken.has(next) || claimed.has(next)) return null;
+        claimed.add(next);
+        return next;
+    };
+    const healList = (ids: string[]): string[] =>
+        ids.map(heal).filter((x): x is string => x !== null);
+
+    return {
+        ...layout,
+        slots: layout.slots.map(s => (typeof s === 'string' ? heal(s) : s)),
+        folders: layout.folders.map(f => (Array.isArray(f.appIds)
+            ? { ...f, appIds: healList(f.appIds.filter(x => typeof x === 'string')) }
+            : f)),
+        ...(layout.dock ? { dock: healList(layout.dock) } : {}),
+    };
+}
+
 /**
  * One parsed layout, or null when it cannot be trusted.
  *
@@ -146,21 +178,21 @@ function sanitiseWidgets(v: unknown, density: Density): WidgetPlacement[] {
  * being the wrong shape entirely.
  */
 function parseValue(v: unknown): SavedLayout | null {
-    if (isSlotArray(v)) return { slots: v, folders: [] };
+    if (isSlotArray(v)) return healLegacyIds({ slots: v, folders: [] });
     if (v && typeof v === 'object' && isSlotArray((v as SavedLayout).slots)) {
         const o = v as SavedLayout;
         const density: Density = isDensity(o.density) ? o.density : 'default';
         const widgets = sanitiseWidgets(o.widgets, density);
         // Only attached when there is something to attach, so a widget-less layout keeps the
         // exact shape it had before widgets existed.
-        return {
+        return healLegacyIds({
             slots: o.slots,
             folders: Array.isArray(o.folders) ? o.folders : [],
             ...(isDensity(o.density) ? { density: o.density } : {}),
             ...(typeof o.rows === 'number' && o.rows > 0 ? { rows: Math.floor(o.rows) } : {}),
             ...(widgets.length ? { widgets } : {}),
             ...(Array.isArray(o.dock) ? { dock: o.dock.filter((x): x is string => typeof x === 'string') } : {}),
-        };
+        });
     }
     return null;
 }

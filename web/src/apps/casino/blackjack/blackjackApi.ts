@@ -9,15 +9,13 @@ import {
 export interface BjResult {
     phase: 'playing' | 'result';
     player: Card[];
-    dealer: Card[];          // playing: dealer up card only; result: full dealer hand
+    dealer: Card[];
     outcome?: Outcome;
-    net?: number;            // signed profit for the hand (result only)
-    chips?: number;          // authoritative balance after this action (present when it changed)
-    bet?: number;            // current wager (doubles report the doubled bet)
+    net?: number;
+    chips?: number;
+    bet?: number;
 }
 
-// --- Browser dev fallback: no server, so a local dealer runs the same rules for development only.
-// In FiveM the server is authoritative and none of this runs. Shares chip storage with chipsApi.
 const CHIP_KEY = 'sd-phone:casino-chips:v1';
 function devChips(): number { return Math.max(0, Number(localStorage.getItem(CHIP_KEY) ?? '2000') || 0); }
 function setDevChips(n: number) { writeJson(CHIP_KEY, Math.max(0, Math.floor(n))); }

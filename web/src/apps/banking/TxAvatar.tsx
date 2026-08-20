@@ -2,7 +2,7 @@ import { AppIconSVG } from '@/shell/AppIconSVG';
 import type { CategoryMeta } from './data';
 import type { BankTx } from './bankingApi';
 
-const GAME_CATEGORIES = new Set(['chess', 'connectfour', 'battleship', 'blackjack', 'wordle', 'ryde', 'streaks']);
+const GAME_CATEGORIES = new Set(['chess', 'connectfour', 'battleship', 'blackjack', 'casino', 'wordle', 'ryde', 'streaks']);
 
 export function TxAvatar({ tx, meta, size = 44 }: { tx: BankTx; meta: CategoryMeta; size?: number }) {
     const box = { width: size, height: size };

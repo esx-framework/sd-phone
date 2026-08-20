@@ -2,10 +2,13 @@
 local util = require 'server.util'
 
 ---@type table<string, boolean> Games allowed to own a stats row. Deliberately NOT the engine's
----`configs` table: blackjack, blocks, climber and flappy are single-player and never register.
+---`configs` table: baccarat, blackjack, blocks, climber, crash, flappy, roulette and slots are
+---single-player and never register.
 local STAT_GAMES = {
-    battleship = true, blackjack = true, blocks = true, chess = true,
-    climber = true, connectfour = true, flappy = true, wordle = true,
+    baccarat = true, battleship = true, blackjack = true, blocks = true,
+    chess = true, climber = true, connectfour = true, crash = true,
+    flappy = true, holdem = true, roulette = true, slots = true,
+    wordle = true,
 }
 
 ---True when a client-supplied game id is one of the shipped games. Closes the key space of
@@ -96,8 +99,10 @@ local STAT_COL = {
     online = { win = 'online_wins', loss = 'online_losses', draw = 'online_draws' },
 }
 
----@type integer Max absolute chip swing credited to the boards per recorded result.
-local AMOUNT_MAX = 1000000
+---@type integer Max absolute chip swing credited to the boards per recorded result. Must clear the
+---largest swing a server-resolved game can produce or the board silently under-reports a real win:
+---slots pays up to 304x the line bet, so the 5000 cap in configs/casino.lua tops out near 1.5m.
+local AMOUNT_MAX = 10000000
 
 ---@type integer Max high score accepted per submission.
 local SCORE_MAX = 100000000

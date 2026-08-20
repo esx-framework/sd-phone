@@ -7,6 +7,12 @@ local ACTIONS = {
     'relay', 'resign', 'finish', 'report', 'stats', 'record', 'leaderboard', 'submitScore', 'scoreboard',
     'chipsGet', 'chipsBuy', 'chipsSell',
     'bjDeal', 'bjHit', 'bjStand', 'bjDouble',
+    'slotsSpin', 'rouletteSpin',
+    'baccaratDeal',
+    -- No crashWatch here: the subscription is gated on the phone being open, and that gate lives in
+    -- client/apps/casino.lua. A second ungated route would just overwrite it.
+    'crashBet', 'crashCashout',
+    'holdemTables', 'holdemSit', 'holdemLeave', 'holdemAct', 'holdemSync',
 }
 
 -- Thin delegates into the games engine (server/games/engine.lua).

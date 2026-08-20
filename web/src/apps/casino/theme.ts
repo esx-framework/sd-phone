@@ -1,0 +1,14 @@
+export const FELT = { top: '#0E5A38', mid: '#0A472C', bot: '#062E1D', rail: '#0A3D26', railHi: '#17553A' };
+export const GOLD = { hi: '#FFF3CE', top: '#F0D48A', mid: '#D4AF5F', deep: '#A97F31' };
+export const TABLE = { red: '#C1272D', black: '#141414', green: '#0E7A46', chip: '#E8C463', win: '#FFD55A', lose: '#FF8585', push: '#CFE9D8' };
+export const SURFACE = { panel: 'rgba(255,255,255,0.07)', soft: 'rgba(255,255,255,0.05)', sunken: 'rgba(0,0,0,0.30)', hair: 'rgba(255,255,255,0.10)' };
+export const ACCENT = '#1C8A4E';
+export const SB_H = 54;
+export const PAD_B = 'calc(var(--safe-bottom) + 30px)';
+export const APP_BG = `radial-gradient(120% 80% at 50% 0%, ${FELT.top} 0%, ${FELT.mid} 45%, ${FELT.bot} 100%)`;
+export const GOLD_FRAME = `linear-gradient(160deg, ${GOLD.top} 0%, ${GOLD.mid} 45%, ${GOLD.deep} 100%)`;
+export const CARD_SHADOW = '0 8px 20px rgba(0,0,0,0.45)';
+export const WELL_SHADOW = 'inset 0 2px 8px rgba(0,0,0,0.55)';
+export const fmtChips = (n: number) => Math.floor(n).toLocaleString('en-US');
+export const EMBER = { hot: '#FFB35C', mid: '#E0632B', deep: '#8E2C10' };
+export const SEAT  = { pod: 'rgba(0,0,0,0.34)', podHi: 'rgba(255,255,255,0.09)', live: '#F0D48A', dim: 'rgba(255,255,255,0.30)' };

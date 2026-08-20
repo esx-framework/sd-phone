@@ -66,4 +66,23 @@ function crypto.decrypt(blob)
     return (okCall and type(res) == 'string') and res or nil
 end
 
+---Hashes an arbitrary string with SHA-256, lowercase hex. Nil when the helper is unavailable, so
+---a caller that needs a verifiable commitment can degrade openly instead of publishing a fake one.
+---@param s string value to hash
+---@return string|nil hex 64 lowercase hex characters
+function crypto.sha256(s)
+    if not crypto.available() then return nil end
+    local okCall, res = call('sdCryptoSha256', s)
+    return (okCall and type(res) == 'string') and res or nil
+end
+
+---Cryptographically strong random bytes as lowercase hex. Nil when the helper is unavailable.
+---@param bytes integer byte count, clamped to 1..64 by the helper
+---@return string|nil hex 2 * bytes lowercase hex characters
+function crypto.randomHex(bytes)
+    if not crypto.available() then return nil end
+    local okCall, res = call('sdCryptoRandomHex', bytes)
+    return (okCall and type(res) == 'string') and res or nil
+end
+
 return crypto

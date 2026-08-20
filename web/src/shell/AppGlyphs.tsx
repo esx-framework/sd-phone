@@ -70,6 +70,7 @@ const APP_GLYPHS: Record<string, LucideIcon> = {
     flappy:      Gamepad2,
     blocks:      Blocks,
     blackjack:   Spade,
+    casino:      Dices,
     climber:     Mountain,
     connectfour: Gamepad2,
     chess:       Crown,

@@ -41,6 +41,22 @@ local function newRegistry()
         end
     end
 
+    ---The live watcher list as an array, pruned of players who have gone. Built once per push so a
+    ---high-rate fan-out can msgpack the payload once through util.pushMany instead of per viewer.
+    ---@return number[] targets
+    function r.targets()
+        local out, n = {}, 0
+        for src in pairs(watchers) do
+            if not GetPlayerName(src) then
+                watchers[src] = nil
+            else
+                n = n + 1
+                out[n] = src
+            end
+        end
+        return out
+    end
+
     return r
 end
 

@@ -1,0 +1,117 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useNuiEvent } from '@/hooks/useNuiEvent';
+import { useDeckActive } from '@/shell/deckActive';
+
+import type { HoldemAction, HoldemHandEnd, HoldemStatePush } from './data';
+import { actApi, leaveApi, sitApi, syncApi } from './holdemApi';
+import { playCheckRap, playChipStack, playDealFlop, playFoldSlide, playPotPush } from '../sfx';
+
+const SHOWDOWN_MS = 5200;
+
+export interface HoldemTableCtl {
+    state:      HoldemStatePush | null;
+    handEnd:    HoldemHandEnd | null;
+    error:      string | null;
+    busy:       boolean;
+    clearError: () => void;
+    sit:        (seat: number, buyIn: number) => Promise<boolean>;
+    leave:      () => Promise<number | null>;
+    act:        (action: HoldemAction, to?: number) => void;
+}
+
+export function useHoldemTable(tableId: string | null): HoldemTableCtl {
+    const [state,   setState]   = useState<HoldemStatePush | null>(null);
+    const [handEnd, setHandEnd] = useState<HoldemHandEnd | null>(null);
+    const lastStreet = useRef<string | null>(null);
+    const [error,   setError]   = useState<string | null>(null);
+    const [busy,    setBusy]    = useState(false);
+
+    const stateRef = useRef(state);
+    stateRef.current = state;
+    const acting = useRef(false);
+    const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearEndTimer = useCallback(() => {
+        if (endTimer.current === null) return;
+        clearTimeout(endTimer.current);
+        endTimer.current = null;
+    }, []);
+
+    useEffect(() => () => clearEndTimer(), [clearEndTimer]);
+
+    useNuiEvent('sd-phone:holdem:state', data => {
+        if (!data || (tableId && data.tableId !== tableId)) return;
+        if (data.street !== lastStreet.current) {
+            if (data.board.length > 0) playDealFlop();
+            lastStreet.current = data.street;
+        }
+        setState(data);
+    });
+
+    useNuiEvent('sd-phone:holdem:hand', data => {
+        if (!data || (tableId && data.tableId !== tableId)) return;
+        setHandEnd(data);
+        playPotPush();
+        clearEndTimer();
+        endTimer.current = setTimeout(() => { setHandEnd(null); endTimer.current = null; }, SHOWDOWN_MS);
+    });
+
+    const resync = useCallback(() => {
+        if (!tableId) return;
+        void syncApi(tableId).then(next => { if (next) setState(next); });
+    }, [tableId]);
+
+    useEffect(() => {
+        setState(null);
+        setHandEnd(null);
+        clearEndTimer();
+        resync();
+    }, [tableId, resync, clearEndTimer]);
+
+    const deckActive = useDeckActive();
+    const wasActive = useRef(deckActive);
+    useEffect(() => {
+        const rising = deckActive && !wasActive.current;
+        wasActive.current = deckActive;
+        if (rising) resync();
+    }, [deckActive, resync]);
+
+    const sit = useCallback(async (seat: number, buyIn: number) => {
+        if (!tableId || busy) return false;
+        setBusy(true);
+        const res = await sitApi(tableId, seat, buyIn);
+        setBusy(false);
+        if (!res.ok) { setError(res.message ?? null); return false; }
+        if (res.data) setState(res.data);
+        return true;
+    }, [tableId, busy]);
+
+    const leave = useCallback(async () => {
+        setBusy(true);
+        const res = await leaveApi();
+        setBusy(false);
+        clearEndTimer();
+        setHandEnd(null);
+        setState(null);
+        if (!res.ok) { setError(res.message ?? null); return null; }
+        return res.data ? res.data.chips : null;
+    }, [clearEndTimer]);
+
+    const act = useCallback((action: HoldemAction, to = 0) => {
+        if (action === 'fold') playFoldSlide();
+        else if (action === 'check') playCheckRap();
+        else playChipStack();
+        const live = stateRef.current;
+        if (!live || !live.legal || acting.current) return;
+        acting.current = true;
+        void actApi(live.tableId, live.handId, action, to).then(res => {
+            acting.current = false;
+            if (!res.ok && res.message) setError(res.message);
+        });
+    }, []);
+
+    const clearError = useCallback(() => setError(null), []);
+
+    return { state, handEnd, error, busy, clearError, sit, leave, act };
+}
