@@ -42,8 +42,8 @@ export function LeaderboardScreen() {
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="no-scrollbar shrink-0 overflow-x-auto px-5 pb-1 pt-1 [contain:paint]">
-                <div className="flex w-max gap-2">
+            <div className="shrink-0 px-5 pb-1 pt-1">
+                <div className="flex flex-wrap gap-2">
                     {BOARD_GAMES.map(g => {
                         const on = g === game;
                         return (

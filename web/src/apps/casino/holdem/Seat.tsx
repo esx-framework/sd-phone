@@ -5,10 +5,10 @@ import { CardBack, CardFace } from '@/apps/casino/CardFace';
 import type { Card } from '@/apps/casino/cards';
 
 import { GOLD, SEAT, SURFACE, TABLE, fmtChips } from '../theme';
-import { inCards, type HoldemSeat } from './data';
+import { handCatLabel, inCards, type HoldemSeat } from './data';
 
-export const POD_W = 92;
-export const POD_H = 54;
+export const POD_W = 104;
+export const POD_H = 62;
 
 export type BlindMark = 'sb' | 'bb' | null;
 
@@ -76,13 +76,15 @@ function HoleCards({ seat, best, dealt }: { seat: HoldemSeat; best: Card[] | nul
     );
 }
 
-export function SeatPod({ seat, isButton, isActor, blind, best, onSit }: {
+export function SeatPod({ seat, isButton, isActor, blind, best, onSit, hideCards, isHero }: {
     seat:     HoldemSeat | null;
     isButton: boolean;
     isActor:  boolean;
     blind:    BlindMark;
     best:     Card[] | null;
     onSit:    (() => void) | null;
+    hideCards?: boolean;
+    isHero?:  boolean;
 }) {
     if (!seat || seat.name === null) {
         return (
@@ -101,7 +103,7 @@ export function SeatPod({ seat, isButton, isActor, blind, best, onSit }: {
                 }}
             >
                 {onSit && <Plus className="h-[14px] w-[14px]" strokeWidth={2.6} />}
-                <span className="text-[11px] font-bold">{t('holdem.emptySeat', 'Open seat')}</span>
+                <span className="text-[12px] font-bold">{t('holdem.emptySeat', 'Open seat')}</span>
             </button>
         );
     }
@@ -111,7 +113,7 @@ export function SeatPod({ seat, isButton, isActor, blind, best, onSit }: {
 
     return (
         <div className="flex flex-col items-center" style={{ width: POD_W }}>
-            <HoleCards seat={seat} best={best} dealt={seat.state !== 'sitting' && seat.state !== 'empty'} />
+            {!hideCards && <HoleCards seat={seat} best={best} dealt={seat.state !== 'sitting' && seat.state !== 'empty'} />}
             <div
                 className="relative flex w-full flex-col items-center justify-center rounded-[14px]"
                 style={{
@@ -119,15 +121,17 @@ export function SeatPod({ seat, isButton, isActor, blind, best, onSit }: {
                     background: SEAT.pod,
                     boxShadow: isActor
                         ? `inset 0 1px 0 ${SEAT.podHi}, 0 0 0 1.5px ${SEAT.live}`
-                        : `inset 0 1px 0 ${SEAT.podHi}`,
+                        : isHero
+                            ? `inset 0 1px 0 ${SEAT.podHi}, 0 0 0 1.5px ${GOLD.mid}`
+                            : `inset 0 1px 0 ${SEAT.podHi}`,
                     animation: isActor ? 'hd-turn 1.6s ease-in-out infinite' : undefined,
                 }}
             >
-                <span className="w-full truncate px-1.5 text-center text-[11px] font-semibold" style={{ color: ink }}>
+                <span className="w-full truncate px-1.5 text-center text-[12px] font-semibold" style={{ color: ink }}>
                     {seat.name}
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="text-[13px] font-extrabold tabular-nums" style={{ color: folded ? SEAT.dim : GOLD.top }}>
+                    <span className="text-[15px] font-extrabold tabular-nums" style={{ color: folded ? SEAT.dim : GOLD.top }}>
                         {fmtChips(seat.stack)}
                     </span>
                     <BlindTag mark={blind} />
@@ -143,7 +147,7 @@ export function SeatPod({ seat, isButton, isActor, blind, best, onSit }: {
     );
 }
 
-export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind, isButton }: {
+export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind, isButton, handRank }: {
     seat:     HoldemSeat;
     isActor:  boolean;
     best:     Card[] | null;
@@ -153,6 +157,7 @@ export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind
     bb:       number;
     blind:    BlindMark;
     isButton: boolean;
+    handRank: string | null;
 }) {
     const cards = seat.hole ?? [];
     return (
@@ -200,8 +205,15 @@ export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind
                     </span>
                 </div>
                 <span className="text-[22px] font-extrabold tabular-nums" style={{ color: GOLD.top }}>{fmtChips(seat.stack)}</span>
-                <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                    {t('holdem.blindsLine', '{sb} / {bb} blinds', { sb: fmtChips(sb), bb: fmtChips(bb) })}
+                <span className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                        {t('holdem.blindsLine', '{sb} / {bb} blinds', { sb: fmtChips(sb), bb: fmtChips(bb) })}
+                    </span>
+                    {handRank !== null && (
+                        <span className="shrink-0 text-[11px] font-extrabold" style={{ color: GOLD.top }}>
+                            {handCatLabel(handRank)}
+                        </span>
+                    )}
                 </span>
                 <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full" style={{ background: SURFACE.sunken }}>
                     {isActor && msLeft > 0 && (

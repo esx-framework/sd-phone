@@ -32,7 +32,8 @@ return {
         HistorySize   = 20,
     },
     Holdem = {
-        ActionSeconds = 20,
+        ActionSeconds     = 20,
+        ShowHandStrength  = true,  -- name the hand you currently hold above your action buttons
         Tables = {
             { id = 'low',  name = 'Sandy Shores', sb = 25,  bb = 50,   minBuyIn = 2000,  maxBuyIn = 10000 },
             { id = 'mid',  name = 'Vinewood',     sb = 100, bb = 200,  minBuyIn = 8000,  maxBuyIn = 40000 },

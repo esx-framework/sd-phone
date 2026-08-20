@@ -93,6 +93,7 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
     const [phase, setPhase] = useState<Phase>('idle');
     const [blurred, setBlurred] = useState<boolean[]>([false, false, false]);
     const [lines, setLines] = useState<SlotLine[]>([]);
+    const [net, setNet] = useState(0);
     const [win, setWin] = useState(0);
     const [paytableOpen, setPaytableOpen] = useState(false);
     const [needChips, setNeedChips] = useState(false);
@@ -123,6 +124,7 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
     );
 
     const stake = bet * LINES;
+    const chipsRef = useRef(chips); chipsRef.current = chips;
     const affordable = stake <= chips;
     const betIndex = BET_STEPS.indexOf(bet);
 
@@ -183,7 +185,9 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
             pending.current = null;
             setLines(data.lines);
             setWin(data.win);
+            setNet(data.net);
             setPhase('result');
+            onChips(data.chips);
             if (data.win >= data.bet * 10) playBigWin();
             else if (data.win > 0) playWin();
         }
@@ -204,8 +208,10 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
         landed.current = [false, false, false];
         setLines([]);
         setWin(0);
+        setNet(0);
         setPhase('spinning');
         setBlurred([true, true, true]);
+        onChips(chipsRef.current - stake);
         playReelSpin();
         reelLoop.current?.stop();
         reelLoop.current = startReelLoop();
@@ -217,13 +223,13 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
             spinning.current = false;
             setPhase('idle');
             setBlurred([false, false, false]);
+            onChips(chipsRef.current + stake);
             if (res.message === 'Not enough chips') setNeedChips(true);
             else setError(res.message ?? t('casino.somethingWrong', 'Something went wrong'));
             return;
         }
         pending.current = res.data;
         setBet(res.data.bet);
-        onChips(res.data.chips);
         launch(res.data.stops);
     }
 
@@ -382,14 +388,19 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                     </div>
                 </div>
 
-                <div className="flex h-[34px] shrink-0 items-center justify-center">
+                <div className="flex h-[44px] shrink-0 flex-col items-center justify-center gap-[3px]">
                     {phase === 'result' && win > 0 && (
-                        <span className="text-[19px] font-extrabold tabular-nums" style={{ color: TABLE.win, animation: 'slot-net 520ms cubic-bezier(0.2,0.8,0.3,1)' }}>
+                        <span className="text-[19px] font-extrabold leading-none tabular-nums" style={{ color: TABLE.win, animation: 'slot-net 520ms cubic-bezier(0.2,0.8,0.3,1)' }}>
                             {t('slots.youWon', 'You won {n} chips', { n: fmtChips(win) })}
                         </span>
                     )}
                     {phase === 'result' && win === 0 && (
-                        <span className="text-[15px] font-semibold text-white/45">{t('slots.noWin', 'No win')}</span>
+                        <span className="text-[15px] font-semibold leading-none text-white/45">{t('slots.noWin', 'No win')}</span>
+                    )}
+                    {phase === 'result' && (
+                        <span className="text-[12px] font-bold leading-none tabular-nums" style={{ color: net > 0 ? TABLE.win : TABLE.lose }}>
+                            {t('slots.thisSpin', '{n} this spin', { n: (net > 0 ? '+' : '') + fmtChips(net) })}
+                        </span>
                     )}
                 </div>
 
@@ -398,8 +409,8 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                         <Minus className="h-[18px] w-[18px]" strokeWidth={3} />
                     </StepButton>
                     <div className="flex flex-1 flex-col items-center rounded-2xl py-1" style={{ background: SURFACE.sunken, border: `1px solid ${SURFACE.hair}` }}>
-                        <span className="text-[12px] font-bold uppercase tracking-wide text-white/45">{t('slots.lineBet', 'Line bet')}</span>
-                        <span className="text-[22px] font-extrabold leading-tight tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(bet)}</span>
+                        <span className="text-[12px] font-bold uppercase tracking-wide text-white/45">{t('slots.totalBet', 'Total bet')}</span>
+                        <span className="text-[22px] font-extrabold leading-tight tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(stake)}</span>
                     </div>
                     <StepButton label={t('slots.raise', 'Raise bet')} disabled={betIndex >= BET_STEPS.length - 1} onClick={() => stepBet(1)}>
                         <Plus className="h-[18px] w-[18px]" strokeWidth={3} />
@@ -415,8 +426,8 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                 </div>
 
                 <div className="flex items-center gap-1.5 text-[13px] font-semibold text-white/55">
-                    <span>{t('slots.totalBet', 'Total bet')}</span>
-                    <span className="tabular-nums text-white">{fmtChips(stake)}</span>
+                    <span className="tabular-nums text-white">{fmtChips(bet)}</span>
+                    <span>{t('slots.perLine', 'per line')}</span>
                     <span className="text-white/25">|</span>
                     <span>{t('slots.lines', '5 lines')}</span>
                 </div>

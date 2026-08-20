@@ -4642,6 +4642,7 @@
     "lines": "5 lines",
     "lower": "Lower bet",
     "max": "MAX",
+    "thisSpin": "{n} this spin",
     "noWin": "No win",
     "paylines": "Paylines",
     "perLine": "per line",

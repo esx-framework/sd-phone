@@ -29,7 +29,7 @@ interface CrashClock { offset: number; startedAt: number; serverMx: number }
 interface RailRow { n: string; s: number; m: number | null; w: number }
 
 const QUICK = [100, 500, 1000, 5000];
-const HISTORY_SHOWN = 12;
+const HISTORY_SHOWN = 5;
 const RAIL_MAX = 20;
 
 const EMBER_FRAME = `linear-gradient(160deg, ${EMBER.hot} 0%, ${EMBER.mid} 52%, ${EMBER.deep} 100%)`;
@@ -98,6 +98,13 @@ function useLiveMult(clock: MutableRefObject<CrashClock>, active: boolean): numb
     return value;
 }
 
+// Lua drops a nil field rather than encoding null, so an absent bet arrives as undefined and a
+// `!== null` guard would wave it straight through into the placed-bet panel.
+function normalizeMine(m: CrashMine | null | undefined): CrashMine | null {
+    if (!m) return null;
+    return { ...m, auto: m.auto ?? null, mx: m.mx ?? null, payout: m.payout ?? 0 };
+}
+
 export function Crash({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
     const deckActive = useDeckActive();
 
@@ -142,7 +149,7 @@ export function Crash({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
         setBets(s.bets);
         setCash(s.cash);
         setHistory(s.history);
-        setMine(s.mine);
+        setMine(normalizeMine(s.mine));
         if (s.ph === 'bet')  setBetClose(Date.now() + s.msLeft);
         if (s.ph === 'run')  { setRunDelay(Math.max(0, s.now - s.startedAt)); setRunKey(k => k + 1); }
         if (s.ph === 'bust') setBustAt(Date.now());
@@ -229,8 +236,8 @@ export function Crash({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
     useNuiEvent('sd-phone:crash:settled', d => {
         if (!d) return;
         setMine(prev => (prev === null
-            ? { stake: d.stake, auto: null, settled: true, mx: d.mx, payout: d.payout }
-            : { ...prev, settled: true, mx: d.mx, payout: d.payout }));
+            ? { stake: d.stake, auto: null, settled: true, mx: d.mx ?? null, payout: d.payout }
+            : { ...prev, settled: true, mx: d.mx ?? null, payout: d.payout }));
         onChips(d.chips);
         if (d.payout > 0) playCashout();
     });
@@ -423,7 +430,7 @@ export function Crash({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                     {history.slice(0, HISTORY_SHOWN).map(round => (
                         <span
                             key={round.id}
-                            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums"
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
                             style={{
                                 background: SURFACE.soft,
                                 color: multColor(round.bust),

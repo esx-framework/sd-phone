@@ -7,6 +7,10 @@ local money   = require 'bridge.server.money'
 local player  = require 'bridge.server.player'
 ---@type table Banking actions (server.banking.actions): Wallet transaction log (log-only, moves no money).
 local banking = require 'server.banking.actions'
+---@type table Banking bridge (bridge.server.banking): moves the money AND registers the movement
+---so the generic Wallet logger skips it. Going through money.* directly logs the same conversion
+---twice, once from that listener and once from the addExternal call below.
+local bankBridge = require 'bridge.server.banking'
 
 ---@type table Chips module; the table returned at end of file. Shared casino-chip wallet, one
 ---persistent balance per character. Chips convert to/from bank money 1:1 and every conversion is
@@ -124,8 +128,9 @@ function chips.buy(src, amount, game)
     local cid = cidOf(src); if not cid then return nil, 'Player not found' end
     amount = clampTx(amount)
     if amount <= 0 then return nil, 'Enter a valid amount' end
-    if (money.get(src, 'bank') or 0) < amount then return nil, 'Not enough money in the bank' end
-    money.remove(src, 'bank', amount, 'casino-chips')
+    if not bankBridge.removeMoney(src, amount, 'casino-chips') then
+        return nil, 'Not enough money in the bank'
+    end
     local bal = chips.add(cid, amount)
     banking.addExternal(cid, { label = 'Chip purchase', amount = -amount, category = categoryOf(game) })
     return { chips = bal, bank = money.get(src, 'bank') or 0 }
@@ -143,7 +148,10 @@ function chips.sell(src, amount, game)
     if amount <= 0 then return nil, 'Enter a valid amount' end
     local bal = chips.remove(cid, amount)
     if not bal then return nil, 'Not enough chips' end
-    money.add(src, 'bank', amount, 'casino-chips')
+    if not bankBridge.addMoney(src, amount, 'casino-chips') then
+        chips.add(cid, amount)
+        return nil, 'Could not reach your bank account'
+    end
     banking.addExternal(cid, { label = 'Chip cashout', amount = amount, category = categoryOf(game) })
     return { chips = bal, bank = money.get(src, 'bank') or 0 }
 end

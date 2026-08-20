@@ -18,6 +18,9 @@ local pot    = require 'server.games.casino.holdem.pot'
 local C = (config.Casino or {}).Holdem or {}
 ---@type integer Seconds a seat has to act before the table acts for it.
 local ACTION_SECONDS = C.ActionSeconds or 20
+---@type boolean Whether a seat is told the category of the hand it currently holds. Read per view,
+---so the answer is only ever about the seat asking and never leaks another hand.
+local SHOW_HAND_STRENGTH = C.ShowHandStrength ~= false
 ---@type integer Grace on top of the action clock (ms), covering the round trip to a phone.
 local ACTION_GRACE = 5000
 ---@type integer Seats at every table.
@@ -280,6 +283,21 @@ end
 ---@param T table table
 ---@param cid string|nil citizenid of the viewer (nil for a player who has not sat down)
 ---@return table view HoldemStatePush
+---The category of the hand a seat currently holds, as an i18n key for handCatLabel. Preflop there
+---are only two cards, which best7 refuses to score, so the pocket pair is read off directly.
+---@param s table seat
+---@param board table[] community cards so far
+---@return string? key nil when the seat has no cards or the feature is off
+local function rankFor(s, board)
+    if not SHOW_HAND_STRENGTH or not s.hole or #s.hole < 2 then return nil end
+    if #board == 0 then
+        return s.hole[1].rank == s.hole[2].rank and 'pair' or 'highCard'
+    end
+    local cards = { s.hole[1], s.hole[2] }
+    for i = 1, #board do cards[#cards + 1] = board[i] end
+    return eval.describe((eval.best7(cards)))
+end
+
 function holdem.view(T, cid)
     local seats = {}
     for i = 1, SEATS do
@@ -295,6 +313,14 @@ function holdem.view(T, cid)
             me = me,
         }
     end
+    local handRank
+    for i = 1, SEATS do
+        local s = T.seats[i]
+        if cid and s.cid == cid and (s.state == 'in' or s.state == 'allin') then
+            handRank = rankFor(s, T.board)
+        end
+    end
+
     local legal
     local actorSeat = T.actor and T.seats[T.actor]
     if actorSeat and cid and actorSeat.cid == cid and actorSeat.state == 'in' then
@@ -304,7 +330,7 @@ function holdem.view(T, cid)
         tableId = T.id, handId = T.handId, street = T.street, button = T.button,
         actor = T.actor, deadline = T.deadline, now = GetGameTimer(),
         board = T.board, pots = T.pots, seats = seats, legal = legal,
-        sb = T.sb, bb = T.bb,
+        handRank = handRank, sb = T.sb, bb = T.bb,
     }
 end
 

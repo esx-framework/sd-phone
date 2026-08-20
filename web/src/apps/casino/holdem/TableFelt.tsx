@@ -190,8 +190,8 @@ export function TableFelt({ state, heroSeat, handEnd, onSit }: {
                         className="flex items-center gap-1.5 rounded-full px-3 py-1"
                         style={{ background: GOLD_FRAME, color: FELT.bot, boxShadow: `inset 0 1px 0 ${GOLD.hi}, 0 2px 6px rgba(0,0,0,0.35)` }}
                     >
-                        <span className="text-[11px] font-black uppercase tracking-wide">{t('holdem.pot', 'Pot')}</span>
-                        <span className="text-[15px] font-extrabold tabular-nums">{fmtChips(mainPot)}</span>
+                        <span className="text-[12px] font-black uppercase tracking-wide">{t('holdem.pot', 'Pot')}</span>
+                        <span className="text-[19px] font-extrabold tabular-nums">{fmtChips(mainPot)}</span>
                     </div>
 
                     {sidePots.map((pot, i) => (
@@ -210,7 +210,7 @@ export function TableFelt({ state, heroSeat, handEnd, onSit }: {
                         {[0, 1, 2, 3, 4].map(i => {
                             const card = state.board[i];
                             if (!card) {
-                                return <div key={i} style={{ width: 44, height: 62, borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.12)' }} />;
+                                return <div key={i} style={{ width: 52, height: 73, borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.12)' }} />;
                             }
                             const lit = boardBest ? inCards(boardBest, card) : false;
                             return (
@@ -228,7 +228,7 @@ export function TableFelt({ state, heroSeat, handEnd, onSit }: {
                                             boxShadow: lit ? `0 0 0 2px ${GOLD.top}` : undefined,
                                         }}
                                     >
-                                        <CardFace card={card} w={44} h={62} />
+                                        <CardFace card={card} w={52} h={73} />
                                     </div>
                                 </div>
                             );
@@ -241,6 +241,21 @@ export function TableFelt({ state, heroSeat, handEnd, onSit }: {
                         </div>
                     )}
                 </div>
+
+                {hero && (
+                    <div className="flex shrink-0 items-center justify-center pb-[26px]">
+                        <SeatPod
+                            seat={hero}
+                            isButton={state.button === hero.i}
+                            isActor={state.actor === hero.i}
+                            blind={marks[hero.i] ?? null}
+                            best={null}
+                            onSit={null}
+                            hideCards
+                            isHero
+                        />
+                    </div>
+                )}
 
                 {hero && hero.committed > 0 && !sweep && (
                     <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 4 }}>

@@ -9,6 +9,19 @@ import { playCheckRap, playChipStack, playDealFlop, playFoldSlide, playPotPush }
 
 const SHOWDOWN_MS = 5200;
 
+// Lua drops a nil field rather than encoding null, so an empty seat arrives with no `name` key at
+// all. Every `name === null` test downstream would then read it as taken, showing a nameless pod
+// with a 0 stack that cannot be sat in. Pin the nullable fields to real nulls at the boundary.
+function normalizeState(data: HoldemStatePush): HoldemStatePush {
+    return {
+        ...data,
+        actor: data.actor ?? null,
+        legal: data.legal ?? null,
+        handRank: data.handRank ?? null,
+        seats: data.seats.map(s => ({ ...s, name: s.name ?? null, hole: s.hole ?? null })),
+    };
+}
+
 export interface HoldemTableCtl {
     state:      HoldemStatePush | null;
     handEnd:    HoldemHandEnd | null;
@@ -46,7 +59,7 @@ export function useHoldemTable(tableId: string | null): HoldemTableCtl {
             if (data.board.length > 0) playDealFlop();
             lastStreet.current = data.street;
         }
-        setState(data);
+        setState(normalizeState(data));
     });
 
     useNuiEvent('sd-phone:holdem:hand', data => {
@@ -59,7 +72,7 @@ export function useHoldemTable(tableId: string | null): HoldemTableCtl {
 
     const resync = useCallback(() => {
         if (!tableId) return;
-        void syncApi(tableId).then(next => { if (next) setState(next); });
+        void syncApi(tableId).then(next => { if (next) setState(normalizeState(next)); });
     }, [tableId]);
 
     useEffect(() => {
@@ -83,7 +96,7 @@ export function useHoldemTable(tableId: string | null): HoldemTableCtl {
         const res = await sitApi(tableId, seat, buyIn);
         setBusy(false);
         if (!res.ok) { setError(res.message ?? null); return false; }
-        if (res.data) setState(res.data);
+        if (res.data) setState(normalizeState(res.data));
         return true;
     }, [tableId, busy]);
 

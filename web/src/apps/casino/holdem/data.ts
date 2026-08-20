@@ -8,7 +8,7 @@ export type HoldemAction = 'fold' | 'check' | 'call' | 'raise';
 export interface HoldemSeat { i: number; name: string | null; stack: number; committed: number; state: SeatState; hole: Card[] | null; me: boolean }
 export interface HoldemLegal { fold: boolean; check: boolean; call: boolean; callAmount: number; minRaiseTo: number; maxRaiseTo: number }
 export interface HoldemPot { amount: number; eligible: number[] }
-export interface HoldemStatePush { tableId: string; handId: number; street: HoldemStreet; button: number; actor: number | null; deadline: number; now: number; board: Card[]; pots: HoldemPot[]; seats: HoldemSeat[]; legal: HoldemLegal | null; sb: number; bb: number }
+export interface HoldemStatePush { tableId: string; handId: number; street: HoldemStreet; button: number; actor: number | null; deadline: number; now: number; board: Card[]; pots: HoldemPot[]; seats: HoldemSeat[]; legal: HoldemLegal | null; handRank: string | null; sb: number; bb: number }
 export interface HoldemHandEnd { tableId: string; handId: number; pots: HoldemPot[]; awards: { seat: number; amount: number }[]; shown: { seat: number; hole: Card[]; best: Card[]; cat: string }[] }
 
 export interface HoldemTableInfo { id: string; name: string; sb: number; bb: number; minBuyIn: number; maxBuyIn: number; seated: number; playing: boolean }

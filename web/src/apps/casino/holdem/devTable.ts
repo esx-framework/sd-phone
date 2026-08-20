@@ -458,6 +458,14 @@ export function createDevEngine(tableId: string, sb: number, bb: number, rng: ()
         return false;
     }
 
+    // Mirrors rankFor in server/games/casino/holdem/table.lua: preflop reads the pocket pair off
+    // the two cards directly, since best7 refuses to score fewer than five.
+    function heroRank(s: DevSeat | null): string | null {
+        if (!s || (s.state !== 'in' && s.state !== 'allin') || s.hole.length < 2) return null;
+        if (board.length === 0) return s.hole[0].rank === s.hole[1].rank ? 'pair' : 'highCard';
+        return categoryOf(best7([...s.hole, ...board]).score);
+    }
+
     function livePots(): HoldemPot[] {
         if (contenders().length === 0) return [];
         const contrib: number[] = [];
@@ -497,6 +505,7 @@ export function createDevEngine(tableId: string, sb: number, bb: number, rng: ()
             pots: street === 'showdown' && lastEnd ? lastEnd.pots : livePots(),
             seats: out,
             legal: meSeat && actor === me && meSeat.state === 'in' ? legalFor(meSeat) : null,
+            handRank: heroRank(meSeat),
             sb,
             bb,
         };

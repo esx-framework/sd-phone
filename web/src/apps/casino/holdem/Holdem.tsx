@@ -10,7 +10,6 @@ import { Slider } from '@/ui/Slider';
 import { useSessionState } from '@/hooks/useSessionState';
 
 import type { CasinoGameProps } from '../casinoApi';
-import { GAME_ACCENT } from '../casinoApi';
 import { CARD_SHADOW, FELT, GOLD, GOLD_FRAME, PAD_B, SEAT, SURFACE, TABLE, fmtChips } from '../theme';
 import { MuteButton } from '../MuteButton';
 
@@ -21,7 +20,7 @@ import { handCatLabel, mySeat, potTotal, seatOf, type HoldemTableInfo } from './
 import { tablesApi } from './holdemApi';
 import { useHoldemTable } from './useHoldemTable';
 
-const ACCENT = GAME_ACCENT.holdem;
+const ACCENT = TABLE.chip;
 
 const KEYFRAMES = `
 @keyframes hd-deal { from { transform: translate(64px, -104px) scale(0.92); opacity: 0 } to { transform: none; opacity: 1 } }
@@ -123,7 +122,7 @@ export function Holdem({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
 
                 {handEnd && (
                     <div
-                        className="pointer-events-none absolute bottom-[13%] left-1/2 z-20 -translate-x-1/2 rounded-2xl px-4 py-2 text-center"
+                        className="pointer-events-none absolute bottom-[46%] left-1/2 z-20 -translate-x-1/2 rounded-2xl px-4 py-2 text-center"
                         style={{ background: 'rgba(0,0,0,0.62)', boxShadow: `inset 0 0 0 1.5px ${GOLD.mid}`, animation: 'hd-badge-in 0.34s ease-out' }}
                     >
                         {handEnd.awards.map(award => {
@@ -131,7 +130,7 @@ export function Holdem({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                             const shown = handEnd.shown.find(s => s.seat === award.seat);
                             const name = seat?.name ?? t('holdem.emptySeat', 'Open seat');
                             return (
-                                <div key={award.seat} className="whitespace-nowrap text-[15px] font-extrabold" style={{ color: TABLE.win }}>
+                                <div key={award.seat} className="whitespace-nowrap text-[17px] font-extrabold" style={{ color: TABLE.win }}>
                                     {shown
                                         ? t('holdem.winsWith', '{name} wins with {hand}', { name, hand: handCatLabel(shown.cat) })
                                         : t('holdem.winsPot', '{name} wins {n}', { name, n: fmtChips(award.amount) })}
@@ -157,6 +156,7 @@ export function Holdem({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
                         bb={state.bb}
                         blind={marks[hero.i] ?? null}
                         isButton={state.button === hero.i}
+                        handRank={state.handRank}
                     />
                 ) : (
                     <div className="flex shrink-0 items-center justify-center px-4 pt-3" style={{ height: 96 }}>

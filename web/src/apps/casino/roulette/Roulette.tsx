@@ -22,7 +22,7 @@ import { POCKET_ANGLE, colorOf } from './wheel';
 
 const TABLE_MAX  = 25000;
 const MAX_BETS   = 20;
-const RECENT_MAX = 8;
+const RECENT_MAX = 5;
 const SPIN_MS    = 4200;
 const CHIP_KEY   = 'sd-phone:roulette:chip';
 
@@ -229,14 +229,14 @@ export function Roulette({ chips, onChips, onBack, onCashier }: CasinoGameProps)
                     <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(chips)}</span>
                     <span className="text-[12px] font-semibold text-white/50">{t('casino.chips', 'chips')}</span>
                 </button>
-                <div className="ml-auto flex items-center gap-1.5">
+                <div className="ml-auto flex min-w-0 items-center gap-1.5 overflow-hidden">
                     {recent.length > 0 && (
                         <span className="text-[11px] font-bold uppercase tracking-wide text-white/40">{t('roulette.recent', 'Recent')}</span>
                     )}
                     {recent.map((pocket, i) => (
                         <span
                             key={`${pocket}-${i}`}
-                            className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold tabular-nums text-white"
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums text-white"
                             style={{ background: POCKET_BG[colorOf(pocket)], border: '1px solid rgba(255,255,255,0.2)', opacity: 1 - i * 0.07 }}
                         >
                             {pocket}
