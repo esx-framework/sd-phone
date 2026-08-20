@@ -1,22 +1,35 @@
 import { fetchNui, isFiveM } from '@/core/nui';
 import { getGameRender, PORTRAIT_CROP, type GameRender } from '@/render';
 import { blobToBase64, pickVideoMime, videoStreamingSupported } from '@/shared/liveMedia';
+import {
+    FLAG_NONE,
+    FRAME_DELTA,
+    FRAME_INIT,
+    FRAME_KEY,
+    mintRelayToken,
+    relayAvailable,
+    relayPublish,
+    type RelayStreamHandle,
+} from '@/shared/mediaSocket';
 import { onCameraDemand, type CameraDemand, type CameraEncoder } from './cameraBus';
 
 const FALLBACK_ASPECT = 16 / 9;
 const CAPTURE_ZOOM = PORTRAIT_CROP.width;
+const ANCHOR_MIN_MS = 1000;
+const ANCHOR_DEFAULT_MS = 4000;
 
 let targetGen: number | null = null;
 let startToken = 0;
 let teardown: (() => void) | null = null;
 let render: GameRender | null = null;
 let surface: HTMLCanvasElement | null = null;
-let reported: string | null = null;
+let reported = '';
 
-function reportState(state: 'ok' | 'unsupported'): void {
-    if (reported === state) return;
-    reported = state;
-    void fetchNui('sd-phone:mdt:cameraState', { unsupported: state === 'unsupported' });
+function reportState(state: 'ok' | 'unsupported', relay: boolean): void {
+    const next = `${state}:${relay ? 'relay' : 'event'}`;
+    if (reported === next) return;
+    reported = next;
+    void fetchNui('sd-phone:mdt:cameraState', { unsupported: state === 'unsupported', relay });
 }
 
 function feedAspect(): number {
@@ -38,11 +51,39 @@ function ensureSurface(): HTMLCanvasElement {
     return canvas;
 }
 
-function encode(source: HTMLCanvasElement, enc: CameraEncoder, gen: number): (() => void) | null {
-    const mime = pickVideoMime();
-    const outW = Math.max(120, Math.round(enc.width));
-    const outH = Math.max(1, Math.round(outW / feedAspect()));
+type Segment = (blob: Blob, init: boolean, key: boolean) => Promise<void>;
 
+interface Encoding {
+    stop(): void;
+    anchor(): void;
+    setSink(sink: Segment): void;
+}
+
+function eventSink(gen: number, mime: string): Segment {
+    return async (blob, init) => {
+        const chunk = await blobToBase64(blob);
+        await fetchNui('sd-phone:mdt:cameraChunk', { gen, chunk, init, mime: init ? mime : undefined });
+    };
+}
+
+function relaySink(handle: RelayStreamHandle, onLost: () => void): Segment {
+    return async (blob, init, key) => {
+        const buffer = await blob.arrayBuffer();
+        const kind = init ? FRAME_INIT : key ? FRAME_KEY : FRAME_DELTA;
+        const stamp = Math.max(0, Math.round(performance.now() * 1000));
+        const sent = handle.send(kind, FLAG_NONE, stamp, new Uint8Array(buffer));
+        if (!sent && kind !== FRAME_DELTA) onLost();
+    };
+}
+
+function encode(
+    source: HTMLCanvasElement,
+    enc: CameraEncoder,
+    outW: number,
+    outH: number,
+    mime: string,
+    first: Segment,
+): Encoding | null {
     const off = document.createElement('canvas');
     off.width = outW;
     off.height = outH;
@@ -63,10 +104,12 @@ function encode(source: HTMLCanvasElement, enc: CameraEncoder, gen: number): (()
 
     let recorder: MediaRecorder | null = null;
     let stopped = false;
+    let sink = first;
+    let chain: Promise<void> = Promise.resolve();
 
     const spin = () => {
         if (stopped) return;
-        let first = true;
+        let seq = 0;
         let rec: MediaRecorder;
         try {
             rec = new MediaRecorder(stream, {
@@ -78,32 +121,47 @@ function encode(source: HTMLCanvasElement, enc: CameraEncoder, gen: number): (()
         }
         rec.ondataavailable = (event) => {
             if (rec !== recorder || stopped || !event.data || !event.data.size) return;
-            const init = first;
-            first = false;
-            void blobToBase64(event.data).then((chunk) => {
-                if (stopped) return;
-                void fetchNui('sd-phone:mdt:cameraChunk', {
-                    gen,
-                    chunk,
-                    init,
-                    mime: init ? mime : undefined,
-                });
-            });
+            const at = sink;
+            const blob = event.data;
+            const init = seq === 0;
+            const key = seq === 1;
+            seq += 1;
+            chain = chain
+                .then(() => (stopped || sink !== at ? undefined : at(blob, init, key)))
+                .catch(() => {});
         };
         rec.start(enc.timesliceMs);
         recorder = rec;
     };
 
+    const anchor = () => {
+        const old = recorder;
+        if (old && old.state !== 'inactive') {
+            try { old.stop(); } catch { /* already stopping */ }
+        }
+        spin();
+    };
+
+    const beat = setInterval(anchor, Math.max(ANCHOR_MIN_MS, Math.round(enc.keyframeMs || ANCHOR_DEFAULT_MS)));
+
     spin();
 
-    return () => {
-        stopped = true;
-        clearInterval(pump);
-        if (recorder && recorder.state !== 'inactive') {
-            try { recorder.onstop = null; recorder.stop(); } catch { /* already inactive */ }
-        }
-        recorder = null;
-        try { stream.getTracks().forEach(track => track.stop()); } catch { /* tracks gone */ }
+    return {
+        stop() {
+            stopped = true;
+            clearInterval(beat);
+            clearInterval(pump);
+            if (recorder && recorder.state !== 'inactive') {
+                try { recorder.onstop = null; recorder.stop(); } catch { /* already inactive */ }
+            }
+            recorder = null;
+            try { stream.getTracks().forEach(track => track.stop()); } catch { /* tracks gone */ }
+        },
+        anchor,
+        setSink(next: Segment) {
+            sink = next;
+            anchor();
+        },
     };
 }
 
@@ -121,6 +179,7 @@ function stopPublishing(): void {
         } catch { /* renderer gone */ }
         render = null;
     }
+    reported = '';
 }
 
 async function startPublishing(demand: CameraDemand, token: number): Promise<void> {
@@ -129,14 +188,14 @@ async function startPublishing(demand: CameraDemand, token: number): Promise<voi
     if (!enc) return;
 
     if (!videoStreamingSupported()) {
-        reportState('unsupported');
+        reportState('unsupported', false);
         return;
     }
 
     const feed = await getGameRender();
     if (token !== startToken) return;
     if (!feed) {
-        reportState('unsupported');
+        reportState('unsupported', false);
         return;
     }
 
@@ -147,15 +206,73 @@ async function startPublishing(demand: CameraDemand, token: number): Promise<voi
     feed.renderToTarget(canvas);
     render = feed;
 
-    const stop = encode(canvas, enc, gen);
-    if (!stop) {
-        stopPublishing();
-        reportState('unsupported');
+    const mime = pickVideoMime();
+    const outW = Math.max(120, Math.round(enc.width));
+    const outH = Math.max(1, Math.round(outW / feedAspect()));
+
+    let encoding: Encoding | null = null;
+    let handle: RelayStreamHandle | null = null;
+
+    const downgrade = () => {
+        if (token !== startToken || !handle) return;
+        const dead = handle;
+        handle = null;
+        try { dead.close(); } catch { /* socket already gone */ }
+        reportState('ok', false);
+        encoding?.setSink(eventSink(gen, mime));
+    };
+
+    const key = demand.streamId ?? null;
+    if (key && relayAvailable()) {
+        const grant = await mintRelayToken('publish', key);
+        if (token !== startToken) return;
+        if (grant) {
+            handle = await relayPublish({
+                token: grant.token,
+                key,
+                gen,
+                desc: {
+                    mode: 'video',
+                    wire: 'mse',
+                    codec: '',
+                    mime,
+                    width: outW,
+                    height: outH,
+                    fps: enc.fps,
+                    bitrate: enc.bitrate,
+                },
+                onKeyframeRequest: () => encoding?.anchor(),
+                onState: (state) => {
+                    if (state === 'reset') encoding?.anchor();
+                    else if (state === 'ended' || state === 'offline') downgrade();
+                },
+                onError: (_code, fatal) => { if (fatal) downgrade(); },
+            });
+        }
+    }
+
+    if (token !== startToken) {
+        handle?.close();
         return;
     }
 
-    teardown = stop;
-    reportState('ok');
+    encoding = encode(canvas, enc, outW, outH, mime, handle ? relaySink(handle, downgrade) : eventSink(gen, mime));
+    if (!encoding) {
+        handle?.close();
+        stopPublishing();
+        reportState('unsupported', false);
+        return;
+    }
+
+    const live = encoding;
+    teardown = () => {
+        live.stop();
+        if (handle) {
+            try { handle.close(); } catch { /* socket already gone */ }
+            handle = null;
+        }
+    };
+    reportState('ok', handle !== null);
 }
 
 function applyDemand(demand: CameraDemand | undefined): void {

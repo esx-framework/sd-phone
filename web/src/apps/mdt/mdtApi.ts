@@ -894,20 +894,28 @@ export async function mdtCameras(): Promise<CameraGrid> {
     };
 }
 
-export async function mdtCameraWatch(cameraId: string, quality: CameraQuality, reprime = false): Promise<CameraStream | string> {
+export async function mdtCameraWatch(
+    cameraId: string,
+    quality: CameraQuality,
+    reprime = false,
+    relay = false,
+    relayFailed = false,
+): Promise<CameraStream | string> {
     if (!isFiveM) {
         const tile = DEV_CAMERAS.find(c => c.id === cameraId);
         if (!tile) return 'That unit is no longer on the air';
-        return { cameraId, gen: 1, mime: null, status: tile.status, viewers: tile.viewers };
+        return { cameraId, gen: 1, mime: null, status: tile.status, viewers: tile.viewers, relay: null };
     }
-    const res = await apiCall<CameraStream>('sd-phone:mdt:cameras:watch', { cameraId, quality, reprime });
+    const res = await apiCall<CameraStream>('sd-phone:mdt:cameras:watch', { cameraId, quality, reprime, relay, relayFailed });
     if (!res.success || !res.data) return res.message ?? '';
+    const grant = res.data.relay ?? null;
     return {
         cameraId: res.data.cameraId ?? cameraId,
         gen:      res.data.gen ?? 0,
         mime:     res.data.mime ?? null,
         status:   res.data.status ?? 'ready',
         viewers:  res.data.viewers ?? 0,
+        relay:    grant && typeof grant.token === 'string' && typeof grant.url === 'string' ? grant : null,
     };
 }
 

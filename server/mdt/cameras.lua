@@ -10,6 +10,9 @@ local store  = require 'server.mdt.store'
 ---@type table Player bridge (bridge.server.player): the citizenid -> source lookup a watch resolves
 ---its host with, rather than walking every connected player on every keep-alive.
 local player = require 'bridge.server.player'
+---@type table Media relay (server.media.init): the token mint and the relay's control channel. It
+---decides nothing; every token this file asks for is signed only after the checks below have run.
+local media  = require 'server.media.init'
 
 ---@type table Cameras module; the table returned at end of file. The whole bodycam/dashcam relay:
 ---who has a camera, who is watching it, and the header + keyframe cache a joining terminal is
@@ -110,6 +113,11 @@ local IDLE_MS = math.max(5000, math.floor((tonumber(CFG.IdleSeconds) or 15) * 10
 ---@type boolean Whether opening a camera full screen writes an audit row.
 local LOG_VIEWING = CFG.LogViewing ~= false
 
+---@type integer How long a stream stays on the event path after a terminal reported it could not
+---reach the relay. Long enough that the officer is not flapping between transports, short enough
+---that one player on a bad network does not hold the department there for a whole session.
+local RELAY_BLOCK_MS = 300000
+
 ---@type integer Milliseconds the last viewer leaving is debounced by, so a terminal switching
 ---tabs does not make the officer's client tear the encoder down and spin it straight back up.
 local OFF_DELAY_MS = 2500
@@ -131,6 +139,16 @@ local MAX_INGEST_CHUNKS = 24
 local REPLAY_MS = 4000
 ---@type integer Minimum gap between two audit rows for the same officer watching the same camera.
 local AUDIT_GAP_MS = 60000
+---@type integer Window a terminal's watch calls are counted over, in milliseconds.
+local WATCH_WINDOW = 10000
+---@type integer Watch calls allowed in that window. The grid re-asserts every open tile on a five
+---second timer, so a full grid plus a full-screen feed sits well inside this; anything past it is a
+---terminal asking faster than one can be operated, and each call can mint a relay token.
+local MAX_WATCHES = 40
+
+---@type string The relay feature id this file owns, and the first two thirds of every stream key it
+---mints a token for.
+local FEATURE = 'mdt:cam'
 
 ---@type table<string, table> Broadcast session per hosting officer citizenid.
 local sessions = {}
@@ -172,6 +190,16 @@ local function splitCameraId(id)
     if not kind then kind, cid = id:match('^(dashcam):(.+)$') end
     if not kind or #cid > 64 then return nil, nil end
     return kind, cid
+end
+
+---The relay stream one officer's camera publishes on, or nil when there is no relay to publish to.
+---A dashcam is the same picture as the bodycam under a different label, so the two camera ids
+---address one stream: the officer encodes once however many tiles are open on them.
+---@param citizenid string officer citizenid
+---@return string|nil streamId
+local function streamFor(citizenid)
+    if not media.featureEnabled(FEATURE) then return nil end
+    return media.streamId('mdt', 'cam', citizenid)
 end
 
 ---The identity of an officer who carries a camera, or nil when they do not. Police only, from the
@@ -234,6 +262,8 @@ local function ensureSession(me)
         gopBytes     = 0,
         busy         = false, -- the officer's own camera app has the game view
         unsupported  = false, -- the officer's client cannot capture at all
+        onRelay      = false, -- the officer's client is publishing over the media relay instead
+        relayBlocked = 0,     -- GetGameTimer until which a viewer that could not reach the relay holds this stream on the event path
         viewers      = {},    -- [src] = { quality, at, ids }
         offAt        = nil,   -- when the debounced stop fires
         ingestAt     = 0,
@@ -289,7 +319,26 @@ local function pushDemand(session, on)
         quality     = session.quality,
         enc         = on and PROFILES[session.quality] or nil,
         firstPerson = FIRST_PERSON and session.quality == 'full',
+        -- Named rather than signed here: the officer's page asks for its own publish token when it
+        -- has an encoder to attach, so a demand that is re-announced a minute later on a page that
+        -- loaded late never carries a token that has already lapsed. A server with no relay sends
+        -- no name, and that page never constructs a socket at all.
+        streamId    = on and streamFor(session.citizenid) or nil,
     })
+end
+
+---Tells every terminal on a camera which way its picture is coming. A viewer keeps its event-path
+---subscription mounted whatever this says, so the message decides which transport it may join, not
+---which one it is allowed to receive.
+---@param session table broadcast session
+local function pushTransport(session)
+    local transport = session.onRelay and 'relay' or 'event'
+    for viewerSrc in pairs(session.viewers) do
+        TriggerClientEvent('sd-phone:client:mdt:cameraTransport', viewerSrc, {
+            citizenid = session.citizenid,
+            transport = transport,
+        })
+    end
 end
 
 ---Reconciles the demand on an officer against what the terminals watching them are asking for. A
@@ -308,6 +357,12 @@ local function applyDemand(session, now)
             session.quality = want
             session.gen     = session.gen + 1
             resetCache(session)
+            -- The relay caches a stream's opening bytes for terminals that join mid-shift, and the
+            -- picture is about to change shape. Forcing the epoch forward there drops that cache
+            -- and tells everyone already watching to rebuild, rather than leaving them to splice a
+            -- header from one profile onto frames from the next.
+            local streamId = streamFor(session.citizenid)
+            if streamId then media.setGen(streamId, session.gen) end
             pushDemand(session, true)
         end
         return
@@ -318,12 +373,41 @@ local function applyDemand(session, now)
     end
 end
 
+---Tears a stream down on the relay, so a broadcast that has ended stops there too rather than
+---lingering until its tokens lapse. Nothing waits on it: the relay is a separate process that may
+---be down, and a camera stopping cannot be allowed to depend on it.
+---@param session table broadcast session
+---@param reason string short machine-readable cause, logged by the relay
+local function revokeStream(session, reason)
+    if not session.onRelay then return end
+    session.onRelay = false
+    local streamId = streamFor(session.citizenid)
+    if streamId then media.revoke(streamId, reason) end
+end
+
+---Holds a stream on the event path because a terminal watching it cannot reach the relay. The
+---publisher encodes to exactly one transport, so a viewer that cannot join the relay would otherwise
+---sit on a dead tile for the whole shift while the officer happily published to nobody. The event
+---path is the one every terminal can always reach, so it wins: correctness over picture quality.
+---The block lapses so a single bad network does not pin the department to the slow path forever.
+---@param session table broadcast session
+---@param now integer GetGameTimer at the moment of the call
+local function blockRelay(session, now)
+    session.relayBlocked = now + RELAY_BLOCK_MS
+    if not session.onRelay then return end
+
+    revokeStream(session, 'viewer_unreachable')
+    resetCache(session)
+    pushTransport(session)
+end
+
 ---Stops a broadcast and forgets everything cached for it.
 ---@param session table broadcast session
 local function stopBroadcast(session)
     session.offAt   = nil
     session.quality = nil
     resetCache(session)
+    revokeStream(session, 'no_viewers')
     if GetPlayerName(session.src) then pushDemand(session, false) end
 end
 
@@ -331,6 +415,7 @@ end
 ---@param session table broadcast session
 ---@param reason string short machine-readable cause the terminal renders copy for
 local function dropSession(session, reason)
+    revokeStream(session, reason)
     for viewerSrc in pairs(session.viewers) do
         TriggerClientEvent('sd-phone:client:mdt:cameraOff', viewerSrc, {
             citizenid = session.citizenid,
@@ -350,6 +435,10 @@ local function statusOf(session)
     if session.unsupported then return 'unsupported' end
     if session.busy then return 'busy' end
     if not session.quality then return 'ready' end
+    -- On the relay the picture never passes through this server, so there is no cached header to
+    -- read a live stream off. The officer's own client saying it is publishing is the only evidence
+    -- there is, and it is the same evidence the header is: proof an encoder is running.
+    if session.onRelay then return 'live' end
     return session.header and 'live' or 'starting'
 end
 
@@ -517,6 +606,9 @@ end)
 ---re-audits nor re-anchors the encoder.
 cameras.watch = access.gated('cameras.view', function(src, payload, me)
     if not ENABLED then return util.fail('Cameras are not available') end
+    if not util.rateLimit(me.citizenid, 'mdt:cameras:watch', WATCH_WINDOW, MAX_WATCHES) then
+        return util.fail('Too many requests, try again in a moment')
+    end
 
     local kind, cid = splitCameraId(payload.cameraId)
     if not kind then return util.fail('Unknown camera') end
@@ -562,12 +654,26 @@ cameras.watch = access.gated('cameras.view', function(src, payload, me)
         })
     end
 
+    -- The relay grant rides on the answer to the attach the terminal was making anyway, so a token
+    -- is only ever signed on the far side of the whole gate above: the read permission, the host
+    -- re-verification, the viewer ceiling and the audit row. It is asked for rather than always
+    -- sent, because the terminal re-asserts this watch every few seconds and only needs a fresh
+    -- token when it has no live join to feed.
+    local grant
+    if payload.relayFailed == true then
+        blockRelay(session, GetGameTimer())
+    elseif payload.relay == true and GetGameTimer() >= (session.relayBlocked or 0) then
+        local streamId = streamFor(cid)
+        if streamId then grant = media.mint(src, { key = streamId, role = 'watch', gen = session.gen }) end
+    end
+
     return util.ok({
         cameraId = payload.cameraId,
         gen      = session.gen,
         mime     = session.mime,
         status   = statusOf(session),
         viewers  = viewerCount(session),
+        relay    = grant,
     })
 end)
 
@@ -630,10 +736,12 @@ function cameras.chunk(src, payload)
     end
 end
 
----Broadcaster state push: the officer's client reporting that it cannot capture, or that its own
----camera app has taken the game view. Both are shown on the tile rather than left as a dead feed.
+---Broadcaster state push: the officer's client reporting that it cannot capture, that its own
+---camera app has taken the game view, or which transport its frames are leaving on. The first two
+---are shown on the tile rather than left as a dead feed; the third decides what a terminal is
+---offered, because the publisher only ever encodes to one place and the viewers follow it there.
 ---@param src integer sender server id
----@param payload table { busy?, unsupported? } attacker-controlled
+---@param payload table { busy?, unsupported?, relay? } attacker-controlled
 function cameras.state(src, payload)
     payload = tbl(payload)
     local session = byHostSrc[src]
@@ -642,6 +750,46 @@ function cameras.state(src, payload)
     session.busy        = payload.busy == true
     session.unsupported = payload.unsupported == true
     if session.busy or session.unsupported then resetCache(session) end
+
+    local onRelay = payload.relay == true and not session.busy and not session.unsupported
+        and GetGameTimer() >= (session.relayBlocked or 0)
+    if onRelay == session.onRelay then return end
+
+    session.onRelay = onRelay
+    -- The two transports never carry the same broadcast at once, so whatever the other one left
+    -- cached would be spliced onto a stream it does not belong to.
+    if onRelay then resetCache(session) end
+    pushTransport(session)
+end
+
+---Whether one player may take one role on one camera stream, answered for the relay's token mint.
+---
+---This is the same gate the callbacks above run, asked a second time and from the other direction:
+---the mint is a public route, so it re-derives the answer here rather than trusting that a watch
+---came first. A viewer has to already hold this camera through cameras.watch, which is what carries
+---the permission key, the host re-verification and the audit row; an officer has to be the officer
+---whose camera it is, with a live demand on them. Nil refuses, and the phone falls back to the
+---event relay it never stopped listening on.
+---@param src integer requesting player's server id
+---@param req { streamId: string, role: string }
+---@return table|nil grant { key, role, gen }
+---@return string|nil message refusal shown to the caller
+local function entitle(src, req)
+    if not ENABLED then return nil, 'Cameras are not available' end
+
+    local cid = type(req.streamId) == 'string' and req.streamId:match('^mdt:cam:(.+)$') or nil
+    local session = cid and sessions[cid]
+    if not session or not session.quality then return nil, 'That unit is no longer on the air' end
+
+    if req.role == 'publish' then
+        local host = cameraOfficer(src)
+        if not host or host.citizenid ~= cid or session.src ~= src then return nil, 'That is not your camera' end
+        return { key = req.streamId, role = 'publish', gen = session.gen }
+    end
+
+    if not access.can(src, 'cameras.view') then return nil, 'Your rank does not allow that' end
+    if not session.viewers[src] then return nil, 'You are not watching that camera' end
+    return { key = req.streamId, role = 'watch', gen = session.gen }
 end
 
 ---Vehicle class push: the officer's own client naming the class of the vehicle it is sitting in.
@@ -661,8 +809,12 @@ function cameras.vehicle(src, payload)
 end
 
 if ENABLED then
+    media.registerFeature(FEATURE, { entitle = entitle })
+
     -- Media and state travel on net events rather than callbacks because a chunk is latent: it is
-    -- paced onto the wire instead of blocking the net thread on one big frame.
+    -- paced onto the wire instead of blocking the net thread on one big frame. This stays whatever
+    -- the relay is doing: it is the transport every install has, and the one a relay outage falls
+    -- back to without anybody watching noticing more than a rebuilt picture.
     RegisterNetEvent('sd-phone:server:mdt:cameraChunk', function(payload) cameras.chunk(source, payload) end)
     RegisterNetEvent('sd-phone:server:mdt:cameraState', function(payload) cameras.state(source, payload) end)
     RegisterNetEvent('sd-phone:server:mdt:cameraVehicle', function(payload) cameras.vehicle(source, payload) end)

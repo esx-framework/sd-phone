@@ -130,3 +130,11 @@ end)
 RegisterNetEvent('sd-phone:client:mdt:cameraOff', function(data)
     SendNUIMessage({ action = 'sd-phone:mdt:cameraOff', data = data })
 end)
+
+---Server push: the transport a unit's camera publishes on changed. The terminal follows the
+---publisher rather than choosing for itself, and it keeps listening on the event path above
+---whichever way this points, so a downgrade costs a rebuilt picture and nothing else.
+---@param data table { citizenid, transport }
+RegisterNetEvent('sd-phone:client:mdt:cameraTransport', function(data)
+    SendNUIMessage({ action = 'sd-phone:mdt:cameraTransport', data = data })
+end)

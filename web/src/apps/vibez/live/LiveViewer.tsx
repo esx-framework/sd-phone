@@ -4,18 +4,17 @@ import { BadgeCheck, Eye, Heart, X } from 'lucide-react';
 import { t } from '@/i18n';
 import { formatDuration } from '@/lib/time';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
-import { useDeckActive } from '@/shell/deckActive';
 import { useStatusBarLight } from '@/shell/useStatusBarLight';
-import { LiveVideoPlayer, base64ToBytes, liveVideoPlaybackSupported } from '@/shared/liveMedia';
+import { base64ToBytes } from '@/shared/liveMedia';
+import { useLiveVideo } from '@/shared/live/useLiveVideo';
 import { GRAD_FROM, GRAD_TO, HEART, type VUser } from '../data';
-import { apiLiveJoin, apiLiveLeave, apiLiveComment, apiLiveHeart } from '../vibezApi';
+import { apiLiveJoin, apiLiveLeave, apiLiveComment, apiLiveHeart, type LiveJoin } from '../vibezApi';
 import { LiveCommentRow, type LiveComment } from './LiveComment';
 
 interface FloatHeart { id: number; drift: number; left: number; }
 
 export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VUser; onClose: () => void }) {
     const [frame,    setFrame]    = useState<string | null>(null);
-    const [hasVideo, setHasVideo] = useState(false);
     const [viewers,  setViewers]  = useState(1);
     const [elapsed,  setElapsed]  = useState(0);
     const [comments, setComments] = useState<LiveComment[]>([]);
@@ -25,37 +24,23 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
     const seq = useRef(0);
     const startedRef = useRef<number>(0);
     const videoRef   = useRef<HTMLVideoElement>(null);
-    const playerRef  = useRef<LiveVideoPlayer | null>(null);
-    const mimeRef    = useRef<string>('');
-
-    // Pause the MSE <video> decode while backgrounded (the frame freezes); on resume
-    // seek to the live edge so a long pause doesn't leave you stuck behind.
-    const deckActive = useDeckActive();
-    useEffect(() => {
-        const v = videoRef.current;
-        if (!v || !hasVideo) return;
-        if (!deckActive) { v.pause(); return; }
-        const buffered = v.buffered;
-        if (buffered.length) {
-            const edge = buffered.end(buffered.length - 1);
-            if (edge - v.currentTime > 0.5) v.currentTime = edge;
-        }
-        void v.play().catch(() => {});
-    }, [deckActive, hasVideo]);
 
     useStatusBarLight(true);
 
-    useEffect(() => {
-        let alive = true;
-        void apiLiveJoin(liveId).then(res => {
-            if (!alive) return;
-            if (!res) { setEnded(true); return; }
+    const { health, transport, feedEvent, setOffered, markEnded } = useLiveVideo<LiveJoin>({
+        liveId,
+        video: videoRef,
+        join:  relay => apiLiveJoin(liveId, relay),
+        onAttach: (res, first) => {
+            if (!first) return;
             if (res.frame) setFrame(res.frame);
             setViewers(res.viewers);
             startedRef.current = res.startedAt;
-        });
-        return () => { alive = false; void apiLiveLeave(liveId); };
-    }, [liveId]);
+        },
+        onGone: () => setEnded(true),
+    });
+
+    useEffect(() => () => { void apiLiveLeave(liveId); }, [liveId]);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -66,33 +51,17 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
 
     const forUs = (id?: string) => !id || id === liveId;
 
-    useEffect(() => () => { playerRef.current?.destroy(); playerRef.current = null; }, []);
-
-    function ingestChunk(b64: string, init: boolean, mime?: string) {
-        const v = videoRef.current;
-        if (!v) return;
-        if (init) {
-            if (!playerRef.current) {
-                const m = mime || mimeRef.current || 'video/webm';
-                if (!liveVideoPlaybackSupported(m)) return;
-                mimeRef.current = m;
-                const player = new LiveVideoPlayer(v, m);
-                player.start();
-                playerRef.current = player;
-            }
-            playerRef.current.append(base64ToBytes(b64));
-        } else if (playerRef.current) {
-            playerRef.current.append(base64ToBytes(b64));
-        }
-    }
-
     useNuiEvent('sd-phone:vibez:liveFrame', (data: { liveId?: string; frame?: string } | undefined) => {
         if (!forUs(data?.liveId) || !data?.frame) return;
         setFrame(data.frame);
     });
-    useNuiEvent('sd-phone:vibez:liveChunk', (data: { liveId?: string; chunk?: string; init?: boolean; mime?: string } | undefined) => {
+    useNuiEvent('sd-phone:vibez:liveChunk', (data: { liveId?: string; chunk?: string; init?: boolean; mime?: string; gen?: number } | undefined) => {
         if (!forUs(data?.liveId) || !data?.chunk) return;
-        ingestChunk(data.chunk, data.init === true, data.mime);
+        feedEvent(base64ToBytes(data.chunk), data.init === true, data.mime, data.gen);
+    });
+    useNuiEvent('sd-phone:vibez:liveTransport', (data: { liveId?: string; transport?: string } | undefined) => {
+        if (!forUs(data?.liveId)) return;
+        setOffered(data?.transport === 'relay' ? 'relay' : 'event');
     });
     useNuiEvent('sd-phone:vibez:liveComment', (data: { liveId?: string; comment?: LiveComment } | undefined) => {
         if (!forUs(data?.liveId) || !data?.comment) return;
@@ -105,7 +74,9 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
         if (forUs(data?.liveId) && typeof data?.viewers === 'number') setViewers(data.viewers);
     });
     useNuiEvent('sd-phone:vibez:liveEnded', (data: { liveId?: string } | undefined) => {
-        if (forUs(data?.liveId)) setEnded(true);
+        if (!forUs(data?.liveId)) return;
+        markEnded();
+        setEnded(true);
     });
 
     function spawnHearts(n: number) {
@@ -131,6 +102,8 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
         void apiLiveComment(liveId, text);
     }
 
+    const showVideo = health === 'live' || health === 'recovering';
+
     return (
         <div className="absolute inset-0 z-[60] flex flex-col overflow-hidden bg-black font-sf text-white">
             <video
@@ -138,16 +111,19 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
                 muted
                 playsInline
                 autoPlay
-                onPlaying={() => setHasVideo(true)}
                 onCanPlay={() => { void videoRef.current?.play?.().catch(() => {}); }}
                 className="absolute inset-0 h-full w-full object-cover"
-                style={{ display: hasVideo ? 'block' : 'none' }}
+                style={{ display: showVideo ? 'block' : 'none' }}
             />
-            {!hasVideo && (frame
+            {!showVideo && (frame
                 ? <img src={frame} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                     <img src={host.avatar} alt="" draggable={false} className="h-[88px] w-[88px] rounded-full object-cover opacity-90" />
-                    <div className="text-[15px] text-white/70">{t('vibez.connectingToLive', "Connecting to {handle}'s LIVE…", { handle: host.handle })}</div>
+                    <div className="text-[15px] text-white/70">
+                        {health === 'failed'
+                            ? t('live.noPicture', 'No picture from this live')
+                            : t('vibez.connectingToLive', "Connecting to {handle}'s LIVE…", { handle: host.handle })}
+                    </div>
                   </div>)}
 
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/60" />
@@ -184,10 +160,22 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
                 </button>
             </div>
 
-            <div className="relative z-20 px-4 pt-1.5">
+            <div className="relative z-20 flex items-center gap-1.5 px-4 pt-1.5">
                 <span className="rounded-full bg-black/40 px-2 py-[3px] text-[12px] font-medium tabular-nums text-white/85 backdrop-blur-sm">
                     {formatDuration(elapsed)}
                 </span>
+                {showVideo && (
+                    <span className="rounded-full bg-black/40 px-2 py-[3px] text-[10.5px] font-bold uppercase tracking-wide text-white/60 backdrop-blur-sm">
+                        {transport === 'relay'
+                            ? t('live.transportRelay', 'Relay')
+                            : t('live.transportEvent', 'Server')}
+                    </span>
+                )}
+                {health === 'recovering' && (
+                    <span className="rounded-full bg-black/40 px-2 py-[3px] text-[10.5px] font-semibold text-white/60 backdrop-blur-sm">
+                        {t('live.reconnecting', 'Reconnecting')}
+                    </span>
+                )}
             </div>
 
             <div className="min-h-0 flex-1" />

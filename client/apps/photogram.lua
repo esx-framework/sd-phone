@@ -19,7 +19,7 @@ local ACTIONS = {
     'toggleFollow', 'respondFollow', 'followRequests', 'followList', 'search',
     'stories', 'addStory', 'markStorySeen', 'activity', 'counts', 'dismissNotification',
     'dmList', 'dmThread', 'dmSend', 'dmReact', 'deleteAccount', 'watch',
-    'liveStart', 'liveJoin', 'liveLeave', 'liveEnd', 'liveComment', 'liveHeart',
+    'liveStart', 'liveJoin', 'liveLeave', 'liveEnd', 'liveComment', 'liveHeart', 'liveTransport',
 }
 
 -- Thin delegates: each action proxies straight into its server callback.
@@ -111,7 +111,10 @@ end)
 
 ---@type string[] Server live-stream pushes (server/photogram/live.lua) relayed 1:1 into the
 ---React app under the matching 'sd-phone:photogram:<name>' NUI action.
-local LIVE_EVENTS = { 'liveFrame', 'liveChunk', 'liveComment', 'liveHeart', 'liveViewers', 'liveEnded', 'liveChanged' }
+local LIVE_EVENTS = {
+    'liveFrame', 'liveChunk', 'liveTransport', 'liveComment', 'liveHeart', 'liveViewers',
+    'liveEnded', 'liveChanged',
+}
 
 -- Thin relays: each live push forwards unchanged.
 for _, ev in ipairs(LIVE_EVENTS) do

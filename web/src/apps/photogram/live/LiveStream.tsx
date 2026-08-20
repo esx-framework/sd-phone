@@ -8,8 +8,9 @@ import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useStatusBarLight } from '@/shell/useStatusBarLight';
 import { AlertDialog } from '@/ui/AlertDialog';
 import { POSTS, type User } from '../data';
-import { apiLiveStart, apiLiveEnd, apiLiveFrame, apiLiveChunk, apiLiveHeart, type LiveComment, type LiveEncoderConfig } from '../photogramApi';
-import { videoStreamingSupported, pickVideoMime, blobToBase64 } from '@/shared/liveMedia';
+import { apiLiveStart, apiLiveEnd, apiLiveFrame, apiLiveChunk, apiLiveHeart, apiLiveTransport, type LiveComment } from '../photogramApi';
+import { videoStreamingSupported } from '@/shared/liveMedia';
+import { startLiveBroadcast } from '@/shared/live/liveBroadcast';
 import { getGameRender, type GameRender } from '@/render';
 import { VerifiedCheck } from '../ui';
 
@@ -17,73 +18,6 @@ const SIM_VIEWERS: User[] = POSTS.map(p => p.user);
 const SIM_LINES = ['hello!! 👋', 'first 🔥', 'lets gooo', 'looking clean 🙌', 'w stream', '😂😂', '🔥🔥🔥'];
 
 interface FloatHeart { id: number; drift: number; left: number; }
-
-function startVideoBroadcast(
-    liveCanvas: HTMLCanvasElement,
-    enc: LiveEncoderConfig,
-    getLiveId: () => string | null,
-    isStopped: () => boolean,
-): () => void {
-    const mime = pickVideoMime();
-
-    const box = liveCanvas.getBoundingClientRect();
-    const outW = 540;
-    const outH = Math.max(1, Math.round(outW * (box.height / box.width || 16 / 9)));
-    const off = document.createElement('canvas');
-    off.width = outW;
-    off.height = outH;
-    const octx = off.getContext('2d');
-    if (!octx) return () => {};
-
-    const pump = setInterval(() => {
-        if (liveCanvas.width) octx.drawImage(liveCanvas, 0, 0, outW, outH);
-    }, Math.max(1, Math.round(1000 / enc.fps)));
-
-    let stream: MediaStream;
-    try { stream = off.captureStream(enc.fps); } catch { clearInterval(pump); return () => {}; }
-
-    let recorder: MediaRecorder | null = null;
-
-    const spin = () => {
-        if (isStopped()) return;
-        let firstChunk = true;
-        let rec: MediaRecorder;
-        try {
-            rec = new MediaRecorder(stream, { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: enc.bitrate });
-        } catch {
-            try { rec = new MediaRecorder(stream); } catch { return; }
-        }
-        rec.ondataavailable = (e) => {
-            if (rec !== recorder || !e.data || !e.data.size || isStopped()) return;
-            const isInit = firstChunk;
-            firstChunk = false;
-            void blobToBase64(e.data).then((b64) => {
-                const id = getLiveId();
-                if (id && !isStopped()) void apiLiveChunk(id, b64, isInit, isInit ? mime : undefined);
-            });
-        };
-        rec.start(enc.timesliceMs);
-        recorder = rec;
-    };
-
-    const anchor = setInterval(() => {
-        const old = recorder;
-        if (old && old.state !== 'inactive') { try { old.stop(); } catch { /* already stopping */ } }
-        spin();
-    }, Math.max(1000, enc.keyframeMs));
-
-    spin();
-
-    return () => {
-        clearInterval(anchor);
-        clearInterval(pump);
-        if (recorder && recorder.state !== 'inactive') {
-            try { recorder.onstop = null; recorder.stop(); } catch { /* already inactive */ }
-        }
-        recorder = null;
-        try { stream.getTracks().forEach(track => track.stop()); } catch { /* tracks gone */ }
-    };
-}
 
 export function LiveStream({ onClose }: { onClose: () => void }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -133,7 +67,19 @@ export function LiveStream({ onClose }: { onClose: () => void }) {
             setFeedReady(true);
 
             if (videoStreamingSupported()) {
-                teardown.push(startVideoBroadcast(canvasRef.current, enc, () => liveIdRef.current, () => stopped));
+                const cast = startLiveBroadcast({
+                    source:    canvasRef.current,
+                    enc,
+                    streamId:  started.streamId,
+                    liveId:    () => liveIdRef.current,
+                    stopped:   () => stopped,
+                    sendChunk: (id, chunk, init, chunkMime) => { void apiLiveChunk(id, chunk, init, chunkMime); },
+                    onTransport: (next) => {
+                        const id = liveIdRef.current;
+                        if (id) void apiLiveTransport(id, next === 'relay');
+                    },
+                });
+                teardown.push(() => cast.stop());
             } else {
                 const frameTimer = setInterval(() => {
                     const id = liveIdRef.current;

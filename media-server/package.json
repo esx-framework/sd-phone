@@ -1,0 +1,17 @@
+{
+  "name": "sd-phone-media-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SDMR/1 binary media relay for sd-phone (MDT bodycam, Photogram Live, Vibez Live)",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "selftest": "node selftest.js"
+  },
+  "dependencies": {}
+}

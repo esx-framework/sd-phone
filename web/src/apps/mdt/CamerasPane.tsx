@@ -8,6 +8,7 @@ import { Scroller } from '@/ui/Scroller';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useSessionState } from '@/hooks/useSessionState';
 import { formatDuration } from '@/lib/time';
+import type { LiveHealth } from '@/shared/liveMedia';
 
 import { CameraFeed, feedNotice } from './CameraFeed';
 import { mdtCameras } from './mdtApi';
@@ -47,6 +48,7 @@ function CameraCard({ camera, previews, onOpen }: {
     previews: boolean;
     onOpen:   () => void;
 }) {
+    const [health, setHealth] = useState<LiveHealth>('starting');
     const active = previews && !camera.self && camera.status !== 'unsupported' && camera.status !== 'busy';
     const notice = feedNotice(camera, active, previews);
 
@@ -57,7 +59,7 @@ function CameraCard({ camera, previews, onOpen }: {
             className="group relative flex flex-col overflow-hidden rounded-[14px] bg-black text-left ring-1 ring-black/10 transition-transform duration-150 active:scale-[0.985] dark:ring-white/10"
         >
             <span className="relative block w-full" style={{ aspectRatio: '16 / 9' }}>
-                <CameraFeed camera={camera} quality="preview" active={active} notice={notice} />
+                <CameraFeed camera={camera} quality="preview" active={active} notice={notice} onHealth={setHealth} />
 
                 <span className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2">
                     <span className="rounded-[6px] bg-black/70 px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-white/85">
@@ -71,7 +73,7 @@ function CameraCard({ camera, previews, onOpen }: {
                     )}
                 </span>
 
-                {!notice && (
+                {!notice && health === 'live' && (
                     <span className="pointer-events-none absolute bottom-2 left-2">
                         <RecordingDot label={t('mdt.cameraRec', 'Rec')} />
                     </span>
@@ -97,6 +99,7 @@ function CameraCard({ camera, previews, onOpen }: {
 
 function CameraStage({ camera, onClose }: { camera: CameraTile; onClose: () => void }) {
     const [elapsed, setElapsed] = useState(0);
+    const [health, setHealth] = useState<LiveHealth>('starting');
 
     useEffect(() => {
         const timer = window.setInterval(() => setElapsed(s => s + 1), 1000);
@@ -109,7 +112,7 @@ function CameraStage({ camera, onClose }: { camera: CameraTile; onClose: () => v
     return (
         <div className="absolute inset-0 z-30 flex flex-col overflow-hidden bg-black animate-fade-in">
             <div className="relative min-h-0 flex-1">
-                <CameraFeed camera={camera} quality="full" active={active} notice={notice} />
+                <CameraFeed camera={camera} quality="full" active={active} notice={notice} showTransport onHealth={setHealth} />
 
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/60" />
 
@@ -130,7 +133,7 @@ function CameraStage({ camera, onClose }: { camera: CameraTile; onClose: () => v
                                 {camera.viewers}
                             </span>
                         )}
-                        {!notice && <RecordingDot label={t('mdt.cameraRec', 'Rec')} />}
+                        {!notice && health === 'live' && <RecordingDot label={t('mdt.cameraRec', 'Rec')} />}
                         <span className="rounded-full bg-black/70 px-2.5 py-[4px] text-[13px] font-medium tabular-nums text-white/85">
                             {formatDuration(elapsed)}
                         </span>

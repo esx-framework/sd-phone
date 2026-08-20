@@ -174,6 +174,7 @@ require 'client.apps.sim'
 require 'client.admin'
 require 'client.payphone'
 require 'client.celltowerblips'
+require 'client.media'
 
 ---@type table Phone visibility state: open/locked flags + cosmetic battery percentage.
 local phoneState = {

@@ -81,6 +81,7 @@ register('liveLeave',        function(src, payload) return live.leave(src, paylo
 register('liveEnd',          function(src, payload) return live.endLive(src, payload) end)
 register('liveComment',      function(src, payload) return live.comment(src, payload) end)
 register('liveHeart',        function(src, payload) return live.heart(src, payload) end)
+register('liveTransport',    function(src, payload) return live.transport(src, payload) end)
 
 ---Host JPEG frame push: drops non-table payloads and forwards to live.frame.
 ---@param payload table { liveId: string, frame: string }

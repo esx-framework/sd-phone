@@ -7,10 +7,18 @@ export interface CameraEncoder {
 }
 
 export interface CameraDemand {
-    on:       boolean;
-    gen?:     number;
-    quality?: string;
-    enc?:     CameraEncoder;
+    on:        boolean;
+    gen?:      number;
+    quality?:  string;
+    enc?:      CameraEncoder;
+    streamId?: string;
+}
+
+export type CameraTransport = 'relay' | 'event';
+
+export interface CameraTransportPush {
+    citizenid: string;
+    transport: CameraTransport;
 }
 
 export interface CameraChunkPush {
@@ -28,12 +36,14 @@ export interface CameraOffPush {
 
 type Handler<T> = (data: T) => void;
 
-const CHUNK_ACTION  = 'sd-phone:mdt:cameraChunk';
-const OFF_ACTION    = 'sd-phone:mdt:cameraOff';
-const DEMAND_ACTION = 'sd-phone:mdt:cameraDemand';
+const CHUNK_ACTION     = 'sd-phone:mdt:cameraChunk';
+const OFF_ACTION       = 'sd-phone:mdt:cameraOff';
+const DEMAND_ACTION    = 'sd-phone:mdt:cameraDemand';
+const TRANSPORT_ACTION = 'sd-phone:mdt:cameraTransport';
 
 const chunkSubs = new Map<string, Set<Handler<CameraChunkPush>>>();
 const offSubs = new Map<string, Set<Handler<CameraOffPush>>>();
+const transportSubs = new Map<string, Set<Handler<CameraTransportPush>>>();
 const demandSubs = new Set<Handler<CameraDemand | undefined>>();
 
 let listening = false;
@@ -53,6 +63,7 @@ function ensureListener(): void {
         if (!msg?.action) return;
         if (msg.action === CHUNK_ACTION) fan(chunkSubs, msg.data as CameraChunkPush | undefined);
         else if (msg.action === OFF_ACTION) fan(offSubs, msg.data as CameraOffPush | undefined);
+        else if (msg.action === TRANSPORT_ACTION) fan(transportSubs, msg.data as CameraTransportPush | undefined);
         else if (msg.action === DEMAND_ACTION) {
             for (const handler of Array.from(demandSubs)) handler(msg.data as CameraDemand | undefined);
         }
@@ -76,6 +87,10 @@ export function onCameraChunk(citizenid: string, handler: Handler<CameraChunkPus
 
 export function onCameraOff(citizenid: string, handler: Handler<CameraOffPush>): () => void {
     return subscribe(offSubs, citizenid, handler);
+}
+
+export function onCameraTransport(citizenid: string, handler: Handler<CameraTransportPush>): () => void {
+    return subscribe(transportSubs, citizenid, handler);
 }
 
 export function onCameraDemand(handler: Handler<CameraDemand | undefined>): () => void {

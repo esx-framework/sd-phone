@@ -37,18 +37,42 @@ local savedVehicleView = nil
 local viewThreadUp = false
 ---@type boolean Whether the demand re-announcement thread is already running.
 local announceThreadUp = false
+---@type boolean Whether the page last reported that it is publishing over the media relay rather
+---than through this client. Remembered so the two other places that report state cannot silently
+---retract it and leave the terminals told to watch a transport nobody is publishing on.
+local onRelay = false
+---@type boolean Whether the page last reported that it cannot capture at all, remembered for the
+---same reason.
+local unsupported = false
+
+---The demand as the page should see it. A demand is withheld while the officer's own camera surface
+---holds the renderer, rather than cancelled, so the broadcast resumes the moment it is handed back.
+---@return table payload { on, gen?, quality?, enc?, streamId? }
+local function demandPayload()
+    if not demand then return { on = false } end
+    return {
+        on       = demand.on == true and not yielded,
+        gen      = demand.gen,
+        quality  = demand.quality,
+        enc      = demand.enc,
+        streamId = demand.streamId,
+    }
+end
 
 ---Hands the current demand to the NUI. Idempotent on the page's side: a repeat carrying the same
 ---generation is ignored there, so re-announcing costs nothing but reliability.
 local function announce()
-    SendNUIMessage({
-        action = 'sd-phone:mdt:cameraDemand',
-        data   = demand and {
-            on      = demand.on == true and not yielded,
-            gen     = demand.gen,
-            quality = demand.quality,
-            enc     = demand.enc,
-        } or { on = false },
+    SendNUIMessage({ action = 'sd-phone:mdt:cameraDemand', data = demandPayload() })
+end
+
+---Tells the server how this client's camera stands: whether its own camera app has the view,
+---whether it can capture at all, and which transport its frames are leaving on. One place, so a
+---report about one of the three can never quietly overwrite the other two.
+local function reportState()
+    TriggerServerEvent('sd-phone:server:mdt:cameraState', {
+        busy        = yielded,
+        unsupported = unsupported,
+        relay       = onRelay and not yielded,
     })
 end
 
@@ -120,16 +144,18 @@ if ENABLED then
     ---@param payload table { on, gen, quality, enc, firstPerson }
     RegisterNetEvent('sd-phone:client:mdt:cameraDemand', function(payload)
         if type(payload) ~= 'table' or payload.on ~= true then
-            demand = nil
+            demand  = nil
+            onRelay = false
             announce()
             return
         end
 
         demand = {
-            on      = true,
-            gen     = payload.gen,
-            quality = payload.quality,
-            enc     = type(payload.enc) == 'table' and payload.enc or nil,
+            on       = true,
+            gen      = payload.gen,
+            quality  = payload.quality,
+            enc      = type(payload.enc) == 'table' and payload.enc or nil,
+            streamId = type(payload.streamId) == 'string' and payload.streamId or nil,
         }
         announce()
         ensureAnnounceThread()
@@ -138,27 +164,19 @@ if ENABLED then
         -- Re-state the yield with every demand. A session the server had forgotten comes back
         -- believing the camera is idle, and without this the tile would sit on "connecting" for
         -- as long as the officer's own camera surface holds the renderer.
-        if yielded then
-            TriggerServerEvent('sd-phone:server:mdt:cameraState', { busy = true, unsupported = false })
-        end
+        if yielded then reportState() end
     end)
 
     ---React -> Lua: the broadcaster page asking what the server currently wants, for the case
     ---where the demand landed before the page had loaded this app's chunk.
     RegisterNUICallback('sd-phone:mdt:cameraSync', function(_, cb)
-        cb({
-            success = true,
-            data    = demand and {
-                on      = demand.on == true and not yielded,
-                gen     = demand.gen,
-                quality = demand.quality,
-                enc     = demand.enc,
-            } or { on = false },
-        })
+        cb({ success = true, data = demandPayload() })
     end)
 
-    ---React -> Lua: one encoded segment on its way to the relay. Latent, so a segment is paced
-    ---onto the wire instead of blocking the net thread.
+    ---React -> Lua: one encoded segment on its way to the server relay. Latent, so a segment is
+    ---paced onto the wire instead of blocking the net thread. This is the fallback path: with a
+    ---media relay configured and reachable the page sends its frames straight down its own socket
+    ---and nothing arrives here at all.
     ---@param payload table { gen, chunk, init?, mime? }
     RegisterNUICallback('sd-phone:mdt:cameraChunk', function(payload, cb)
         local chunk = type(payload) == 'table' and payload.chunk or nil
@@ -174,13 +192,14 @@ if ENABLED then
     end)
 
     ---React -> Lua: the page reporting that it cannot capture at all, so the terminal shows a
-    ---reason on the tile rather than a feed that never arrives.
-    ---@param payload table { unsupported? }
+    ---reason on the tile rather than a feed that never arrives, and which transport it settled on
+    ---so the terminals watching are pointed at the one the frames are actually on.
+    ---@param payload table { unsupported?, relay? }
     RegisterNUICallback('sd-phone:mdt:cameraState', function(payload, cb)
-        TriggerServerEvent('sd-phone:server:mdt:cameraState', {
-            busy        = yielded,
-            unsupported = type(payload) == 'table' and payload.unsupported == true,
-        })
+        local data = type(payload) == 'table' and payload or {}
+        unsupported = data.unsupported == true
+        onRelay     = data.relay == true
+        reportState()
         cb({ success = true })
     end)
 
@@ -193,7 +212,7 @@ if ENABLED then
         if busy == yielded then return end
         yielded = busy
 
-        TriggerServerEvent('sd-phone:server:mdt:cameraState', { busy = yielded, unsupported = false })
+        reportState()
         announce()
         if wantsFirstPerson() then ensureViewThread() end
     end)

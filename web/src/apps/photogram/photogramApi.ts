@@ -3,6 +3,7 @@ import { relTimeCompact } from '@/lib/time';
 import { fetchNui, isFiveM } from '@/core/nui';
 import { apiCall, apiData as call } from '@/core/api';
 import type { MessageDraft } from '@/shared/chat/ChatView';
+import type { RelayGrant } from '@/shared/mediaSocket';
 import type { Reaction } from '@/shared/chat/data';
 import {
     ACTIVITY, COMMENTS, DMS, EXPLORE, MY_POSTS, POSTS, STORIES,
@@ -40,10 +41,26 @@ export interface Conversation { id: string; user: User; last: DMsg | null; unrea
 export interface StoryGroup { user: User; isMe: boolean; seen: boolean; frames: { id: string; url: string }[] }
 export interface LiveEntry { user: User; liveId: string; startedAt: number }
 export interface LiveComment { id: string; user: User; text: string }
-export interface LiveJoin { liveId: string; host: User; mode?: 'video' | 'image'; mime?: string; frame?: string; viewers: number; startedAt: number }
+export interface LiveJoin {
+    liveId:    string;
+    host:      User;
+    mode?:     'video' | 'image';
+    mime?:     string;
+    frame?:    string;
+    viewers:   number;
+    startedAt: number;
+    relay:     RelayGrant | null;
+}
 
 export interface LiveEncoderConfig { bitrate: number; fps: number; timesliceMs: number; keyframeMs: number }
 export const DEFAULT_ENC: LiveEncoderConfig = { bitrate: 900000, fps: 25, timesliceMs: 250, keyframeMs: 4000 };
+
+export interface LiveSession {
+    liveId:    string;
+    startedAt: number;
+    enc:       LiveEncoderConfig;
+    streamId:  string | null;
+}
 
 
 const NO_AVATAR =
@@ -248,17 +265,28 @@ export async function apiStories(): Promise<{ stories: StoryGroup[]; hasOwn: boo
 }
 
 
-export async function apiLiveStart(): Promise<{ liveId: string; startedAt: number; enc: LiveEncoderConfig } | null> {
-    if (!isFiveM) return { liveId: 'dev-live', startedAt: Date.now(), enc: DEFAULT_ENC };
-    const r = await call<{ liveId: string; startedAt: number; enc?: Partial<LiveEncoderConfig> }>('sd-phone:photogram:liveStart');
+export async function apiLiveStart(): Promise<LiveSession | null> {
+    if (!isFiveM) return { liveId: 'dev-live', startedAt: Date.now(), enc: DEFAULT_ENC, streamId: null };
+    const r = await call<{ liveId: string; startedAt: number; enc?: Partial<LiveEncoderConfig>; streamId?: string }>('sd-phone:photogram:liveStart');
     if (!r) return null;
-    return { liveId: r.liveId, startedAt: r.startedAt, enc: { ...DEFAULT_ENC, ...(r.enc ?? {}) } };
+    return {
+        liveId:    r.liveId,
+        startedAt: r.startedAt,
+        enc:       { ...DEFAULT_ENC, ...(r.enc ?? {}) },
+        streamId:  typeof r.streamId === 'string' && r.streamId.length > 0 ? r.streamId : null,
+    };
 }
 
-export async function apiLiveJoin(liveId: string): Promise<LiveJoin | null> {
-    if (!isFiveM) return { liveId, host: { id: 'lossantos', handle: 'lossantos', avatar: '', verified: true }, viewers: 1, startedAt: Date.now() };
-    const r = await call<LiveJoin>('sd-phone:photogram:liveJoin', { liveId });
-    return r ? { ...r, host: fixUser(r.host) } : null;
+export async function apiLiveJoin(liveId: string, relay = false): Promise<LiveJoin | null> {
+    if (!isFiveM) return { liveId, host: { id: 'lossantos', handle: 'lossantos', avatar: '', verified: true }, viewers: 1, startedAt: Date.now(), relay: null };
+    const r = await call<LiveJoin>('sd-phone:photogram:liveJoin', { liveId, relay });
+    if (!r) return null;
+    const grant = r.relay ?? null;
+    return {
+        ...r,
+        host:  fixUser(r.host),
+        relay: grant && typeof grant.token === 'string' && typeof grant.url === 'string' ? grant : null,
+    };
 }
 
 export async function apiLiveLeave(liveId: string): Promise<void> {
@@ -289,6 +317,11 @@ export async function apiLiveFrame(liveId: string, frame: string): Promise<void>
 export async function apiLiveChunk(liveId: string, chunk: string, init: boolean, mime?: string): Promise<void> {
     if (!isFiveM) return;
     await fetchNui('sd-phone:photogram:liveChunk', { liveId, chunk, init, mime });
+}
+
+export async function apiLiveTransport(liveId: string, relay: boolean): Promise<void> {
+    if (!isFiveM) return;
+    await fetchNui('sd-phone:photogram:liveTransport', { liveId, relay });
 }
 
 export async function apiAddStory(image: string): Promise<void> {

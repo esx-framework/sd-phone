@@ -412,7 +412,8 @@ export type NuiMessage =
     | { action: 'sd-phone:photogram:postRemoved'; data: { postId: string } }
     | { action: 'sd-phone:photogram:followChanged'; data: { target: string; status: 'none' | 'pending' | 'accepted' | 'self' } }
     | { action: 'sd-phone:photogram:liveFrame';   data: { liveId: string; frame: string } }
-    | { action: 'sd-phone:photogram:liveChunk';   data: { liveId: string; chunk: string; init?: boolean; mime?: string } }
+    | { action: 'sd-phone:photogram:liveChunk';   data: { liveId: string; chunk: string; init?: boolean; mime?: string; gen?: number } }
+    | { action: 'sd-phone:photogram:liveTransport'; data: { liveId: string; transport: 'relay' | 'event' } }
     | { action: 'sd-phone:photogram:liveComment'; data: { liveId: string; comment: { id: string; user: PhotogramUser; text: string } } }
     | { action: 'sd-phone:photogram:liveHeart';   data: { liveId: string } }
     | { action: 'sd-phone:photogram:liveViewers'; data: { liveId: string; viewers: number } }
@@ -424,7 +425,8 @@ export type NuiMessage =
     | { action: 'sd-phone:vibez:postRemoved';   data: { postId: string } }
     | { action: 'sd-phone:vibez:followChanged'; data: { target: string; following: boolean } }
     | { action: 'sd-phone:vibez:liveFrame';     data: { liveId: string; frame: string } }
-    | { action: 'sd-phone:vibez:liveChunk';     data: { liveId: string; chunk: string; init?: boolean; mime?: string } }
+    | { action: 'sd-phone:vibez:liveChunk';     data: { liveId: string; chunk: string; init?: boolean; mime?: string; gen?: number } }
+    | { action: 'sd-phone:vibez:liveTransport'; data: { liveId: string; transport: 'relay' | 'event' } }
     | { action: 'sd-phone:vibez:liveComment';   data: { liveId: string; comment: { id: string; user: VibezUser; text: string } } }
     | { action: 'sd-phone:vibez:liveHeart';     data: { liveId: string } }
     | { action: 'sd-phone:vibez:liveViewers';   data: { liveId: string; viewers: number } }
@@ -440,6 +442,7 @@ export type NuiMessage =
     | { action: 'sd-phone:mdt:chat';     data: { message: ChatMsg } }
     | { action: 'sd-phone:mdt:bulletin'; data: { bulletins: Bulletin[] } }
     | { action: 'sd-phone:mdt:warrant';  data: { citizenid: string; wanted: boolean } }
+    | { action: 'sd-phone:mdt:cameraTransport'; data: { citizenid: string; transport: 'relay' | 'event' } }
     | { action: 'sd-phone:racing:racesChanged' }
     | { action: 'sd-phone:racing:standings';  data: { raceId: string; entries: Standing[] } }
     | { action: 'sd-phone:racing:raceResult'; data: RaceResult }

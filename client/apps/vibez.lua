@@ -9,6 +9,7 @@ local ACTIONS = {
     'savedPosts', 'updateProfile', 'toggleFollow', 'followList', 'search',
     'activity', 'counts', 'dismissNotification', 'deleteAccount', 'watch',
     'lives', 'liveStart', 'liveJoin', 'liveLeave', 'liveEnd', 'liveComment', 'liveHeart',
+    'liveTransport',
 }
 
 -- Thin delegates: each action proxies straight into its server callback.
@@ -49,7 +50,8 @@ end)
 ---'sd-phone:vibez:<name>' NUI action.
 local EVENTS = {
     'notification', 'feedChanged', 'postChanged', 'postRemoved', 'followChanged',
-    'liveFrame', 'liveChunk', 'liveComment', 'liveHeart', 'liveViewers', 'liveEnded', 'liveChanged',
+    'liveFrame', 'liveChunk', 'liveTransport', 'liveComment', 'liveHeart', 'liveViewers',
+    'liveEnded', 'liveChanged',
 }
 
 -- Thin relays: each push forwards unchanged.

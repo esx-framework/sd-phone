@@ -2,13 +2,33 @@ import { useEffect, useRef, useState } from 'react';
 import { VideoOff } from 'lucide-react';
 
 import { t } from '@/i18n';
-import { LiveVideoPlayer, base64ToBytes, liveVideoPlaybackSupported } from '@/shared/liveMedia';
+import { useDeckActive } from '@/shell/deckActive';
+import { LiveVideoPlayer, base64ToBytes, liveVideoPlaybackSupported, type LiveHealth } from '@/shared/liveMedia';
+import {
+    FRAME_DELTA,
+    FRAME_INIT,
+    FRAME_KEY,
+    relayAvailable,
+    relayJoin,
+    type RelayGrant,
+    type RelayStreamHandle,
+} from '@/shared/mediaSocket';
 import { mdtCameraUnwatch, mdtCameraWatch } from './mdtApi';
-import { onCameraChunk, onCameraOff, type CameraChunkPush } from './cameraBus';
+import {
+    onCameraChunk,
+    onCameraOff,
+    onCameraTransport,
+    type CameraChunkPush,
+    type CameraTransport,
+} from './cameraBus';
 import type { CameraQuality, CameraTile } from './data';
 
 const KEEPALIVE_MS = 5000;
-const MAX_REPRIMES = 6;
+const ATTACH_GAP_MS = 2500;
+const SWITCH_IDLE_MS = 1500;
+const SILENT_MS = 15000;
+const TIMESLICE_MS = 400;
+const DEFAULT_MIME = 'video/webm';
 
 export function feedNotice(camera: CameraTile, active: boolean, previews: boolean): string | null {
     if (camera.self) return t('mdt.cameraSelf', 'Your own camera');
@@ -22,24 +42,35 @@ export function feedNotice(camera: CameraTile, active: boolean, previews: boolea
     return null;
 }
 
-export function CameraFeed({ camera, quality, active, notice }: {
-    camera:  CameraTile;
-    quality: CameraQuality;
-    active:  boolean;
-    notice:  string | null;
+export function CameraFeed({ camera, quality, active, notice, showTransport, onHealth }: {
+    camera:         CameraTile;
+    quality:        CameraQuality;
+    active:         boolean;
+    notice:         string | null;
+    showTransport?: boolean;
+    onHealth?:      (health: LiveHealth) => void;
 }) {
     const videoRef  = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<LiveVideoPlayer | null>(null);
-    const genRef    = useRef<number | null>(null);
-    const mimeRef   = useRef<string>('');
 
-    const [playing, setPlaying] = useState(false);
+    const [health, setHealth] = useState<LiveHealth>('starting');
+    const [transport, setTransport] = useState<CameraTransport>('event');
     const [failure, setFailure] = useState<string | null>(null);
-    const playingRef = useRef(false);
-    playingRef.current = playing;
-    const failureRef = useRef<string | null>(null);
-    failureRef.current = failure;
-    const reprimes = useRef(0);
+    const [silent, setSilent] = useState(false);
+
+    const deckActive = useDeckActive();
+    const deckRef = useRef(deckActive);
+    deckRef.current = deckActive;
+
+    const healthRef = useRef(onHealth);
+    healthRef.current = onHealth;
+
+    const showingRef = useRef(false);
+    showingRef.current = health === 'live' || health === 'recovering';
+
+    useEffect(() => {
+        playerRef.current?.setActive(deckActive);
+    }, [deckActive]);
 
     useEffect(() => () => {
         playerRef.current?.destroy();
@@ -50,66 +81,158 @@ export function CameraFeed({ camera, quality, active, notice }: {
         if (!active || notice) return;
 
         let alive = true;
-        reprimes.current = 0;
-        setFailure(null);
+        let mime = '';
+        let handle: RelayStreamHandle | null = null;
+        let joining = false;
+        let relayMime = '';
+        let committed: CameraTransport | null = null;
+        let offered = true;
+        let attachedAt = 0;
+        let framedAt = Date.now();
+        const seen: Record<CameraTransport, number> = { relay: 0, event: 0 };
 
-        const drop = () => {
-            playerRef.current?.destroy();
-            playerRef.current = null;
-            genRef.current = null;
-            setPlaying(false);
+        setHealth('starting');
+        setTransport('event');
+        setFailure(null);
+        setSilent(false);
+        healthRef.current?.('starting');
+
+        const publish = (next: LiveHealth) => {
+            if (!alive) return;
+            setHealth(next);
+            healthRef.current?.(next);
         };
 
-        const ingest = (push: CameraChunkPush) => {
-            if (!alive || !push.chunk) return;
+        const destroy = () => {
+            playerRef.current?.destroy();
+            playerRef.current = null;
+        };
+
+        const dropRelay = () => {
+            const open = handle;
+            handle = null;
+            if (!open) return;
+            try { open.close(); } catch { /* socket already gone */ }
+        };
+
+        const relayWanted = (): boolean => offered && !handle && relayAvailable();
+
+        const needInit = (): void => {
+            if (!alive) return;
+            if (committed === 'relay' && handle) {
+                handle.requestKeyframe();
+                return;
+            }
+            void attach(true, relayWanted());
+        };
+
+        const feed = (from: CameraTransport, bytes: Uint8Array, init: boolean, hint: string, gen: number) => {
+            if (!alive || bytes.byteLength === 0) return;
             const video = videoRef.current;
             if (!video) return;
 
-            const gen = push.gen ?? 0;
-            if (genRef.current !== null && genRef.current !== gen) drop();
-            genRef.current = gen;
+            const now = Date.now();
+            framedAt = now;
+            setSilent(false);
+            if (committed !== from) {
+                if (!init) return;
+                if (committed !== null && now - seen[committed] < SWITCH_IDLE_MS) return;
+                destroy();
+                committed = from;
+                setTransport(from);
+            }
+            seen[from] = now;
 
-            if (push.init) {
-                const mime = push.mime || mimeRef.current || 'video/webm';
-                if (!liveVideoPlaybackSupported(mime)) {
+            if (init) {
+                const want = hint || mime || DEFAULT_MIME;
+                if (!liveVideoPlaybackSupported(want)) {
                     setFailure(t('mdt.cameraNoDecoder', 'This terminal cannot play that stream'));
                     return;
                 }
-                mimeRef.current = mime;
-                if (playerRef.current) drop();
-                const player = new LiveVideoPlayer(video, mime);
-                player.start();
-                playerRef.current = player;
-                player.append(base64ToBytes(push.chunk));
-                return;
+                if (want !== mime) {
+                    mime = want;
+                    destroy();
+                }
             }
-            playerRef.current?.append(base64ToBytes(push.chunk));
+
+            if (!playerRef.current) {
+                if (!init) return;
+                const player = new LiveVideoPlayer(video, mime || DEFAULT_MIME, {
+                    timesliceMs: TIMESLICE_MS,
+                    onHealth: next => publish(next),
+                    onNeedInit: () => needInit(),
+                });
+                playerRef.current = player;
+                player.start();
+                player.setActive(deckRef.current);
+            }
+            playerRef.current.append(bytes, init, gen);
         };
 
-        const offChunk = onCameraChunk(camera.citizenid, ingest);
+        const join = async (grant: RelayGrant) => {
+            if (!alive || handle || joining) return;
+            joining = true;
+            const opened = await relayJoin({
+                token: grant.token,
+                key:   grant.streamId,
+                onFrame: frame => {
+                    if (frame.kind !== FRAME_INIT && frame.kind !== FRAME_KEY && frame.kind !== FRAME_DELTA) return;
+                    feed('relay', frame.payload, frame.kind === FRAME_INIT, relayMime, frame.gen);
+                },
+                onDesc: desc => { if (desc.mime) relayMime = desc.mime; },
+                onState: state => {
+                    if (state === 'ended' || state === 'offline' || state === 'expired') dropRelay();
+                },
+                onError: () => dropRelay(),
+            });
+            joining = false;
+            if (!alive || !opened) {
+                opened?.close();
+                return;
+            }
+            handle = opened;
+        };
+
+        const attach = async (reprime: boolean, wantRelay: boolean) => {
+            const now = Date.now();
+            if (now - attachedAt < ATTACH_GAP_MS) return;
+            attachedAt = now;
+
+            const res = await mdtCameraWatch(camera.id, quality, reprime, wantRelay, offered && !handle && !relayAvailable());
+            if (!alive) return;
+            if (typeof res === 'string') {
+                if (!showingRef.current) setFailure(res || t('mdt.cameraNoFeed', 'No feed from that unit'));
+                return;
+            }
+            setFailure(null);
+            if (res.mime && !mime) mime = res.mime;
+            if (res.relay) void join(res.relay);
+        };
+
+        const offChunk = onCameraChunk(camera.citizenid, (push: CameraChunkPush) => {
+            if (!push.chunk) return;
+            feed('event', base64ToBytes(push.chunk), push.init === true, push.mime ?? '', push.gen ?? 0);
+        });
+
         const offEnded = onCameraOff(camera.citizenid, () => {
             if (!alive) return;
-            drop();
+            dropRelay();
+            playerRef.current?.markOffAir('offair');
+            publish('offair');
             setFailure(t('mdt.cameraOffAir', 'That unit is no longer on the air'));
         });
 
-        const attach = (reprime: boolean) => {
-            void mdtCameraWatch(camera.id, quality, reprime).then(res => {
-                if (!alive) return;
-                if (typeof res === 'string') {
-                    setFailure(res || t('mdt.cameraNoFeed', 'No feed from that unit'));
-                    return;
-                }
-                setFailure(null);
-                if (res.mime) mimeRef.current = res.mime;
-            });
-        };
+        const offTransport = onCameraTransport(camera.citizenid, push => {
+            if (!alive) return;
+            offered = push.transport === 'relay';
+            if (offered) void attach(false, relayWanted());
+            else dropRelay();
+        });
 
-        attach(false);
+        void attach(false, relayWanted());
         const keepAlive = window.setInterval(() => {
-            const stalled = !playingRef.current && failureRef.current === null && reprimes.current < MAX_REPRIMES;
-            if (stalled) reprimes.current += 1;
-            attach(stalled);
+            setSilent(Date.now() - framedAt > SILENT_MS);
+            void attach(false, relayWanted());
         }, KEEPALIVE_MS);
 
         return () => {
@@ -117,12 +240,17 @@ export function CameraFeed({ camera, quality, active, notice }: {
             window.clearInterval(keepAlive);
             offChunk();
             offEnded();
-            drop();
+            offTransport();
+            dropRelay();
+            destroy();
             void mdtCameraUnwatch(camera.id);
         };
     }, [camera.id, camera.citizenid, quality, active, notice]);
 
-    const message = notice ?? failure;
+    const showVideo = notice === null && failure === null && (health === 'live' || health === 'recovering');
+    const quiet = silent && !showVideo ? t('mdt.cameraNoPicture', 'No picture from that unit') : null;
+    const message = notice ?? failure ?? quiet;
+    const stalled = message === null && health === 'failed';
 
     return (
         <div className="absolute inset-0 overflow-hidden bg-black">
@@ -131,18 +259,33 @@ export function CameraFeed({ camera, quality, active, notice }: {
                 muted
                 playsInline
                 autoPlay
-                onPlaying={() => { reprimes.current = 0; setPlaying(true); }}
                 onCanPlay={() => { void videoRef.current?.play?.().catch(() => {}); }}
                 className="absolute inset-0 h-full w-full object-cover"
-                style={{ display: playing && !message ? 'block' : 'none' }}
+                style={{ display: showVideo ? 'block' : 'none' }}
             />
 
-            {(!playing || message) && (
+            {showVideo && health === 'recovering' && (
+                <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/70 px-2 py-[2px] text-[10.5px] font-semibold text-white/80">
+                    {t('mdt.cameraRecovering', 'Reconnecting')}
+                </span>
+            )}
+
+            {showVideo && showTransport && (
+                <span className="pointer-events-none absolute bottom-2 right-2 rounded-[6px] bg-black/70 px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-white/70">
+                    {transport === 'relay'
+                        ? t('mdt.transportRelay', 'Relay')
+                        : t('mdt.transportEvent', 'Server')}
+                </span>
+            )}
+
+            {!showVideo && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3 text-center">
-                    {message ? (
+                    {message || stalled ? (
                         <>
                             <VideoOff className="h-6 w-6 text-white/35" strokeWidth={1.8} />
-                            <span className="text-[12.5px] font-medium leading-snug text-white/55">{message}</span>
+                            <span className="text-[12.5px] font-medium leading-snug text-white/55">
+                                {message ?? t('mdt.cameraStalled', 'No usable picture from that unit')}
+                            </span>
                         </>
                     ) : (
                         <>

@@ -1,3 +1,5 @@
+import type { RelayGrant } from '@/shared/mediaSocket';
+
 export interface EvidenceItem {
     url:   string;
     label: string;
@@ -376,6 +378,7 @@ export interface CameraStream {
     mime:     string | null;
     status:   CameraStatus;
     viewers:  number;
+    relay:    RelayGrant | null;
 }
 
 export interface Charge {

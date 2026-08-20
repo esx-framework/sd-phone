@@ -92,3 +92,31 @@ registerExport('sdCryptoEncrypt', encrypt);
 registerExport('sdCryptoDecrypt', decrypt);
 registerExport('sdCryptoSha256', (s) => crypto.createHash('sha256').update(String(s), 'utf8').digest('hex'));
 registerExport('sdCryptoRandomHex', (n) => crypto.randomBytes(Math.min(64, Math.max(1, Number(n) || 32))).toString('hex'));
+
+// The relay token helpers. `server/media/tokens.lua` signs every grant through these, and
+// `media-server/src/token.js` verifies what comes out, so the two implementations have to agree
+// byte for byte: HMAC-SHA256 over the ASCII string `sdmr1.<base64url(claims)>`, with the raw
+// signature bytes (not their hex) base64url'd as the third part.
+const RELAY_KEY_RE = /^[0-9a-f]{64}$/;
+
+function relayKey(keyHex) {
+    return typeof keyHex === 'string' && RELAY_KEY_RE.test(keyHex) ? Buffer.from(keyHex, 'hex') : null;
+}
+
+function b64url(buf) {
+    return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+registerExport('sdCryptoHmacHex', (keyHex, msg) => {
+    const key = relayKey(keyHex);
+    if (!key || typeof msg !== 'string') return null;
+    return crypto.createHmac('sha256', key).update(msg, 'utf8').digest('hex');
+});
+
+registerExport('sdCryptoRelayToken', (keyHex, payloadJson) => {
+    const key = relayKey(keyHex);
+    if (!key || typeof payloadJson !== 'string' || payloadJson === '') return null;
+    const part = b64url(Buffer.from(payloadJson, 'utf8'));
+    const mac = crypto.createHmac('sha256', key).update(`sdmr1.${part}`, 'utf8').digest();
+    return `sdmr1.${part}.${b64url(mac)}`;
+});

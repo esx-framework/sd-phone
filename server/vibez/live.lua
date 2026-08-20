@@ -9,12 +9,19 @@ local store     = require 'server.vibez.store'
 local config    = require 'configs.config'
 ---@type table Watcher registry (server.watchers): shared with server.vibez.actions and init.
 local watchers  = require('server.watchers').of('vibez')
+---@type table Media relay (server.media.init): the token mint and the relay's control channel. It
+---decides nothing; every token this file asks for is signed only after the checks below have run.
+local media     = require 'server.media.init'
 
 ---@type table Live module; the table returned at end of file.
 local live = {}
 
 ---@type table Live-video knobs (configs Vibez.Live when present; photogram's defaults otherwise).
 local CFG = (config.Vibez and config.Vibez.Live) or {}
+---@type string The relay feature id this file owns, and the first two thirds of every stream key
+---it mints a token for.
+local FEATURE = 'vibez:live'
+
 ---@type integer Concurrent viewers allowed on one stream (0 = unlimited).
 local MAX_VIEWERS = tonumber(CFG.MaxViewers) or 50
 ---@type integer Per-viewer latent-event send ceiling (bytes/s).
@@ -203,6 +210,25 @@ local function pushViewers(session)
     relay(session, 'liveViewers', { liveId = session.id, viewers = viewerCount(session) })
 end
 
+---The relay stream one broadcast publishes on, or nil when there is no relay to publish to. The
+---epoch is always zero: a broadcast's picture never changes shape mid-stream, so there is nothing
+---for a viewer to be told it cannot decode across.
+---@param liveId string broadcast id
+---@return string|nil streamId
+local function streamFor(liveId)
+    if not media.featureEnabled(FEATURE) then return nil end
+    return media.streamId('vibez', 'live', liveId)
+end
+
+---Forgets a broadcast's cached opening bytes. Called whenever the stream that cache belongs to
+---stops being the stream a joining viewer would be primed with.
+---@param session table live session
+local function resetCache(session)
+    session.header    = nil
+    session.genChunks = nil
+    session.genBytes  = 0
+end
+
 ---Starts (or resumes) a broadcast for the caller's account. Idempotent: a re-entrant start
 ---returns the existing session. Broadcasts an empty liveChanged to every watching phone.
 ---@param src integer hosting player server id
@@ -213,7 +239,12 @@ function live.start(src)
 
     local existing = hostLive[src]
     if existing and lives[existing] then
-        return ok({ liveId = existing, startedAt = lives[existing].startedAt * 1000, enc = ENC })
+        return ok({
+            liveId    = existing,
+            startedAt = lives[existing].startedAt * 1000,
+            enc       = ENC,
+            streamId  = streamFor(existing),
+        })
     end
 
     -- Only a genuinely new session is gated; the re-entrant path above already short-circuits.
@@ -234,6 +265,7 @@ function live.start(src)
         header    = nil,    -- init chunk that carries the codec config (video mode)
         genChunks = nil,    -- chunks since the last keyframe anchor (video mode)
         genBytes  = 0,      -- total bytes cached in genChunks
+        onRelay   = false,  -- the host's browser is publishing over the media relay instead
         viewers   = {},     -- [src] = username
         ingestAt  = 0,      -- start of the current host ingest window
         ingestPushes = 0,   -- pushes accepted in it
@@ -245,7 +277,11 @@ function live.start(src)
     hostLive[src] = id
 
     markChanged()
-    return ok({ liveId = id, startedAt = lives[id].startedAt * 1000, enc = ENC })
+    -- Named rather than signed here: the host's page asks for its own publish token once it has an
+    -- encoder to attach, so a name that was handed out before the browser was ready never carries a
+    -- token that has already lapsed. A server with no relay sends no name, and that page never
+    -- constructs a socket at all.
+    return ok({ liveId = id, startedAt = lives[id].startedAt * 1000, enc = ENC, streamId = streamFor(id) })
 end
 
 ---Host JPEG push (latent net event). Only the session's recorded hostSrc may feed it; the frame
@@ -359,6 +395,17 @@ function live.join(src, payload)
         end
     end
 
+    -- The relay grant rides on the answer to the join the viewer was making anyway, so a token is
+    -- only ever signed on the far side of the whole gate above: the account check, the host's
+    -- privacy check and the viewer ceiling. It is asked for rather than always sent, because a
+    -- viewer re-joins to re-prime a stalled picture and only needs a fresh token when it has no
+    -- live socket to feed.
+    local grant
+    if payload.relay == true then
+        local streamId = streamFor(session.id)
+        if streamId then grant = media.mint(src, { key = streamId, role = 'watch', gen = 0 }) end
+    end
+
     return ok({
         liveId    = session.id,
         host      = session.card,
@@ -367,7 +414,31 @@ function live.join(src, payload)
         frame     = session.frame,
         viewers   = viewerCount(session),
         startedAt = session.startedAt * 1000,
+        relay     = grant,
     })
+end
+
+---Host transport push: the broadcaster's browser reporting which way its frames are leaving. The
+---viewers follow the host rather than choosing for themselves, because a host only ever encodes to
+---one place; they keep listening on the event path whichever way this points, so a downgrade costs
+---a rebuilt picture and nothing else.
+---@param src integer sender server id (must be the session host)
+---@param payload table { liveId, relay } attacker-controlled
+---@return table result success envelope
+function live.transport(src, payload)
+    payload = tbl(payload)
+    local session = lives[payload.liveId]
+    if not session or session.hostSrc ~= src then return ok() end
+
+    local onRelay = payload.relay == true
+    if onRelay == session.onRelay then return ok() end
+
+    session.onRelay = onRelay
+    -- The two transports never carry the same broadcast at once, so whatever the one being left
+    -- behind had cached would be spliced onto a stream it does not belong to.
+    resetCache(session)
+    relay(session, 'liveTransport', { liveId = session.id, transport = onRelay and 'relay' or 'event' })
+    return ok()
 end
 
 ---Leaves a live, scoped to the caller's own membership. Falls back to the caller's tracked live
@@ -441,6 +512,15 @@ function live.endLive(src, payload)
         viewerLive[viewerSrc] = nil
         TriggerClientEvent('sd-phone:client:vibez:liveEnded', viewerSrc, { liveId = session.id })
     end
+
+    -- Nothing waits on this: the relay is a separate process that may be down, and a broadcast
+    -- ending cannot be allowed to depend on it. Short token lifetimes stop the next attach either
+    -- way; this is only what stops the current one.
+    if session.onRelay then
+        local streamId = streamFor(session.id)
+        if streamId then media.revoke(streamId, 'ended') end
+    end
+
     lives[id] = nil
     hostLive[src] = nil
 
@@ -461,6 +541,33 @@ function live.activeForViewer(username)
     table.sort(out, function(a, b) return a.startedAt > b.startedAt end)
     return out
 end
+
+---Whether one player may take one role on one broadcast, answered for the relay's token mint.
+---
+---This is the same gate the calls above run, asked a second time and from the other direction: the
+---mint is a public route, so it re-derives the answer here rather than trusting that a join came
+---first. A host has to be the session's own host; a viewer has to already be attached, which is
+---what carried the account check. Nil refuses, and the phone falls back to the event relay it
+---never stopped listening on.
+---@param src integer requesting player's server id
+---@param req { streamId: string, role: string }
+---@return table|nil grant { key, role, gen }
+---@return string|nil message refusal shown to the caller
+local function entitle(src, req)
+    local liveId = type(req.streamId) == 'string' and req.streamId:match('^vibez:live:(.+)$') or nil
+    local session = liveId and lives[liveId]
+    if not session then return nil, 'This live has ended' end
+
+    if req.role == 'publish' then
+        if session.hostSrc ~= src then return nil, 'You are not the host' end
+        return { key = req.streamId, role = 'publish', gen = 0 }
+    end
+
+    if not session.viewers[src] then return nil, 'You are not watching this live' end
+    return { key = req.streamId, role = 'watch', gen = 0 }
+end
+
+media.registerFeature(FEATURE, { entitle = entitle })
 
 ---Tears down a departing player's live state: a hosted live ends for everyone, a watched live
 ---loses them as a viewer.
