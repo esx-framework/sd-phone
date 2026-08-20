@@ -9,6 +9,7 @@ import { NavContext } from '@/hooks/useIosPush';
 import type { DepartmentType, MdtSection } from './data';
 import { AffairsPane } from './AffairsPane';
 import { CamerasPane } from './CamerasPane';
+import { CctvPane } from './CctvPane';
 import { CasesPane } from './CasesPane';
 import { ChatPane } from './ChatPane';
 import { CourtPane } from './CourtPane';
@@ -44,6 +45,7 @@ function pane(section: MdtSection) {
         case 'vehicles':  return <VehiclesPane />;
         case 'weapons':   return <WeaponsPane />;
         case 'cameras':   return <CamerasPane />;
+        case 'cctv':      return <CctvPane />;
         case 'reports':   return <ReportsPane />;
         case 'cases':     return <CasesPane />;
         case 'warrants':  return <WarrantsPane />;

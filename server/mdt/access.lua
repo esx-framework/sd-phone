@@ -35,6 +35,7 @@ local SHIPPED_PERMISSIONS = {
     ['weapons.view'] = 0,
     ['weapons.edit'] = 1,
     ['cameras.view'] = 1,
+    ['cctv.view']    = 1,
 }
 
 ---@type table<string, number> Permission key -> minimum grade. An absent key is denied. Built as a
@@ -67,6 +68,7 @@ local KEY_DOMAIN = {
     ['weapons.view']        = { leo = true },
     ['weapons.edit']        = { leo = true },
     ['cameras.view']        = { leo = true },
+    ['cctv.view']           = { leo = true },
     ['warrants.issue']      = { leo = true },
     ['warrants.close']      = { leo = true },
     ['jail.view']           = { leo = true },

@@ -1,5 +1,5 @@
 import {
-    BookText, Car, ClipboardList, Crosshair, Eraser, FileText, FolderOpen, Gavel, HeartPulse, IdCard,
+    BookText, Car, Cctv, ClipboardList, Crosshair, Eraser, FileText, FolderOpen, Gavel, HeartPulse, IdCard,
     Landmark, LayoutDashboard, Lock, MessageSquare, RadioTower, Scale, ScrollText, ShieldQuestion,
     Smartphone, Users, Video, type LucideIcon,
 } from 'lucide-react';
@@ -21,6 +21,7 @@ export function navItems(): Record<MdtSection, MdtNavItem> {
         vehicles:  { id: 'vehicles',  label: t('mdt.navVehicles', 'Vehicles'),   icon: Car },
         weapons:   { id: 'weapons',   label: t('mdt.navWeapons', 'Weapons'),     icon: Crosshair },
         cameras:   { id: 'cameras',   label: t('mdt.navCameras', 'Cameras'),     icon: Video },
+        cctv:      { id: 'cctv',      label: t('mdt.navCctv', 'CCTV'),           icon: Cctv },
         reports:   { id: 'reports',   label: t('mdt.navReports', 'Reports'),     icon: FileText },
         cases:     { id: 'cases',     label: t('mdt.navCases', 'Cases'),         icon: FolderOpen },
         warrants:  { id: 'warrants',  label: t('mdt.navWarrants', 'Warrants'),   icon: Gavel },

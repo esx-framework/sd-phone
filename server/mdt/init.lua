@@ -16,6 +16,8 @@ local weapons   = require 'server.mdt.weapons'
 ---@type table Bodycams and dashcams (server.mdt.cameras): the demand-gated live relay behind the
 ---Cameras section.
 local cameras   = require 'server.mdt.cameras'
+---@type table Fixed CCTV cameras (server.mdt.cctv): the police-only gate on looking through one.
+local cctv      = require 'server.mdt.cctv'
 ---@type table Reports and cases (server.mdt.paperwork).
 local paperwork = require 'server.mdt.paperwork'
 ---@type table Warrants (server.mdt.warrants).
@@ -108,6 +110,7 @@ local ROUTES = {
     { 'cameras:list',        cameras,   'list' },
     { 'cameras:watch',       cameras,   'watch' },
     { 'cameras:unwatch',     cameras,   'unwatch' },
+    { 'cctv:watch',          cctv,      'watch' },
 
     { 'reports:list',        paperwork, 'reportsList' },
     { 'reports:get',         paperwork, 'reportsGet' },

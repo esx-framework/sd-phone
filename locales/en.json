@@ -2846,7 +2846,17 @@
     "weaponSniper": "Sniper rifle",
     "weaponStatusLabel": "Registry status",
     "weaponStolen": "Stolen",
-    "weapons": "Weapons"
+    "weapons": "Weapons",
+    "cctvViewing": "Viewing",
+    "cctvOther": "Other",
+    "noCctv": "No cameras on file",
+    "noCctvSub": "Fixed cameras are listed in configs/cctv.lua. Each one puts your own view at that location while you watch it.",
+    "cctvTitle": "Fixed cameras",
+    "cctvCount": "{count} cameras",
+    "cctvHint": "Watching a camera moves your own view to it and puts it back when you leave. Nobody else is affected.",
+    "cctvLive": "Your view is on this camera",
+    "cctvExit": "Exit",
+    "navCctv": "CCTV"
   },
   "messages": {
     "accepted": "Accepted",

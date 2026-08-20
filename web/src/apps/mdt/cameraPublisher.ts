@@ -23,6 +23,7 @@ let targetGen: number | null = null;
 let startToken = 0;
 let teardown: (() => void) | null = null;
 let sampler: ReturnType<typeof setInterval> | null = null;
+let encodedBytes = 0;
 let render: GameRender | null = null;
 let surface: HTMLCanvasElement | null = null;
 let reported = '';
@@ -128,6 +129,7 @@ function encode(
             const init = seq === 0;
             const key = seq === 1;
             seq += 1;
+            encodedBytes += blob.size;
             chain = chain
                 .then(() => (stopped || sink !== at ? undefined : at(blob, init, key)))
                 .catch(() => {});
@@ -214,7 +216,9 @@ async function startPublishing(demand: CameraDemand, token: number): Promise<voi
     let lastFrames = feed.framesRendered();
     sampler = setInterval(() => {
         const now = feed.framesRendered();
-        mediaDebug('render', 'fps', { want: enc.fps, got: now - lastFrames, w: enc.width });
+        const kbps = Math.round((encodedBytes * 8) / 1000);
+        encodedBytes = 0;
+        mediaDebug('render', 'fps', { want: enc.fps, got: now - lastFrames, w: enc.width, wantKbps: Math.round(enc.bitrate / 1000), gotKbps: kbps });
         lastFrames = now;
     }, 1000);
 

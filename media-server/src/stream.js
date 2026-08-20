@@ -315,8 +315,10 @@ export class Stream {
             viewer.pendingDiscontinuity = false;
             viewer.session.sendJson(this.stateMessage(viewer.sid, 'reset', reason));
         }
+        // No keyframe request here: a generation change IS the publisher re-anchoring, so its new
+        // init and keyframe are already on their way. Asking again would anchor it a second time
+        // and make every viewer rebuild twice for one quality change.
         this.lastKeyframeReqAt = 0;
-        this.requestKeyframe('stale_prime');
         this.log.info('stream', 'generation reset', { key: this.key, gen, reason });
     }
 
@@ -394,6 +396,7 @@ export class Stream {
         if (!this.publisher) {
             viewer.session.sendJson(this.stateMessage(viewer.sid, 'idle', 'publisher_gone'));
         } else if (!prime || this.primeStale) {
+            this.requestKeyframe('viewer_join');
             viewer.session.sendJson(this.stateMessage(viewer.sid, 'priming', 'stale_prime'));
         } else {
             viewer.session.sendJson(this.stateMessage(viewer.sid, 'live', 'publisher_attached'));
@@ -512,9 +515,7 @@ export class Stream {
             this.primeFrames = 0;
             this.primeBytes = 0;
             this.primeStale = true;
-            this.lastKeyframeReqAt = 0;
-            this.requestKeyframe('stale_prime');
-            this.log.debug('stream', 'prime cache discarded, publisher is not re-anchoring', { key: this.key });
+            this.log.debug('stream', 'prime cache over budget, dropped; init segment retained', { key: this.key });
         }
     }
 

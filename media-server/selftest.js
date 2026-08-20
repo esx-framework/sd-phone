@@ -719,11 +719,11 @@ await check('a client that never says hello is closed 4408', async () => {
     assert.equal(await client.waitClosed(), 4400);
 });
 
-await check('unpublish takes the viewers off air', async () => {
+await check('unpublish idles the viewers rather than ending them', async () => {
     publisher.json({ t: 'unpublish', sid: publisherSid });
-    const ended = await viewer.waitText((m) => m.t === 'stream' && m.state === 'ended', 'ended state');
-    assert.equal(ended.reason, 'unpublished');
-    assert.equal(ended.key, STREAM);
+    const idle = await viewer.waitText((m) => m.t === 'stream' && m.state === 'idle', 'idle state');
+    assert.equal(idle.reason, 'unpublished');
+    assert.equal(idle.key, STREAM);
 });
 
 await check('a publisher can resume inside the linger window without the viewer rejoining', async () => {

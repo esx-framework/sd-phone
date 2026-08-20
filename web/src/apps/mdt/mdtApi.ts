@@ -1913,3 +1913,33 @@ export async function mdtSops(): Promise<Sop[]> {
     if (!isFiveM) return [...DEV_SOPS];
     return (await apiData<{ rows: Sop[] }>('sd-phone:mdt:sops:list'))?.rows ?? [];
 }
+
+export interface CctvCamera {
+    id:       string;
+    label:    string;
+    category: string;
+}
+
+export async function cctvList(): Promise<{ enabled: boolean; cameras: CctvCamera[] }> {
+    if (!isFiveM) {
+        return {
+            enabled: true,
+            cameras: [
+                { id: 'dev_bank', label: 'Fleeca, Legion Square', category: 'Bank' },
+                { id: 'dev_store', label: '24/7 1', category: '24/7' },
+            ],
+        };
+    }
+    const res = await apiCall<{ enabled?: boolean; cameras?: CctvCamera[] }>('sd-phone:cctv:list', {});
+    return { enabled: res.data?.enabled !== false, cameras: res.data?.cameras ?? [] };
+}
+
+export async function cctvWatch(cameraId: string): Promise<boolean> {
+    if (!isFiveM) return true;
+    return (await apiCall('sd-phone:cctv:watch', { cameraId })).success === true;
+}
+
+export async function cctvClose(): Promise<void> {
+    if (!isFiveM) return;
+    await apiCall('sd-phone:cctv:close', {});
+}
