@@ -147,11 +147,12 @@ export interface HomescreenProps {
     savedLayout?: SavedLayout | null;
     onLayoutChange?: (layout: SavedLayout) => void;
     onEditingChange?: (editing: boolean) => void;
+    homeActive?: boolean;
     /** Play the icon bloom on mount; false when the phone is revealed with an app on top. */
     bloomOnMount?: boolean;
 }
 
-export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, onUninstall, savedLayout, onLayoutChange, onEditingChange, bloomOnMount = true }: HomescreenProps) {
+export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, onUninstall, savedLayout, onLayoutChange, onEditingChange, homeActive = true, bloomOnMount = true }: HomescreenProps) {
     const { blurHome, dockStyle, wallpaperParallax } = useTheme('blurHome', 'dockStyle', 'wallpaperParallax');
     const grid = useGrid();
     const { cols: COLS, rows: ROWS, icon: ICON, rowY0: ROW_Y0, rowStride: ROW_STRIDE, stripTop } = grid;
@@ -172,6 +173,9 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const appMap   = useMemo(() => new Map(apps.map(a => [a.id, a])), [apps]);
+    // Tile elements keyed by widget uid, so an interactive custom widget's "open" postMessage
+    // (no MouseEvent to read a launch origin from) can still zoom the app open from its own tile.
+    const widgetTileRefs = useRef<Record<string, HTMLElement>>({});
 
     const [dockIds, setDockIds] = useState<string[]>(() => savedLayout?.dock ?? dock);
     const dockApps = useMemo(
@@ -468,6 +472,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     const [openFolder, setOpenFolder] = useState<string | null>(null);
     const [renameFolder, setRenameFolder] = useState<string | null>(null);
     const [mergeCell, setMergeCell] = useState<number | null>(null);
+    const homeActiveRef = useRef(homeActive);
+    homeActiveRef.current = homeActive;
     const editingRef = useRef(false);
     editingRef.current = editing;
 
@@ -993,6 +999,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                         } as CSSProperties}
                                     >
                                         <div
+                                            ref={el => { if (el) widgetTileRefs.current[w.uid] = el; else delete widgetTileRefs.current[w.uid]; }}
                                             className={editing ? 'animate-app-jiggle' : ''}
                                             // --jiggle scales the wobble down for bigger tiles so a
                                             // 4x4 does not swing five times as far as an icon.
@@ -1022,7 +1029,22 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                                     const cd = widgetByKind(card.kind);
                                                     if (!cd) return null;
                                                     return cd.render({ size: w.size, width, height, align: card.align ?? 'left', theme: card.theme ?? 'dark', picks: card.picks,
-                                                        onPicks: ids => setWidgets(prev => prev.map(o => (o.uid === w.uid ? patchCard(o, ci, { picks: ids.length ? ids : undefined }) : o))) });
+                                                        onPicks: ids => setWidgets(prev => prev.map(o => (o.uid === w.uid ? patchCard(o, ci, { picks: ids.length ? ids : undefined }) : o))),
+                                                        editing,
+                                                        // Interactive custom widgets are real pointer targets, so their own
+                                                        // clicks/long-presses no longer bubble out of the (cross-origin)
+                                                        // iframe into this tile - they ask for the same behavior explicitly.
+                                                        onOpen: () => {
+                                                            if (editingRef.current || !homeActiveRef.current) return;
+                                                            const a = appMap.get(cd.appId);
+                                                            if (!a) return;
+                                                            launch(a, launchOriginFrom(widgetTileRefs.current[w.uid] ?? null));
+                                                        },
+                                                        onLongPress: () => {
+                                                            if (!homeActiveRef.current) return;
+                                                            if (!editingRef.current) setEditing(true);
+                                                        },
+                                                    });
                                                 }}
                                             />
                                         </div>
@@ -1161,7 +1183,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                     } as CSSProperties}
                 >
                     <div>
-                        {dragWidgetDef.render({ size: dragWidget.size, width: dragWidgetBox.width, height: dragWidgetBox.height, align: dragWidget.align ?? 'left', theme: dragWidget.theme ?? 'dark', picks: dragWidget.picks,
+                        {dragWidgetDef.render({ size: dragWidget.size, width: dragWidgetBox.width, height: dragWidgetBox.height, align: dragWidget.align ?? 'left', theme: dragWidget.theme ?? 'dark', picks: dragWidget.picks, editing,
                             onPicks: ids => setWidgets(prev => prev.map(o => (o.uid === dragWidget.uid ? { ...o, picks: ids.length ? ids : undefined } : o))) })}
                     </div>
                     {editing && (

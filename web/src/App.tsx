@@ -1594,6 +1594,7 @@ function AppContent() {
                             savedLayout={homeLayout}
                             onLayoutChange={handleSaveLayout}
                             onEditingChange={setHomeEditing}
+                            homeActive={currentApp === null}
                             bloomOnMount={currentApp === null}
                         />
                     )
