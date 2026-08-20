@@ -84,8 +84,8 @@ local function profileOf(raw, fps, width, bitrate)
     local block = type(raw) == 'table' and raw or {}
     return {
         fps         = lib.math.clamp(math.floor(tonumber(block.Fps) or fps), 1, 60),
-        width       = lib.math.clamp(math.floor(tonumber(block.Width) or width), 120, 1280),
-        bitrate     = lib.math.clamp(math.floor(tonumber(block.Bitrate) or bitrate), 40000, 4000000),
+        width       = lib.math.clamp(math.floor(tonumber(block.Width) or width), 120, 1920),
+        bitrate     = lib.math.clamp(math.floor(tonumber(block.Bitrate) or bitrate), 40000, 12000000),
         timesliceMs = TIMESLICE_MS,
         keyframeMs  = KEYFRAME_MS,
     }

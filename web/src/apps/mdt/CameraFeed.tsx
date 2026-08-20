@@ -70,18 +70,17 @@ export function CameraFeed({ camera, quality, active, notice }: {
             genRef.current = gen;
 
             if (push.init) {
-                if (!playerRef.current) {
-                    const mime = push.mime || mimeRef.current || 'video/webm';
-                    if (!liveVideoPlaybackSupported(mime)) {
-                        setFailure(t('mdt.cameraNoDecoder', 'This terminal cannot play that stream'));
-                        return;
-                    }
-                    mimeRef.current = mime;
-                    const player = new LiveVideoPlayer(video, mime);
-                    player.start();
-                    playerRef.current = player;
+                const mime = push.mime || mimeRef.current || 'video/webm';
+                if (!liveVideoPlaybackSupported(mime)) {
+                    setFailure(t('mdt.cameraNoDecoder', 'This terminal cannot play that stream'));
+                    return;
                 }
-                playerRef.current.append(base64ToBytes(push.chunk));
+                mimeRef.current = mime;
+                if (playerRef.current) drop();
+                const player = new LiveVideoPlayer(video, mime);
+                player.start();
+                playerRef.current = player;
+                player.append(base64ToBytes(push.chunk));
                 return;
             }
             playerRef.current?.append(base64ToBytes(push.chunk));

@@ -7,9 +7,9 @@
 -- the officer's client is told to start only once a viewer is actually attached.
 --
 -- Because the capture is the officer's own rendered frame, a bodycam shows what the
--- officer sees. FirstPerson below puts them in first person while they are being watched,
--- which is what makes the feed read as a body-worn camera rather than a chase cam. A
--- dashcam is the same feed, labelled with the vehicle the officer is sitting in.
+-- officer sees, from whatever camera they are playing on. A dashcam is the same feed,
+-- labelled with the vehicle they are sitting in. FirstPerson below can force them into
+-- first person while watched, but it is off by default: see the note on that setting.
 return {
     -- Whether the Cameras section works at all. Off by default: every viewer costs roughly
     -- the profile bitrate of server uplink, the same as a live stream.
@@ -23,10 +23,14 @@ return {
     -- Whether an officer must be on duty to appear in the grid.
     RequireDuty = true,
 
-    -- Put a broadcasting officer into first person for as long as they are being watched,
-    -- and restore the view they had when the last viewer leaves. Turn this off if you would
-    -- rather the feed be whatever camera the officer is playing on.
-    FirstPerson = true,
+    -- Put a broadcasting officer into first person for as long as they are being watched, and
+    -- restore the view they had when the last viewer leaves.
+    --
+    -- OFF by default, and think before turning it on: the capture is the officer's own rendered
+    -- frame, so this does not change the camera for the viewer, it changes it for the OFFICER,
+    -- mid-roleplay, because somebody opened their tile. Left off, the feed is simply whatever
+    -- camera they are playing on, which is the honest reading of a body-worn camera anyway.
+    FirstPerson = false,
 
     Dashcam = {
         -- Whether an occupied police vehicle gets its own tile in the grid.
@@ -52,16 +56,19 @@ return {
         -- Whether the grid streams live thumbnails at all. With this off the tiles render as
         -- offline cards and a feed is only established when an officer is opened full screen.
         Enabled = true,
-        Fps     = 4,
-        Width   = 320,
-        Bitrate = 120000,
+        Fps     = 5,
+        Width   = 384,
+        Bitrate = 220000,
     },
 
-    -- The full-screen profile, established only for the one camera an officer opened.
+    -- The full-screen profile, established only for the one camera an officer opened. Only ever
+    -- one of these runs per viewer, so it can afford to be a real picture rather than a thumbnail.
+    -- Width is capped by the broadcasting officer's own game resolution: asking for more than they
+    -- render buys nothing but bitrate.
     Fullscreen = {
-        Fps     = 20,
-        Width   = 720,
-        Bitrate = 800000,
+        Fps     = 30,
+        Width   = 1600,
+        Bitrate = 8000000,
     },
 
     -- How often (ms) the broadcaster emits a chunk. Lower is lower latency and slightly
@@ -75,7 +82,7 @@ return {
     -- Per-viewer latent send ceiling (bytes/s) the server paces each chunk onto the wire
     -- with. Chunks cross the NUI boundary as base64, which is about a third larger than the
     -- encoded video itself, so leave headroom over the bitrates above.
-    RelayBytesPerSec = 512 * 1024,
+    RelayBytesPerSec = 2048 * 1024,
 
     -- Terminals allowed on one officer's camera at once (0 = unlimited).
     MaxViewers = 6,

@@ -94,17 +94,10 @@ function encode(source: HTMLCanvasElement, enc: CameraEncoder, gen: number): (()
         recorder = rec;
     };
 
-    const anchor = setInterval(() => {
-        const old = recorder;
-        if (old && old.state !== 'inactive') { try { old.stop(); } catch { /* already stopping */ } }
-        spin();
-    }, Math.max(1000, enc.keyframeMs));
-
     spin();
 
     return () => {
         stopped = true;
-        clearInterval(anchor);
         clearInterval(pump);
         if (recorder && recorder.state !== 'inactive') {
             try { recorder.onstop = null; recorder.stop(); } catch { /* already inactive */ }

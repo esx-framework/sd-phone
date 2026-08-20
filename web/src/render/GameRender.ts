@@ -38,6 +38,8 @@ void main() {
 }
 `;
 
+const PUMP_MS = 16;
+
 export class GameRender {
     private readonly renderer: WebGLRenderer;
     private readonly material: ShaderMaterial;
@@ -46,6 +48,7 @@ export class GameRender {
     private rtTexture: WebGLRenderTarget;
     private canvas: HTMLCanvasElement | null = null;
     private animated = false;
+    private pump: ReturnType<typeof setInterval> | null = null;
     private zoom = 1;
     private orientation: Orientation = 'portrait';
     private selfie = false;
@@ -75,13 +78,13 @@ export class GameRender {
         document.body.append(mount);
 
         window.addEventListener('resize', () => this.rebuild(!this.animated));
-        requestAnimationFrame(this.animate);
     }
 
     renderToTarget(canvas: HTMLCanvasElement) {
         this.rebuild(false);
         this.canvas = canvas;
         this.animated = true;
+        if (this.pump === null) this.pump = setInterval(this.animate, PUMP_MS);
     }
 
     setZoom(zoom: number) {
@@ -103,6 +106,7 @@ export class GameRender {
     stop() {
         this.animated = false;
         this.canvas = null;
+        if (this.pump !== null) { clearInterval(this.pump); this.pump = null; }
         this.rebuild(true);
     }
 
@@ -146,7 +150,6 @@ export class GameRender {
     }
 
     private animate = () => {
-        requestAnimationFrame(this.animate);
         if (!this.animated || !this.canvas) return;
 
         const w = window.innerWidth;
