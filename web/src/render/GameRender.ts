@@ -39,6 +39,8 @@ void main() {
 `;
 
 const PUMP_MS = 16;
+const MIN_FPS = 1;
+const MAX_FPS = 60;
 
 export class GameRender {
     private readonly renderer: WebGLRenderer;
@@ -49,6 +51,13 @@ export class GameRender {
     private canvas: HTMLCanvasElement | null = null;
     private animated = false;
     private pump: ReturnType<typeof setInterval> | null = null;
+    private pumpMs = PUMP_MS;
+    private pixels: Uint8Array | null = null;
+    private image: ImageData | null = null;
+    private ctx: CanvasRenderingContext2D | null = null;
+    private bufW = 0;
+    private bufH = 0;
+    private frames = 0;
     private zoom = 1;
     private orientation: Orientation = 'portrait';
     private selfie = false;
@@ -84,7 +93,26 @@ export class GameRender {
         this.rebuild(false);
         this.canvas = canvas;
         this.animated = true;
-        if (this.pump === null) this.pump = setInterval(this.animate, PUMP_MS);
+        this.bufW = 0;
+        this.bufH = 0;
+        this.startPump();
+    }
+
+    setTargetFps(fps: number) {
+        const want = Math.round(Math.min(MAX_FPS, Math.max(MIN_FPS, fps || MAX_FPS)));
+        const ms = Math.max(1, Math.round(1000 / want));
+        if (ms === this.pumpMs) return;
+        this.pumpMs = ms;
+        if (this.pump !== null) this.startPump();
+    }
+
+    framesRendered() {
+        return this.frames;
+    }
+
+    private startPump() {
+        if (this.pump !== null) clearInterval(this.pump);
+        this.pump = setInterval(this.animate, this.pumpMs);
     }
 
     setZoom(zoom: number) {
@@ -154,16 +182,24 @@ export class GameRender {
 
         const w = window.innerWidth;
         const h = window.innerHeight;
+        if (w <= 0 || h <= 0) return;
+
+        if (this.bufW !== w || this.bufH !== h || !this.pixels || !this.image || !this.ctx) {
+            this.bufW = w;
+            this.bufH = h;
+            const buffer = new ArrayBuffer(w * h * 4);
+            this.pixels = new Uint8Array(buffer);
+            this.image = new ImageData(new Uint8ClampedArray(buffer), w, h);
+            this.canvas.width = w;
+            this.canvas.height = h;
+            this.ctx = this.canvas.getContext('2d');
+            if (!this.ctx) return;
+        }
+
         this.renderer.clear();
         this.renderer.render(this.sceneRTT, this.cameraRTT, this.rtTexture, true);
-
-        const pixels = new Uint8Array(w * h * 4);
-        this.renderer.readRenderTargetPixels(this.rtTexture, 0, 0, w, h, pixels);
-
-        this.canvas.width  = w;
-        this.canvas.height = h;
-        const ctx = this.canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.buffer), w, h), 0, 0);
+        this.renderer.readRenderTargetPixels(this.rtTexture, 0, 0, w, h, this.pixels);
+        this.ctx.putImageData(this.image, 0, 0);
+        this.frames += 1;
     };
 }

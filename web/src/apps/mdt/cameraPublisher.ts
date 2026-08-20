@@ -12,15 +12,17 @@ import {
     type RelayStreamHandle,
 } from '@/shared/mediaSocket';
 import { onCameraDemand, type CameraDemand, type CameraEncoder } from './cameraBus';
+import { mediaDebug } from '@/shared/mediaDebug';
 
 const FALLBACK_ASPECT = 16 / 9;
 const CAPTURE_ZOOM = PORTRAIT_CROP.width;
 const ANCHOR_MIN_MS = 1000;
-const ANCHOR_DEFAULT_MS = 4000;
+const ANCHOR_DEFAULT_MS = 20000;
 
 let targetGen: number | null = null;
 let startToken = 0;
 let teardown: (() => void) | null = null;
+let sampler: ReturnType<typeof setInterval> | null = null;
 let render: GameRender | null = null;
 let surface: HTMLCanvasElement | null = null;
 let reported = '';
@@ -166,6 +168,7 @@ function encode(
 }
 
 function stopPublishing(): void {
+    if (sampler !== null) { clearInterval(sampler); sampler = null; }
     if (teardown) {
         try { teardown(); } catch { /* best effort */ }
         teardown = null;
@@ -203,8 +206,17 @@ async function startPublishing(demand: CameraDemand, token: number): Promise<voi
     feed.setOrientation('portrait');
     feed.setSelfie(false);
     feed.setZoom(CAPTURE_ZOOM);
+    feed.setTargetFps(enc.fps);
     feed.renderToTarget(canvas);
     render = feed;
+
+    if (sampler !== null) clearInterval(sampler);
+    let lastFrames = feed.framesRendered();
+    sampler = setInterval(() => {
+        const now = feed.framesRendered();
+        mediaDebug('render', 'fps', { want: enc.fps, got: now - lastFrames, w: enc.width });
+        lastFrames = now;
+    }, 1000);
 
     const mime = pickVideoMime();
     const outW = Math.max(120, Math.round(enc.width));

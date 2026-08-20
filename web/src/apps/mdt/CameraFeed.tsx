@@ -22,6 +22,7 @@ import {
     type CameraTransport,
 } from './cameraBus';
 import type { CameraQuality, CameraTile } from './data';
+import { mediaDebug } from '@/shared/mediaDebug';
 
 const KEEPALIVE_MS = 5000;
 const ATTACH_GAP_MS = 2500;
@@ -180,7 +181,8 @@ export function CameraFeed({ camera, quality, active, notice, showTransport, onH
                     feed('relay', frame.payload, frame.kind === FRAME_INIT, relayMime, frame.gen);
                 },
                 onDesc: desc => { if (desc.mime) relayMime = desc.mime; },
-                onState: state => {
+                onState: (state, reason) => {
+                    mediaDebug('camera', 'streamState', { id: camera.id, state, reason });
                     if (state === 'ended' || state === 'offline' || state === 'expired') dropRelay();
                 },
                 onError: () => dropRelay(),

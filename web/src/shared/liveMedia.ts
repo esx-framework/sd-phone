@@ -1,3 +1,5 @@
+import { mediaDebug } from './mediaDebug';
+
 
 export function pickVideoMime(): string {
     const candidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
@@ -313,6 +315,7 @@ export class LiveVideoPlayer {
 
     private rebuild(reason: string): void {
         if (this.destroyed || this.rebuilding || !this.started) return;
+        mediaDebug('player', 'rebuild', { reason, frames: this.framesDecoded, stallTicks: this.stallTicks });
         this.rebuilding = true;
         this.fault = reason;
 
@@ -631,6 +634,7 @@ export class LiveVideoPlayer {
         if (next === 'live' && this.healthState !== 'live') this.liveSince = Date.now();
         if (next !== 'live') this.liveSince = 0;
         if (this.healthState === next) return;
+        mediaDebug('player', 'health', { from: this.healthState, to: next, reason, frames: this.framesDecoded, rebuilds: this.rebuildTimes.length });
         this.healthState = next;
         this.opts.onHealth?.(next, reason);
     }

@@ -75,9 +75,14 @@ return {
     -- more overhead.
     TimesliceMs = 400,
 
-    -- How often (ms) the broadcaster re-anchors with a fresh stream header, so a terminal
-    -- opening a camera that has been running for a while gets a picture quickly.
-    KeyframeMs = 4000,
+    -- How often (ms) the broadcaster re-anchors with a fresh stream header.
+    --
+    -- Every re-anchor restarts the encoder, which restarts the stream clock, which makes every
+    -- terminal already watching rebuild its player and show a visible break. So this wants to be
+    -- RARE, not frequent: the relay asks for a fresh header the moment somebody actually joins, so
+    -- a terminal opening a long-running camera still gets a picture quickly without everyone else
+    -- paying for a cut on the same interval.
+    KeyframeMs = 20000,
 
     -- Per-viewer latent send ceiling (bytes/s) the server paces each chunk onto the wire
     -- with. Chunks cross the NUI boundary as base64, which is about a third larger than the

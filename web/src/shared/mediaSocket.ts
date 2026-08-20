@@ -1,5 +1,6 @@
 import { device } from '@device';
 import { apiData } from '@/core/api';
+import { mediaDebug } from './mediaDebug';
 
 export const SDMR_HEADER_BYTES = 24;
 export const SDMR_MAGIC = 0xa7;
@@ -669,6 +670,7 @@ class RelayConnection {
         if (typeof msg.gen === 'number' && msg.gen !== rec.gen) rec.gen = msg.gen;
         const state = typeof msg.state === 'string' ? msg.state : '';
         const reason = typeof msg.reason === 'string' ? msg.reason : '';
+        mediaDebug('stream', state || '?', { key: rec.key, role: rec.role, gen: rec.gen, reason });
         if (state === 'live' && rec.role === 'join') rec.onDesc?.(descFrom(msg), rec.gen);
         rec.onState?.(state, reason);
     }
@@ -903,6 +905,7 @@ class RelayConnection {
     }
 
     private setState(next: RelayState): void {
+        if (this.state !== next) mediaDebug('socket', 'state', { from: this.state, to: next });
         this.state = next;
     }
 }

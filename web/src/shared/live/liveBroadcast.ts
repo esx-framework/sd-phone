@@ -36,7 +36,7 @@ export interface LiveBroadcast {
 }
 
 const ANCHOR_MIN_MS = 1000;
-const ANCHOR_DEFAULT_MS = 4000;
+const ANCHOR_DEFAULT_MS = 20000;
 const DEFAULT_WIDTH = 540;
 const FALLBACK_ASPECT = 16 / 9;
 

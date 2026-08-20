@@ -37,7 +37,7 @@ export const AUTH_BAN_MS = 300_000;
 export const PRIME_MAX_GOPS = 2;
 export const PRIME_MAX_FRAMES = 120;
 export const PRIME_MAX_BYTES = 2_097_152;
-export const PRIME_MAX_AGE_MS = 6_000;
+export const PRIME_MAX_AGE_MS = 30_000;
 export const LINGER_MS = 10_000;
 
 export const SOFT_LIMIT = 1_048_576;
