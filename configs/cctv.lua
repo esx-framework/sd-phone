@@ -13,12 +13,35 @@ return {
     -- flicking between cameras does not thrash the world stream.
     FocusGraceSeconds = 3,
 
-    -- Field of view. Lower is more zoomed in.
-    Fov = 62.0,
+    -- Field of view at rest. Lower is more zoomed in.
+    --
+    -- Wide on purpose. A security camera is not a telephoto lens: it is bolted to a ceiling to see
+    -- a whole room at once, and anything under about 90 here frames a doorway rather than a shop.
+    -- Operators zoom IN from this when they want a face.
+    Fov = 100.0,
+
+    -- How far an operator may swing a camera off its resting aim, and how far it zooms. These are
+    -- the defaults; any camera below may override PanDegrees, TiltUp, TiltDown, ZoomMinFov and
+    -- ZoomMaxFov on its own entry, which is how you mix dome cameras with cameras bolted to a wall.
+    --
+    -- PanDegrees is measured EACH WAY from the resting aim, so 70 is a 140 degree arc. Set it to
+    -- 360 (or anything at or above it) for a dome camera that spins freely with no stops, and to 0
+    -- to pin a camera dead ahead so it can only tilt and zoom.
+    Controls = {
+        PanDegrees  = 360.0,  -- free spin by default; lower it to bolt a camera down
+        TiltUp      = 22.0,   -- above centre
+        TiltDown    = 34.0,   -- below centre
+        ZoomMinFov  = 30.0,   -- most zoomed in
+        ZoomMaxFov  = 110.0,  -- most zoomed out, wide enough to hold a whole room
+        LookSpeed   = 1.35,   -- degrees per frame at full stick/mouse deflection
+        ZoomSpeed   = 2.2,    -- fov change per scroll step
+    },
 
     Cameras = {
         -- Bank
-        { id = 'pacific_standard_vinewood', label = 'Pacific Standard, Vinewood', category = 'Bank',
+        -- Any camera may override the Controls above. This one is a dome on the ceiling, so it
+        -- spins; a camera in a doorway might take PanDegrees = 45 instead.
+        { id = 'pacific_standard_vinewood', label = 'Pacific Standard, Vinewood', category = 'Bank', PanDegrees = 360.0,
           coords = vec3(241.97, 230.35, 108.64), look = vec3(241.44, 227.19, 106.89) },
         { id = 'fleeca_legion_square', label = 'Fleeca, Legion Square', category = 'Bank',
           coords = vec3(312.66, -283.55, 56.51), look = vec3(313.84, -280.58, 54.76) },

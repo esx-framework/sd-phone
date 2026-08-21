@@ -72,6 +72,7 @@ function peekAlign(align: PhoneAlign): PhoneAlign {
 export interface PhoneShellProps {
     children: ReactNode;
     cameraActive?: boolean;
+    hidden?: boolean;
     entering?: boolean;
     leaving?: boolean;
     landscape?: boolean;
@@ -405,7 +406,7 @@ function RailKey({ btn, m }: { btn: RailButton; m: ChassisMetrics }) {
     );
 }
 
-export function PhoneShell({ children, cameraActive = false, entering = false, leaving = false, landscape = false, peek, onClose, radioIsland, alarmIsland, frameColor = DEFAULT_FRAME_COLOR }: PhoneShellProps) {
+export function PhoneShell({ children, hidden = false, cameraActive = false, entering = false, leaving = false, landscape = false, peek, onClose, radioIsland, alarmIsland, frameColor = DEFAULT_FRAME_COLOR }: PhoneShellProps) {
     const { brightness, phoneScale, phoneAlign, phoneTilt, openAnim, ringtoneVol, setRingtoneVol, islandPet, shell } = useTheme('brightness', 'phoneScale', 'phoneAlign', 'phoneTilt', 'openAnim', 'ringtoneVol', 'setRingtoneVol', 'islandPet', 'shell');
     const m = useMemo(() => chassisMetrics(shellFor(shell, device.id)), [shell]);
     const {
@@ -528,7 +529,7 @@ export function PhoneShell({ children, cameraActive = false, entering = false, l
     return (
         <div
             className={`flex h-screen w-full ${flexClasses}`}
-            style={{ padding: EDGE_PADDING }}
+            style={{ padding: EDGE_PADDING, display: hidden ? 'none' : undefined }}
         >
             <div
                 className="shrink-0"

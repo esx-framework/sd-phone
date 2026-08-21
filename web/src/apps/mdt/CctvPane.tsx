@@ -9,6 +9,41 @@ import { useSessionState } from '@/hooks/useSessionState';
 import { mdtPanePad, mdtRowMeta, mdtSectionHeader } from './mdtTheme';
 import { cctvClose, cctvList, cctvWatch, type CctvCamera } from './mdtApi';
 
+const ART: Record<string, { from: string; to: string; glow: string }> = {
+    Bank:            { from: '#12263f', to: '#0a1622', glow: 'rgba(120,180,255,0.30)' },
+    '24/7':          { from: '#2a1f0d', to: '#150f06', glow: 'rgba(255,196,90,0.28)' },
+    Ammunation:      { from: '#2a1212', to: '#160909', glow: 'rgba(255,120,110,0.26)' },
+    'Liquor Store':  { from: '#241a2e', to: '#120d18', glow: 'rgba(190,140,255,0.26)' },
+    YouTool:         { from: '#0f2620', to: '#081410', glow: 'rgba(110,235,190,0.26)' },
+};
+
+function Thumb({ camera, live }: { camera: CctvCamera; live: boolean }) {
+    const art = ART[camera.category] ?? { from: '#1b1b1f', to: '#0d0d10', glow: 'rgba(255,255,255,0.2)' };
+    return (
+        <div
+            className="relative h-[74px] w-[104px] shrink-0 overflow-hidden rounded-[10px]"
+            style={{ background: `linear-gradient(150deg, ${art.from} 0%, ${art.to} 100%)` }}
+        >
+            <div
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(120% 90% at 30% 15%, ${art.glow} 0%, transparent 60%)` }}
+            />
+            <div
+                className="absolute inset-0 opacity-[0.22]"
+                style={{ backgroundImage: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 3px)' }}
+            />
+            <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
+                <span className={`h-[5px] w-[5px] rounded-full ${live ? 'animate-pulse bg-[#ff5a5a]' : 'bg-white/35'}`} />
+                <span className="font-mono text-[8px] font-bold uppercase tracking-[0.14em] text-white/70">
+                    {live ? t('mdt.cctvRec', 'REC') : t('mdt.cctvStandby', 'STBY')}
+                </span>
+            </div>
+            <Cctv className="absolute bottom-1.5 right-1.5 h-[13px] w-[13px] text-white/45" strokeWidth={2} />
+            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-white/10" />
+        </div>
+    );
+}
+
 function Group({ label, cameras, activeId, onPick }: {
     label: string;
     cameras: CctvCamera[];
@@ -26,14 +61,17 @@ function Group({ label, cameras, activeId, onPick }: {
                             key={camera.id}
                             type="button"
                             onClick={() => onPick(camera)}
-                            className="flex items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors"
+                            className="flex items-center gap-3 rounded-[14px] p-2 text-left transition-colors"
                             style={{
                                 background: on ? 'rgba(59,130,246,0.16)' : 'rgba(127,127,127,0.08)',
                                 boxShadow: on ? 'inset 0 0 0 1.5px rgba(59,130,246,0.55)' : undefined,
                             }}
                         >
-                            <Cctv className="h-[16px] w-[16px] shrink-0 text-ios-gray" strokeWidth={2.1} />
-                            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{camera.label}</span>
+                            <Thumb camera={camera} live={on} />
+                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                <span className="truncate text-[14px] font-semibold">{camera.label}</span>
+                                <span className="truncate text-[11.5px] text-ios-gray">{camera.category}</span>
+                            </span>
                             {on ? (
                                 <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-blue-500">
                                     <Radio className="h-[12px] w-[12px]" strokeWidth={2.6} />

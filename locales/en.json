@@ -2856,7 +2856,13 @@
     "cctvHint": "Watching a camera moves your own view to it and puts it back when you leave. Nobody else is affected.",
     "cctvLive": "Your view is on this camera",
     "cctvExit": "Exit",
-    "navCctv": "CCTV"
+    "navCctv": "CCTV",
+    "cctvRec": "REC",
+    "cctvChannel": "CH",
+    "cctvHintLook": "Move the mouse to pan and tilt",
+    "cctvHintZoom": "Scroll to zoom",
+    "cctvHintExit": "Backspace to leave the camera",
+    "cctvStandby": "STBY"
   },
   "messages": {
     "accepted": "Accepted",

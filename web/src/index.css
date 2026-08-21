@@ -914,3 +914,8 @@ input[type='number'] {
 @media (prefers-reduced-motion: reduce) {
     .mdt-stagger > * { animation: none; }
 }
+
+@keyframes cctv-drift {
+    from { transform: translateY(0); }
+    to   { transform: translateY(9px); }
+}

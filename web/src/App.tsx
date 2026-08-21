@@ -18,6 +18,7 @@ import { ControlCenter, ControlCenterHotzone } from '@/shell/ControlCenter';
 import { NotificationCenter, NotificationCenterHotzone } from '@/shell/NotificationCenter';
 import { MusicProvider, useMusic } from '@/apps/music/MusicContext';
 import { LockscreenWidgetsProvider } from '@/shell/LockscreenWidgetsContext';
+import { CctvOverlay, useCctvActive } from '@/apps/mdt/CctvOverlay';
 import '@/apps/mdt/cameraPublisher';
 import { ryDevDataHidden, ryDevToggleData } from '@/apps/ryde/data';
 import { asAppId, isPreviewApp, preloadAllApps, preloadApp, setPreloadPaused, type AppId } from '@/shell/appRegistry';
@@ -199,6 +200,7 @@ export function App() {
 }
 
 function AppContent() {
+    const cctvActive = useCctvActive();
     // Tone/volume fields are deliberately NOT subscribed here — they're only
     // read inside event callbacks (via useThemeStore.getState()), so slider
     // drags in Control Center don't re-render the whole tree from the root.
@@ -1492,6 +1494,7 @@ function AppContent() {
         && (!isFiveM || serverSetupDone !== null);
 
     const cameraMode = currentApp === 'camera' && !isClosing && !locked;
+    const onCamera = cctvActive !== null;
 
     const onHomescreen = !showSetup && !locked && !currentApp;
 
@@ -1547,7 +1550,7 @@ function AppContent() {
                     {hour24 ? '24h: on' : '24h: off'}
                 </button>
             )}
-            <PhoneShell cameraActive={cameraMode} landscape={cameraMode && landscape} entering={entering} leaving={leaving} onClose={closePhone} frameColor={frameColor} radioIsland={radioIsland} alarmIsland={{ ringing: !!ringingAlarm, since: ringingSince }}>
+            <PhoneShell hidden={onCamera} cameraActive={cameraMode} landscape={cameraMode && landscape} entering={entering} leaving={leaving} onClose={closePhone} frameColor={frameColor} radioIsland={radioIsland} alarmIsland={{ ringing: !!ringingAlarm, since: ringingSince }}>
                 {!(showSetup && setupHello && !noSim) && (
                     <StatusBar
                         use24h={hour24}
@@ -1720,6 +1723,7 @@ function AppContent() {
                 )}
             </PhoneShell>
         </div>
+        {cctvActive && <CctvOverlay active={cctvActive} />}
         </>
     );
 }
