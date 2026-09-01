@@ -7,6 +7,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { formatRelativeDate, noteTitle, notePreview, noteHasContent } from './data';
 import type { Note } from './data';
 import { t } from '@/i18n';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 interface Props {
     notes:     Note[];
@@ -31,7 +32,7 @@ export function NotesList({ notes, onOpen, onCompose }: Props) {
 
     return (
         <div className="absolute inset-0 flex flex-col bg-base text-black dark:text-white">
-            <div className="h-[58px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
 
             <div className="flex items-center justify-between px-5 pb-1 pt-1">
                 <h1 className="text-[34px] font-bold tracking-tight">{t('notes.appTitle', 'Notes')}</h1>
@@ -69,7 +70,7 @@ export function NotesList({ notes, onOpen, onCompose }: Props) {
                                     </div>
                                 </button>
                                 {i < sorted.length - 1 && (
-                                    <div className="pointer-events-none mx-[6%] h-[0.4px] bg-black/15 dark:bg-white/15" />
+                                    <div className="pointer-events-none mx-[6%] h-[0.4px] bg-hairline/15" />
                                 )}
                             </div>
                         ))}

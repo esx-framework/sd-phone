@@ -14,6 +14,7 @@ import { RichBody, SignatureBlock } from '@/apps/documents/TextEditor';
 import type { DocFile } from '@/apps/documents/data';
 import { attachmentSaveStates, saveAttachment, type MailAttachment } from './data';
 import { failText } from '@/core/api';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 type DocAttachment = Extract<MailAttachment, { kind: 'document' }>;
 
@@ -64,7 +65,7 @@ export function AttachmentStrip({ attachments, max, onRemove }: {
                 {others.map(({ a, i }, idx) => (
                     <div key={i}>
                         {(idx > 0 || photos.length > 0) && (
-                            <div className="bg-black/10 dark:bg-white/10" style={{ height: '0.5px' }} />
+                            <div className="bg-hairline/10" style={{ height: '0.5px' }} />
                         )}
                         <div className="flex items-center gap-3 px-4 py-3">
                             {a.kind === 'audio' ? (
@@ -219,7 +220,7 @@ export function MemoPickerSheet({ excludeUrls, max, onPickMany, onClose }: {
                                 <span className="shrink-0 text-[15px] text-ios-gray">{fmtDuration(m.duration)}</span>
                                 <SelectCircle selected={selected.has(m.id)} />
                             </button>
-                            {i < candidates.length - 1 && <div className="bg-black/10 dark:bg-white/10" style={{ height: '0.5px' }} />}
+                            {i < candidates.length - 1 && <div className="bg-hairline/10" style={{ height: '0.5px' }} />}
                         </div>
                     ))}
                 </div>
@@ -284,7 +285,7 @@ export function NotePickerSheet({ max, onPickMany, onClose }: {
                                 </div>
                                 <SelectCircle selected={selected.has(n.id)} />
                             </button>
-                            {i < notes.length - 1 && <div className="bg-black/10 dark:bg-white/10" style={{ height: '0.5px' }} />}
+                            {i < notes.length - 1 && <div className="bg-hairline/10" style={{ height: '0.5px' }} />}
                         </div>
                     ))}
                 </div>
@@ -348,7 +349,7 @@ export function DocPickerSheet({ excludeIds, max, onPickMany, onClose }: {
                                 </div>
                                 <SelectCircle selected={selected.has(d.id)} />
                             </button>
-                            {i < candidates.length - 1 && <div className="bg-black/10 dark:bg-white/10" style={{ height: '0.5px' }} />}
+                            {i < candidates.length - 1 && <div className="bg-hairline/10" style={{ height: '0.5px' }} />}
                         </div>
                     ))}
                 </div>
@@ -371,7 +372,7 @@ function DocAttachmentSheet({ att, onClose }: { att: DocAttachment; onClose: () 
                 ? 'ios-sheet-down 0.26s cubic-bezier(0.32,0,0.68,1) forwards'
                 : 'ios-sheet-up 0.34s cubic-bezier(0.32,0.72,0,1)' }}
         >
-            <div className="h-[54px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
             <div className="relative flex h-11 shrink-0 items-center px-4">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="max-w-[60%] truncate text-[15px] font-semibold">{att.name}</span>
@@ -412,7 +413,7 @@ function NoteSheet({ title, body, onClose }: { title: string; body: string; onCl
                 ? 'ios-sheet-down 0.26s cubic-bezier(0.32,0,0.68,1) forwards'
                 : 'ios-sheet-up 0.34s cubic-bezier(0.32,0.72,0,1)' }}
         >
-            <div className="h-[54px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
             <div className="relative flex h-11 shrink-0 items-center px-4">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="max-w-[60%] truncate text-[15px] font-semibold">{title || t('mail.note', 'Note')}</span>

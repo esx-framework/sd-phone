@@ -13,6 +13,7 @@ import { SearchBar } from '@/ui/SearchBar';
 import { accountsDeletePassword, accountsListPasswords, type VaultEntry } from '@/core/accountsApi';
 import { SlideOver } from '@/ui/SlideOver';
 import { t } from '@/i18n';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 const APP_LABELS: Record<string, string> = {
     photogram: 'Photogram', cherry: 'Cherry', vibez: 'Clout', birdy: 'Squawk', mail: 'Mail',
@@ -54,7 +55,7 @@ export function Passwords({ onClose }: { onClose: () => void }) {
     return (
         <div className="absolute inset-0 z-10 overflow-hidden bg-base font-sf text-black dark:text-white">
             <div className="flex h-full flex-col">
-                <div className="h-[54px] shrink-0" aria-hidden />
+                <StatusBarSpacer />
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-10">
                     <h1 className="pt-3 text-[32px] font-extrabold tracking-tight">{t('passwords.title', 'Passwords')}</h1>
@@ -71,7 +72,7 @@ export function Passwords({ onClose }: { onClose: () => void }) {
                                     key={e.id}
                                     type="button"
                                     onClick={() => setOpenId(e.id)}
-                                    className={`flex w-full items-center gap-4 px-4 py-[18px] text-left active:bg-black/5 dark:active:bg-white/5 ${i === shown.length - 1 ? '' : 'border-b-[0.5px] border-black/10 dark:border-white/10'}`}
+                                    className={`flex w-full items-center gap-4 px-4 py-[18px] text-left active:bg-black/5 dark:active:bg-white/5 ${i === shown.length - 1 ? '' : 'border-b-[0.5px] border-hairline/10'}`}
                                 >
                                     <span className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[13px] [&>svg]:block [&>svg]:h-full [&>svg]:w-full" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.14)' }}>
                                         <AppIconSVG icon={e.app} />
@@ -113,7 +114,7 @@ function Detail({ entry, onBack, onDelete }: { entry: VaultEntry; onBack: () => 
 
     return (
         <div className="flex h-full flex-col bg-base text-black dark:text-white">
-            <div className="h-[54px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
             <header className="flex items-center px-3 py-2">
                 <button type="button" onClick={onBack} className="flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
@@ -191,7 +192,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
 function Row({ label, value, last, copyable = true }: { label: string; value: string; last?: boolean; copyable?: boolean }) {
     return (
-        <div className={`flex items-center px-4 py-3.5 ${last ? '' : 'border-b-[0.5px] border-black/10 dark:border-white/10'}`}>
+        <div className={`flex items-center px-4 py-3.5 ${last ? '' : 'border-b-[0.5px] border-hairline/10'}`}>
             <div className="min-w-0 flex-1">
                 <div className="text-[14px] text-black/80 dark:text-white/80">{label}</div>
                 <div className="truncate pt-0.5 text-[18px]">{value}</div>

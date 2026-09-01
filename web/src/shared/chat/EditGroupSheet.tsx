@@ -62,7 +62,7 @@ export function EditGroupSheet({ groupName, groupAvatar, participants, onCancel,
                                     </button>
                                 </div>
                             </div>
-                            <div className="h-[0.5px] shrink-0 bg-black/10 dark:bg-white/10" />
+                            <div className="h-[0.5px] shrink-0 bg-hairline/10" />
 
                             <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">
                                 <div className="flex flex-col items-center gap-2.5 pt-6">
@@ -103,7 +103,7 @@ export function EditGroupSheet({ groupName, groupAvatar, participants, onCancel,
                                         <MemberRow contact={ME} displayName={t('messages.you', 'You')} />
                                         {participants.map(c => (
                                             <div key={c.id}>
-                                                <div className="ml-[68px] h-[0.5px] bg-black/10 dark:bg-white/10" />
+                                                <div className="ml-[68px] h-[0.5px] bg-hairline/10" />
                                                 <MemberRow contact={c} displayName={c.name} onRemove={() => setPendingRemove(c)} />
                                             </div>
                                         ))}
@@ -148,7 +148,7 @@ function MemberRow({ contact, displayName, onRemove }: { contact: Contact; displ
                     aria-label={t('messages.removeMemberAria', 'Remove {name}', { name: displayName })}
                     className="shrink-0 pl-2 active:opacity-60"
                 >
-                    <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#ff3b30]">
+                    <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ios-red">
                         <span className="h-[2.5px] w-[13px] rounded-full bg-white" />
                     </span>
                 </button>

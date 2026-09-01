@@ -47,7 +47,7 @@ export function FavoritesTab({ favorites, onRemoveFavorite, onRequestCall, onUpd
                                         onCall={() => onRequestCall({ number: c.phone, name: c.name })}
                                     />
                                     {i < favorites.length - 1 && (
-                                        <div className="pointer-events-none bg-black/10 dark:bg-white/10" style={{ height: '0.5px' }} />
+                                        <div className="pointer-events-none bg-hairline/10" style={{ height: '0.5px' }} />
                                     )}
                                 </div>
                             ))}
@@ -86,7 +86,7 @@ function FavoriteRow({ contact, editing, onRemove, onInfo, onCall }: {
                     type="button"
                     aria-label={t('phone.removeFromFavoritesAria','Remove {name} from favorites',{ name: contact.name })}
                     onClick={() => onRemove(contact.id)}
-                    className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#ff3b30] active:opacity-70"
+                    className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-ios-red active:opacity-70"
                 >
                     <Minus className="h-[18px] w-[18px] text-white" strokeWidth={3} />
                 </button>

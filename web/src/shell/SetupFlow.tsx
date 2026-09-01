@@ -16,6 +16,7 @@ import { t } from '@/i18n';
 import { formatLongDate } from '@/lib/time';
 import { SUPPORTED_LOCALES, useLocaleStore } from '@/stores/localeStore';
 import type { LocaleOption } from '@/stores/localeStore';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 export interface SetupResult {
     language:    string;
@@ -92,7 +93,7 @@ export function SetupFlow({ onDone, onHelloChange }: Props) {
                 </defs>
             </svg>
 
-            <div className="h-[54px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
 
             <div className="h-10 shrink-0 px-3">
                 {canGoBack && stage !== 'done' && (
@@ -174,7 +175,7 @@ export function SetupFlow({ onDone, onHelloChange }: Props) {
                     style={{ background: HELLO_BG_LIGHT, willChange: 'transform, opacity' }}
                 >
                     <HelloAurora />
-                    <div className="h-[54px] shrink-0" aria-hidden />
+                    <StatusBarSpacer />
                     <div className="h-10 shrink-0" aria-hidden />
                     <HelloStage onContinue={beginHelloLift} frozen={helloLifting} />
                 </div>
@@ -787,7 +788,7 @@ function WallpaperStage({
                                 />
                                 <div
                                     className={`pointer-events-none absolute inset-0 rounded-[16px] ${
-                                        isSelected ? 'border-[3px] border-ios-blue' : 'border border-black/10 dark:border-white/10'
+                                        isSelected ? 'border-[3px] border-ios-blue' : 'border border-hairline/10'
                                     }`}
                                 />
                                 {isSelected && (

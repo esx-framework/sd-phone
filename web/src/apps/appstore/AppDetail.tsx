@@ -6,6 +6,7 @@ import { CircularProgress } from '@/ui/CircularProgress';
 import { getCustomApp } from '@/stores/customAppsStore';
 import { t, appLabel } from '@/i18n';
 import type { AppDef } from '@/core/types';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 const HEAVY = new Set(['cookie', 'wordle', 'flappy', 'blocks', 'casino', 'climber', 'connectfour', 'photogram', 'vibez', 'cherry', 'birdy', 'camera', 'maps', 'music', 'weazelnews', 'streaks']);
 const LIGHT = new Set(['calculator', 'notes', 'clock', 'weather', 'voicememos', 'settings', 'calendar']);
@@ -52,7 +53,7 @@ export function AppDetail({ app, desc, installed, downloadProgress, onBack, onIn
             }}
             onTransitionEnd={() => { if (!shown) onBack(); }}
         >
-            <div className="h-[58px] shrink-0" aria-hidden />
+            <StatusBarSpacer />
 
             <div className="flex items-center px-3 pb-1">
                 <button type="button" onClick={() => setShown(false)} className="flex items-center text-ios-blue active:opacity-60">
@@ -116,7 +117,7 @@ export function AppDetail({ app, desc, installed, downloadProgress, onBack, onIn
 
 function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
     return (
-        <div className={`flex items-center justify-between gap-4 py-3.5 ${last ? '' : 'border-b border-black/10 dark:border-white/10'}`}>
+        <div className={`flex items-center justify-between gap-4 py-3.5 ${last ? '' : 'border-b border-hairline/10'}`}>
             <span className="shrink-0 text-[18px] text-black/55 dark:text-white/55">{label}</span>
             <span className="truncate text-right text-[18px] font-medium text-black dark:text-white">{value}</span>
         </div>
