@@ -1493,8 +1493,40 @@ function RacingIcon() {
     );
 }
 
+function IdIcon() {
+    const u = useIconIds();
+    return (
+        <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
+            <defs>
+                <LinearGrad id={u('idbg')} top="#2C2C2E" bot="#0A0A0C" angle={160} />
+                <LinearGrad id={u('idfront')} top="#F7F8FA" bot="#DFE3EA" angle={170} />
+                <LinearGrad id={u('idpocket')} top="#3A3A3E" bot="#1C1C1E" angle={175} />
+                <filter id={u('idsh')} x="-20%" y="-30%" width="140%" height="170%">
+                    <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" floodColor="#000" floodOpacity="0.5" />
+                </filter>
+            </defs>
+            <rect width={S} height={S} fill={`url(#${u('idbg')})`} />
+            <g filter={`url(#${u('idsh')})`}>
+                <rect x="9" y="8"    width="42" height="26" rx="4.5" fill="#1E5BC6" />
+                <rect x="9" y="12.5" width="42" height="26" rx="4.5" fill="#34C759" />
+                <rect x="9" y="17"   width="42" height="26" rx="4.5" fill="#FFCC00" />
+                <rect x="9" y="21.5" width="42" height="26" rx="4.5" fill="#FF3B30" />
+                <rect x="9" y="26"   width="42" height="26" rx="4.5" fill={`url(#${u('idfront')})`} />
+            </g>
+            <circle cx="18.5" cy="35" r="4.2" fill="#8E8E93" />
+            <path d="M11.6 44.5 a6.9 6.9 0 0 1 13.8 0 z" fill="#8E8E93" />
+            <rect x="28" y="31.5" width="16" height="2.8" rx="1.4" fill="#48484A" />
+            <rect x="28" y="36.5" width="11" height="2.8" rx="1.4" fill="#AEAEB2" />
+            <rect x="28" y="41.5" width="14" height="2.8" rx="1.4" fill="#AEAEB2" />
+            <rect x="6" y="41" width="48" height="14" rx="5" fill={`url(#${u('idpocket')})`} />
+            <rect x="6" y="41" width="48" height="1.2" fill="rgba(255,255,255,0.22)" />
+        </svg>
+    );
+}
+
 const ICON_MAP: Record<string, IconComponent> = {
     phone:    PhoneIcon,
+    id:       IdIcon,
     messages: MessagesIcon,
     services: ServicesIcon,
     pages:    PagesIcon,
