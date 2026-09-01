@@ -1,11 +1,16 @@
 
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 import { t } from '@/i18n';
 import { customAccent, useCustomAppsStore } from '@/stores/customAppsStore';
 
 const S = 60;
+
+function useIconIds() {
+    const scope = useId().replace(/:/g, '');
+    return (name: string) => `${name}-${scope}`;
+}
 
 
 function LinearGrad({ id, top, mid, bot, angle = 150 }: {
@@ -37,10 +42,11 @@ function RadialGrad({ id, inner, outer, cx = '38%', cy = '32%' }: {
 }
 
 function PhoneIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="ph" top="#45E768" mid="#23D24E" bot="#0CBB3B" /></defs>
-            <rect width={S} height={S} fill="url(#ph)" />
+            <defs><LinearGrad id={u('ph')} top="#45E768" mid="#23D24E" bot="#0CBB3B" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('ph')})`} />
             <svg x="12.5" y="12.5" width="35" height="35" viewBox="0 0 24 24">
                 <path
                     d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
@@ -55,10 +61,11 @@ function PhoneIcon() {
 }
 
 function MessagesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="msg" top="#5BF675" bot="#0CBD2A" angle={0} /></defs>
-            <rect width={S} height={S} fill="url(#msg)" />
+            <defs><LinearGrad id={u('msg')} top="#5BF675" bot="#0CBD2A" angle={0} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('msg')})`} />
             <g transform={`scale(${S / 66.145836}) translate(59.483067,-145.8456)`}>
                 <path
                     fill="#fff"
@@ -70,37 +77,39 @@ function MessagesIcon() {
 }
 
 function ServicesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="srv" top="#34D9C4" mid="#16B8A6" bot="#0E9488" /></defs>
-            <rect width={S} height={S} fill="url(#srv)" />
+            <defs><LinearGrad id={u('srv')} top="#34D9C4" mid="#16B8A6" bot="#0E9488" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('srv')})`} />
             <path
                 d="M22.5,22 L22.5,18.5 Q22.5,15.5 25.5,15.5 L34.5,15.5 Q37.5,15.5 37.5,18.5 L37.5,22"
                 fill="none" stroke="white" strokeWidth="3.4" strokeLinecap="round"
             />
             <path
                 d="M25.8,21 V19.2 Q25.8,18.3 26.7,18.3 H33.3 Q34.2,18.3 34.2,19.2 V21"
-                fill="none" stroke="url(#srv)" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"
+                fill="none" stroke={`url(#${u('srv')})`} strokeWidth="1.4" strokeLinecap="round" opacity="0.65"
             />
             <rect x="11.5" y="21.5" width="37" height="26.5" rx="5" fill="white" />
-            <rect x="11.5" y="31.6" width="37" height="2.6" fill="url(#srv)" opacity="0.9" />
-            <rect x="26.2" y="29.8" width="7.6" height="6.2" rx="2" fill="url(#srv)" />
+            <rect x="11.5" y="31.6" width="37" height="2.6" fill={`url(#${u('srv')})`} opacity="0.9" />
+            <rect x="26.2" y="29.8" width="7.6" height="6.2" rx="2" fill={`url(#${u('srv')})`} />
             <circle cx="30" cy="32.9" r="1.15" fill="#fff" />
-            <rect x="16.4" y="24.5" width="1.5" height="20.5" rx="0.75" fill="url(#srv)" opacity="0.22" />
-            <rect x="42.1" y="24.5" width="1.5" height="20.5" rx="0.75" fill="url(#srv)" opacity="0.22" />
-            <circle cx="15.5" cy="26"   r="1.05" fill="url(#srv)" opacity="0.45" />
-            <circle cx="44.5" cy="26"   r="1.05" fill="url(#srv)" opacity="0.45" />
-            <circle cx="15.5" cy="43.5" r="1.05" fill="url(#srv)" opacity="0.45" />
-            <circle cx="44.5" cy="43.5" r="1.05" fill="url(#srv)" opacity="0.45" />
+            <rect x="16.4" y="24.5" width="1.5" height="20.5" rx="0.75" fill={`url(#${u('srv')})`} opacity="0.22" />
+            <rect x="42.1" y="24.5" width="1.5" height="20.5" rx="0.75" fill={`url(#${u('srv')})`} opacity="0.22" />
+            <circle cx="15.5" cy="26"   r="1.05" fill={`url(#${u('srv')})`} opacity="0.45" />
+            <circle cx="44.5" cy="26"   r="1.05" fill={`url(#${u('srv')})`} opacity="0.45" />
+            <circle cx="15.5" cy="43.5" r="1.05" fill={`url(#${u('srv')})`} opacity="0.45" />
+            <circle cx="44.5" cy="43.5" r="1.05" fill={`url(#${u('srv')})`} opacity="0.45" />
         </svg>
     );
 }
 
 function PagesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="pg" top="#FFE45C" mid="#FFD43B" bot="#FBC02D" /></defs>
-            <rect width={S} height={S} fill="url(#pg)" />
+            <defs><LinearGrad id={u('pg')} top="#FFE45C" mid="#FFD43B" bot="#FBC02D" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('pg')})`} />
             <path d="M30,46.8 C24,44 15.5,43.7 11.5,45 L11.5,46.4 C15.5,45.1 24,45.4 30,48.2 C36,45.4 44.5,45.1 48.5,46.4 L48.5,45 C44.5,43.7 36,44 30,46.8 Z" fill="rgba(0,0,0,0.20)" />
             <path d="M30,46.5 C24.5,43.8 16.5,43.5 13,44.6 L13,45.6 C16.5,44.5 24.5,44.8 30,47.5 C35.5,44.8 43.5,44.5 47,45.6 L47,44.6 C43.5,43.5 35.5,43.8 30,46.5 Z" fill="rgba(255,255,255,0.8)" />
             <path d="M30,17.5 C24.5,14.8 16.5,14.5 12,16 L12,42.5 C16.5,41 24.5,41.3 30,44 Z" fill="white" />
@@ -122,10 +131,11 @@ function PagesIcon() {
 }
 
 function MarketplaceIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="mkt" top="#4FA9FF" mid="#1B8BF6" bot="#0A63E0" /></defs>
-            <rect width={S} height={S} fill="url(#mkt)" />
+            <defs><LinearGrad id={u('mkt')} top="#4FA9FF" mid="#1B8BF6" bot="#0A63E0" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('mkt')})`} />
             <svg x="12" y="12" width="36" height="36" viewBox="0 0 24 24"
                 fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
@@ -139,12 +149,13 @@ function MarketplaceIcon() {
 }
 
 function MailIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="ml" top="#5BB8FF" mid="#2E9CF5" bot="#0E6FD8" /></defs>
-            <rect width={S} height={S} fill="url(#ml)" />
+            <defs><LinearGrad id={u('ml')} top="#5BB8FF" mid="#2E9CF5" bot="#0E6FD8" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('ml')})`} />
             <rect x="8" y="16" width="44" height="30" rx="4" fill="white" />
-            <path d="M8,17 L30,34 L52,17" fill="none" stroke="url(#ml)" strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M8,17 L30,34 L52,17" fill="none" stroke={`url(#${u('ml')})`} strokeWidth="2.5" strokeLinejoin="round" />
             <path d="M8,46 L22,32" fill="none" stroke="rgba(0,80,200,0.18)" strokeWidth="1.5" />
             <path d="M52,46 L38,32" fill="none" stroke="rgba(0,80,200,0.18)" strokeWidth="1.5" />
         </svg>
@@ -152,10 +163,11 @@ function MailIcon() {
 }
 
 function SafariIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><RadialGrad id="saf" inner="#6EC8FF" outer="#0A70E0" cx="40%" cy="32%" /></defs>
-            <rect width={S} height={S} fill="url(#saf)" />
+            <defs><RadialGrad id={u('saf')} inner="#6EC8FF" outer="#0A70E0" cx="40%" cy="32%" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('saf')})`} />
             <circle cx="30" cy="30" r="21" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
             {Array.from({ length: 12 }).map((_, i) => {
                 const a = (i * 30 - 90) * Math.PI / 180;
@@ -182,10 +194,11 @@ function SafariIcon() {
 }
 
 function CompassIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><RadialGrad id="cmp" inner="#48484a" outer="#0a0a0c" cx="42%" cy="34%" /></defs>
-            <rect width={S} height={S} fill="url(#cmp)" />
+            <defs><RadialGrad id={u('cmp')} inner="#48484a" outer="#0a0a0c" cx="42%" cy="34%" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('cmp')})`} />
             <circle cx="30" cy="30" r="22" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="1" />
             {Array.from({ length: 24 }).map((_, i) => {
                 const b = i * 15;
@@ -212,15 +225,16 @@ function CompassIcon() {
 }
 
 function MapsIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="mland"  top="#F8F7F3" bot="#EDEBE3" angle={180} />
-                <LinearGrad id="mwater" top="#B5DFF6" bot="#9FD2EF" angle={180} />
-                <RadialGrad id="mpuck" inner="#4AA3FF" outer="#0A7AFF" cx="38%" cy="32%" />
+                <LinearGrad id={u('mland')}  top="#F8F7F3" bot="#EDEBE3" angle={180} />
+                <LinearGrad id={u('mwater')} top="#B5DFF6" bot="#9FD2EF" angle={180} />
+                <RadialGrad id={u('mpuck')} inner="#4AA3FF" outer="#0A7AFF" cx="38%" cy="32%" />
             </defs>
-            <rect width={S} height={S} fill="url(#mland)" />
-            <path d="M46,-4 C43,6 50,14 51,24 C52,34 44,42 44,52 C44,56 45,60 47,64 L64,64 L64,-4 Z" fill="url(#mwater)" />
+            <rect width={S} height={S} fill={`url(#${u('mland')})`} />
+            <path d="M46,-4 C43,6 50,14 51,24 C52,34 44,42 44,52 C44,56 45,60 47,64 L64,64 L64,-4 Z" fill={`url(#${u('mwater')})`} />
             <path d="M21,7 C28,5 31.5,11 29.5,16.5 C27.5,22 19,23 16,17.5 C13.5,13 15,9 21,7 Z" fill="#C3E5A9" />
             <g stroke="#E0DED5" strokeWidth="1.4" fill="none">
                 <path d="M22,34 L22,62" />
@@ -239,18 +253,19 @@ function MapsIcon() {
             </g>
             <circle cx="31" cy="25" r="9.5" fill="#0A7AFF" opacity="0.18" />
             <circle cx="31" cy="25" r="6" fill="#FFFFFF" />
-            <circle cx="31" cy="25" r="4.4" fill="url(#mpuck)" />
+            <circle cx="31" cy="25" r="4.4" fill={`url(#${u('mpuck')})`} />
         </svg>
     );
 }
 
 function FindFriendsIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <RadialGrad id="ffbg" inner="#5BE584" outer="#16B85A" cx="50%" cy="42%" />
+                <RadialGrad id={u('ffbg')} inner="#5BE584" outer="#16B85A" cx="50%" cy="42%" />
             </defs>
-            <rect width={S} height={S} fill="url(#ffbg)" />
+            <rect width={S} height={S} fill={`url(#${u('ffbg')})`} />
             <circle cx="30" cy="30" r="19" fill="none" stroke="#FFFFFF" strokeOpacity="0.32" strokeWidth="2" />
             <circle cx="30" cy="30" r="11.5" fill="none" stroke="#FFFFFF" strokeOpacity="0.5" strokeWidth="2" />
             <circle cx="30" cy="28.5" r="6.5" fill="#FFFFFF" />
@@ -281,18 +296,19 @@ function RydeIcon() {
 }
 
 function CameraIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <RadialGrad id="cbg"  inner="#6E6E78" outer="#2C2C31" cx="50%" cy="40%" />
-                <RadialGrad id="clns" inner="#5E7188" outer="#141A26" cx="38%" cy="32%" />
+                <RadialGrad id={u('cbg')}  inner="#6E6E78" outer="#2C2C31" cx="50%" cy="40%" />
+                <RadialGrad id={u('clns')} inner="#5E7188" outer="#141A26" cx="38%" cy="32%" />
             </defs>
-            <rect width={S} height={S} fill="url(#cbg)" />
+            <rect width={S} height={S} fill={`url(#${u('cbg')})`} />
             <rect x="8" y="10" width="12" height="8" rx="3" fill="#55555C" />
             <rect x="9.5" y="11.5" width="9" height="5" rx="2" fill="#3A3A40" />
             <circle cx="46" cy="14" r="3.5" fill="#55555C" />
             <circle cx="30" cy="32" r="18.5" fill="#3A3A40" />
-            <circle cx="30" cy="32" r="17.5" fill="url(#clns)" />
+            <circle cx="30" cy="32" r="17.5" fill={`url(#${u('clns')})`} />
             <circle cx="30" cy="32" r="13.5" fill="none" stroke="#6A6A78" strokeWidth="1.2" />
             <circle cx="30" cy="32" r="9.5"  fill="#10151F" />
             <ellipse cx="25" cy="26" rx="3.5" ry="2" fill="rgba(215,232,255,0.55)"
@@ -331,10 +347,11 @@ export function PhotosIcon() {
 }
 
 function MusicIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="mus" top="#FB5C74" mid="#FA3D55" bot="#F8233B" angle={170} /></defs>
-            <rect width={S} height={S} fill="url(#mus)" />
+            <defs><LinearGrad id={u('mus')} top="#FB5C74" mid="#FA3D55" bot="#F8233B" angle={170} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('mus')})`} />
             <path d="M0,38 Q10,32 20,37 T40,37 T60,33 V60 H0 Z" fill="rgba(255,255,255,0.10)" />
             <path d="M0,45 Q12,39.5 24,44 T46,43.5 T60,41 V60 H0 Z" fill="rgba(255,255,255,0.12)" />
             <path d="M0,52 Q14,47.5 28,51 T60,49.5 V60 H0 Z" fill="rgba(255,255,255,0.14)" />
@@ -348,10 +365,11 @@ function MusicIcon() {
 }
 
 function WalletIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="wbg" top="#2C2C2E" bot="#0A0A0C" angle={160} /></defs>
-            <rect width={S} height={S} fill="url(#wbg)" />
+            <defs><LinearGrad id={u('wbg')} top="#2C2C2E" bot="#0A0A0C" angle={160} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('wbg')})`} />
             <rect x="8" y="18" width="44" height="27" rx="4.5" fill="#C8A43C" opacity="0.9" />
             <rect x="8" y="14" width="44" height="27" rx="4.5" fill="#1B64C8" />
             <rect x="14" y="21" width="10" height="7.5" rx="1.5" fill="#E8C840" opacity="0.95" />
@@ -369,20 +387,21 @@ function WalletIcon() {
 }
 
 function WeatherIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="wxbg" top="#5CC8FF" mid="#2A9FF5" bot="#1460D4" angle={170} />
-                <radialGradient id="wxsun" cx="42%" cy="40%" r="62%">
+                <LinearGrad id={u('wxbg')} top="#5CC8FF" mid="#2A9FF5" bot="#1460D4" angle={170} />
+                <radialGradient id={u('wxsun')} cx="42%" cy="40%" r="62%">
                     <stop offset="0" stopColor="#FFE873" />
                     <stop offset="1" stopColor="#FFC700" />
                 </radialGradient>
-                <linearGradient id="wxcloud" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('wxcloud')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#FFFFFF" />
                     <stop offset="1" stopColor="#E4EEFA" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#wxbg)" />
+            <rect width={S} height={S} fill={`url(#${u('wxbg')})`} />
             <circle cx="22" cy="20" r="15" fill="#FFE873" opacity="0.22" />
             {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
                 <line key={a}
@@ -391,14 +410,14 @@ function WeatherIcon() {
                     transform={`rotate(${a},22,20)`}
                 />
             ))}
-            <circle cx="22" cy="20" r="9" fill="url(#wxsun)" />
+            <circle cx="22" cy="20" r="9" fill={`url(#${u('wxsun')})`} />
             <ellipse cx="19" cy="16.5" rx="3.4" ry="2.1" fill="rgba(255,255,255,0.5)" transform="rotate(-28 19 16.5)" />
             <circle cx="42" cy="29" r="8.5" fill="#fff" opacity="0.55" />
             <g>
-                <rect  x="12" y="36" width="38" height="13.5" rx="6.75" fill="url(#wxcloud)" />
-                <circle cx="22"   cy="36"   r="8.6"  fill="url(#wxcloud)" />
-                <circle cx="33.5" cy="32.5" r="11"   fill="url(#wxcloud)" />
-                <circle cx="44"   cy="36.5" r="7.6"  fill="url(#wxcloud)" />
+                <rect  x="12" y="36" width="38" height="13.5" rx="6.75" fill={`url(#${u('wxcloud')})`} />
+                <circle cx="22"   cy="36"   r="8.6"  fill={`url(#${u('wxcloud')})`} />
+                <circle cx="33.5" cy="32.5" r="11"   fill={`url(#${u('wxcloud')})`} />
+                <circle cx="44"   cy="36.5" r="7.6"  fill={`url(#${u('wxcloud')})`} />
                 <path d="M26,27.5 A10,10 0 0 1 39,26.5" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" />
                 <path d="M14,46.5 Q30,50.5 48,46.2" fill="none" stroke="rgba(20,70,160,0.18)" strokeWidth="2.4" strokeLinecap="round" />
             </g>
@@ -407,10 +426,11 @@ function WeatherIcon() {
 }
 
 function ClockIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="clkbg" top="#3A3A3C" bot="#0A0A0C" angle={160} /></defs>
-            <rect width={S} height={S} fill="url(#clkbg)" />
+            <defs><LinearGrad id={u('clkbg')} top="#3A3A3C" bot="#0A0A0C" angle={160} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('clkbg')})`} />
             <circle cx="30" cy="30" r="23" fill="#2C2C2E" />
             <circle cx="30" cy="30" r="22" fill="#1C1C1E" />
             {Array.from({ length: 12 }).map((_, i) => {
@@ -468,10 +488,11 @@ function CalendarIcon() {
 }
 
 function NotesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="ntbg" top="#FFE94D" mid="#FFCD3C" bot="#F0A800" angle={160} /></defs>
-            <rect width={S} height={S} fill="url(#ntbg)" />
+            <defs><LinearGrad id={u('ntbg')} top="#FFE94D" mid="#FFCD3C" bot="#F0A800" angle={160} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('ntbg')})`} />
             <rect x="9" y="8" width="42" height="45" rx="4" fill="rgba(255,255,255,0.97)" />
             <line x1="19" y1="8" x2="19" y2="53" stroke="#FFAAAA" strokeWidth="1.5" opacity="0.7" />
             {[20, 27, 34, 41, 48].map(y => (
@@ -485,6 +506,7 @@ function NotesIcon() {
 }
 
 function DocumentsIcon() {
+    const u = useIconIds();
     // Passwords-icon technique: one folder glyph repeated in yellow/green/blue, cascading
     // diagonally, each with a tile-coloured stroke pass behind it so the layers cut cleanly
     // out of each other.
@@ -501,19 +523,20 @@ function DocumentsIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="docy" top="#FFE03D" bot="#F5A623" angle={160} />
-                <LinearGrad id="docg" top="#5BE372" bot="#1FAE43" angle={160} />
-                <LinearGrad id="docb" top="#56C8FF" bot="#0A6CDE" angle={160} />
+                <LinearGrad id={u('docy')} top="#FFE03D" bot="#F5A623" angle={160} />
+                <LinearGrad id={u('docg')} top="#5BE372" bot="#1FAE43" angle={160} />
+                <LinearGrad id={u('docb')} top="#56C8FF" bot="#0A6CDE" angle={160} />
             </defs>
             <rect width={S} height={S} fill={TILE} />
-            {fold('url(#docy)', 23.5, 23.5)}
-            {fold('url(#docg)', 28.5, 29.5)}
-            {fold('url(#docb)', 33.5, 35.5)}
+            {fold(`url(#${u('docy')})`, 23.5, 23.5)}
+            {fold(`url(#${u('docg')})`, 28.5, 29.5)}
+            {fold(`url(#${u('docb')})`, 33.5, 35.5)}
         </svg>
     );
 }
 
 function SettingsIcon() {
+    const u = useIconIds();
     const teeth = (n: number, base: number, tip: number, bhw: number, thw: number, fill: string) =>
         Array.from({ length: n }).map((_, i) => (
             <polygon key={i}
@@ -523,36 +546,36 @@ function SettingsIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="setbg" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('setbg')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#E6E5EC" />
                     <stop offset="0.5" stopColor="#C2C2C7" />
                     <stop offset="1" stopColor="#929296" />
                 </linearGradient>
-                <linearGradient id="setdk" x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+                <linearGradient id={u('setdk')} x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
                     <stop offset="0" stopColor="#323236" />
                     <stop offset="1" stopColor="#242428" />
                 </linearGradient>
-                <linearGradient id="setsv" x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+                <linearGradient id={u('setsv')} x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
                     <stop offset="0" stopColor="#E7E6EB" />
                     <stop offset="1" stopColor="#A0A0A5" />
                 </linearGradient>
-                <linearGradient id="setsvd" x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+                <linearGradient id={u('setsvd')} x1="0" y1="-26" x2="0" y2="26" gradientUnits="userSpaceOnUse">
                     <stop offset="0" stopColor="#BFBEC4" />
                     <stop offset="1" stopColor="#8E8D93" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#setbg)" />
+            <rect width={S} height={S} fill={`url(#${u('setbg')})`} />
             <g transform="translate(30,30)">
-                <circle r="25.9" fill="url(#setdk)" />
-                <circle r="12.75" fill="none" stroke="url(#setsvd)" strokeWidth="2.5" />
-                {teeth(54, 13.8, 16.1, 0.38, 0.15, 'url(#setsvd)')}
+                <circle r="25.9" fill={`url(#${u('setdk')})`} />
+                <circle r="12.75" fill="none" stroke={`url(#${u('setsvd')})`} strokeWidth="2.5" />
+                {teeth(54, 13.8, 16.1, 0.38, 0.15, `url(#${u('setsvd')})`)}
                 {[0, 120, 240].map(a => (
                     <polygon key={a} points="1.2,-1.2 18.8,-2.2 18.8,2.2 1.2,1.2"
-                        fill="url(#setsvd)" transform={`rotate(${a})`} />
+                        fill={`url(#${u('setsvd')})`} transform={`rotate(${a})`} />
                 ))}
-                <circle r="20" fill="none" stroke="url(#setsv)" strokeWidth="2.4" />
-                {teeth(56, 21, 24.2, 0.5, 0.16, 'url(#setsv)')}
-                <circle r="3" fill="url(#setsvd)" />
+                <circle r="20" fill="none" stroke={`url(#${u('setsv')})`} strokeWidth="2.4" />
+                {teeth(56, 21, 24.2, 0.5, 0.16, `url(#${u('setsv')})`)}
+                <circle r="3" fill={`url(#${u('setsvd')})`} />
                 <circle r="1.05" fill="#242428" />
             </g>
         </svg>
@@ -560,22 +583,23 @@ function SettingsIcon() {
 }
 
 function AppStoreIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="asbg" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('asbg')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#5BD8FF" />
                     <stop offset="0.5" stopColor="#1E8BFF" />
                     <stop offset="1" stopColor="#0B57C9" />
                 </linearGradient>
-                <radialGradient id="asgl" cx="50%" cy="-6%" r="80%">
+                <radialGradient id={u('asgl')} cx="50%" cy="-6%" r="80%">
                     <stop offset="0" stopColor="#fff" stopOpacity="0.42" />
                     <stop offset="0.55" stopColor="#fff" stopOpacity="0.06" />
                     <stop offset="1" stopColor="#fff" stopOpacity="0" />
                 </radialGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#asbg)" />
-            <rect width={S} height={S} fill="url(#asgl)" />
+            <rect width={S} height={S} fill={`url(#${u('asbg')})`} />
+            <rect width={S} height={S} fill={`url(#${u('asgl')})`} />
             <g strokeWidth="4.4" strokeLinecap="round" fill="none">
                 <line x1="16" y1="43" x2="34" y2="13" stroke="#fff" />
                 <line x1="44" y1="43" x2="26" y2="13" stroke="#fff" strokeOpacity="0.6" />
@@ -586,10 +610,11 @@ function AppStoreIcon() {
 }
 
 function BankIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="bnkbg" top="#5BBBF5" bot="#0064D2" angle={145} /></defs>
-            <rect width={S} height={S} fill="url(#bnkbg)" />
+            <defs><LinearGrad id={u('bnkbg')} top="#5BBBF5" bot="#0064D2" angle={145} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('bnkbg')})`} />
             <polygon points="30,9 53,22 7,22" fill="white" opacity="0.96" />
             <rect x="6" y="22" width="48" height="5" fill="white" opacity="0.93" />
             <rect x="10"    y="27" width="5.5" height="19" rx="2.75" fill="white" opacity="0.93" />
@@ -602,13 +627,14 @@ function BankIcon() {
 }
 
 function HealthIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="hlthbg" top="#FFFFFF" bot="#F2F2F4" angle={180} />
-                <LinearGrad id="hlthhr" top="#FF5277" bot="#E5163E" angle={160} />
+                <LinearGrad id={u('hlthbg')} top="#FFFFFF" bot="#F2F2F4" angle={180} />
+                <LinearGrad id={u('hlthhr')} top="#FF5277" bot="#E5163E" angle={160} />
             </defs>
-            <rect width={S} height={S} fill="url(#hlthbg)" />
+            <rect width={S} height={S} fill={`url(#${u('hlthbg')})`} />
             <path
                 d="M30,49
                    C18,40 8,32 8,22
@@ -617,7 +643,7 @@ function HealthIcon() {
                    C33,13.5 37,11 41.5,11
                    C47,11 52,15.5 52,22
                    C52,32 42,40 30,49 Z"
-                fill="url(#hlthhr)"
+                fill={`url(#${u('hlthhr')})`}
             />
             <path
                 d="M22,14 C18.5,14 14,16.5 14,21 C14,24 16,27 19,30"
@@ -629,23 +655,24 @@ function HealthIcon() {
 }
 
 function GroupsIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="grpsbg" top="#C084FC" mid="#7C3AED" bot="#4C1D95" angle={148} />
-                <radialGradient id="grpsgl" cx="62%" cy="22%" r="58%">
+                <LinearGrad id={u('grpsbg')} top="#C084FC" mid="#7C3AED" bot="#4C1D95" angle={148} />
+                <radialGradient id={u('grpsgl')} cx="62%" cy="22%" r="58%">
                     <stop offset="0%"   stopColor="rgba(255,255,255,0.24)" />
                     <stop offset="100%" stopColor="rgba(255,255,255,0)"    />
                 </radialGradient>
-                <radialGradient id="grpsvig" cx="50%" cy="110%" r="60%">
+                <radialGradient id={u('grpsvig')} cx="50%" cy="110%" r="60%">
                     <stop offset="0%"   stopColor="rgba(40,0,90,0.38)" />
                     <stop offset="100%" stopColor="rgba(40,0,90,0)"    />
                 </radialGradient>
             </defs>
 
-            <rect width={S} height={S} fill="url(#grpsbg)" />
-            <rect width={S} height={S} fill="url(#grpsgl)" />
-            <rect width={S} height={S} fill="url(#grpsvig)" />
+            <rect width={S} height={S} fill={`url(#${u('grpsbg')})`} />
+            <rect width={S} height={S} fill={`url(#${u('grpsgl')})`} />
+            <rect width={S} height={S} fill={`url(#${u('grpsvig')})`} />
 
             <path
                 d="M23,60 C23,45 30,36 37,36 C44,36 51,45 51,60 Z"
@@ -694,18 +721,19 @@ function CalculatorIcon() {
 }
 
 function BirdyIcon() {
+    const u = useIconIds();
     // The user-drawn "plump two-feather flyer" final mark (Downloads/BirdyIconNEWEST2.jsx)
     // with its authored periwinkle palette; the bare glyph twin lives in apps/birdy/BirdyBird.
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="bdy" x1="0.15" y1="0" x2="0.85" y2="1">
+                <linearGradient id={u('bdy')} x1="0.15" y1="0" x2="0.85" y2="1">
                     <stop offset="0" stopColor="#6b8ff5" />
                     <stop offset="0.55" stopColor="#5570e8" />
                     <stop offset="1" stopColor="#4353d4" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#bdy)" />
+            <rect width={S} height={S} fill={`url(#${u('bdy')})`} />
             <svg x="0" y="0" width={S} height={S} viewBox="0 0 512 512">
                 {/* Centered on the artwork's bounding box (x 8-95, y 19-96 in its 100-frame). */}
                 <g transform="translate(37,11.5) scale(4.25)">
@@ -721,31 +749,33 @@ function BirdyIcon() {
 }
 
 function DarkChatIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="dchat" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('dchat')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#2B3040" />
                     <stop offset="1" stopColor="#101218" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#dchat)" />
+            <rect width={S} height={S} fill={`url(#${u('dchat')})`} />
             <rect x="26" y="12" width="24" height="16" rx="6" fill="#7C6CFF" />
             <polygon points="44,26 44,33 36,27" fill="#7C6CFF" />
             <rect x="10" y="26" width="28" height="18" rx="6.5" fill="#fff" />
             <polygon points="16,42 16,50 25,43.5" fill="#fff" />
-            <circle cx="19" cy="35" r="2" fill="url(#dchat)" />
-            <circle cx="24" cy="35" r="2" fill="url(#dchat)" />
-            <circle cx="29" cy="35" r="2" fill="url(#dchat)" />
+            <circle cx="19" cy="35" r="2" fill={`url(#${u('dchat')})`} />
+            <circle cx="24" cy="35" r="2" fill={`url(#${u('dchat')})`} />
+            <circle cx="29" cy="35" r="2" fill={`url(#${u('dchat')})`} />
         </svg>
     );
 }
 
 function CherryIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="chy" top="#FF5C7E" mid="#F0285A" bot="#D11241" /></defs>
-            <rect width={S} height={S} fill="url(#chy)" />
+            <defs><LinearGrad id={u('chy')} top="#FF5C7E" mid="#F0285A" bot="#D11241" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('chy')})`} />
             <svg x="12" y="12" width="36" height="36" viewBox="0 0 24 24"
                 fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z" />
@@ -758,24 +788,25 @@ function CherryIcon() {
 }
 
 function PhotogramIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="pgram" x1="0" y1="1" x2="1" y2="0">
+                <linearGradient id={u('pgram')} x1="0" y1="1" x2="1" y2="0">
                     <stop offset="0" stopColor="#FCAF45" />
                     <stop offset="0.5" stopColor="#E1306C" />
                     <stop offset="1" stopColor="#7B2FF7" />
                 </linearGradient>
-                <radialGradient id="pgramLens" cx="40%" cy="34%" r="66%">
+                <radialGradient id={u('pgramLens')} cx="40%" cy="34%" r="66%">
                     <stop offset="0" stopColor="#26262f" />
                     <stop offset="1" stopColor="#08080c" />
                 </radialGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#pgram)" />
+            <rect width={S} height={S} fill={`url(#${u('pgram')})`} />
             <rect x="9" y="9.5" width="12" height="3" rx="1.5" fill="#fff" opacity="0.6" />
             <rect x="43" y="8" width="8" height="5.5" rx="2" fill="#fff" opacity="0.92" />
             <circle cx="30" cy="33" r="16.5" fill="#fff" opacity="0.22" />
-            <circle cx="30" cy="33" r="14.5" fill="url(#pgramLens)" />
+            <circle cx="30" cy="33" r="14.5" fill={`url(#${u('pgramLens')})`} />
             <circle cx="30" cy="33" r="14.5" fill="none" stroke="#fff" strokeWidth="1.8" />
             <circle cx="30" cy="33" r="8" fill="none" stroke="#fff" strokeWidth="2" opacity="0.55" />
             <circle cx="30" cy="33" r="3.6" fill="#08080c" />
@@ -786,21 +817,22 @@ function PhotogramIcon() {
 
 
 function GaragesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="gar" x1="0" y1="1" x2="1" y2="0">
+                <linearGradient id={u('gar')} x1="0" y1="1" x2="1" y2="0">
                     <stop offset="0" stopColor="#9D4EFF" />
                     <stop offset="1" stopColor="#2E6BFF" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#gar)" />
+            <rect width={S} height={S} fill={`url(#${u('gar')})`} />
             <path
                 d="M30,11 L49,21.5 Q50,22 50,23 V44 Q50,46.5 47.5,46.5 H12.5 Q10,46.5 10,44 V23 Q10,22 11,21.5 Z"
                 fill="#fff"
             />
-            <circle cx="30" cy="19.5" r="2.1" fill="url(#gar)" />
-            <rect x="16.5" y="26" width="27" height="20.5" rx="2" fill="url(#gar)" />
+            <circle cx="30" cy="19.5" r="2.1" fill={`url(#${u('gar')})`} />
+            <rect x="16.5" y="26" width="27" height="20.5" rx="2" fill={`url(#${u('gar')})`} />
             <rect x="16.5" y="30.4" width="27" height="2" fill="#fff" opacity="0.9" />
             <rect x="16.5" y="35.2" width="27" height="2" fill="#fff" opacity="0.9" />
             <rect x="16.5" y="40"   width="27" height="2" fill="#fff" opacity="0.9" />
@@ -811,15 +843,16 @@ function GaragesIcon() {
 }
 
 function HomesIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="hom" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('hom')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#4FE0A6" />
                     <stop offset="1" stopColor="#11936B" />
                 </linearGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#hom)" />
+            <rect width={S} height={S} fill={`url(#${u('hom')})`} />
             <circle cx="30" cy="31" r="20.5" fill="#fff" opacity="0.10" />
             <path
                 d="M27.8,13.4
@@ -829,23 +862,24 @@ function HomesIcon() {
                    V26.9 L14.6,27.6 Q13.2,28.4 12.4,27.4 Q11.6,26.2 12.8,25.2 Z"
                 fill="#fff"
             />
-            <path d="M25.6,47 V36.5 A4.4,4.4 0 0 1 34.4,36.5 V47 Z" fill="url(#hom)" />
+            <path d="M25.6,47 V36.5 A4.4,4.4 0 0 1 34.4,36.5 V47 Z" fill={`url(#${u('hom')})`} />
         </svg>
     );
 }
 
 function CookieIcon() {
+    const u = useIconIds();
     const chips = [
         [22, 22, 4], [40, 19, 4.4], [30, 36, 4], [44, 39, 3.6], [21, 42, 3.4],
     ] as const;
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="ckie-bg" top="#E7A856" mid="#C77D2E" bot="#9C5A1C" angle={150} />
-                <RadialGrad id="ckie-b" inner="#EFC684" outer="#B9772F" cx="38%" cy="32%" />
+                <LinearGrad id={u('ckie-bg')} top="#E7A856" mid="#C77D2E" bot="#9C5A1C" angle={150} />
+                <RadialGrad id={u('ckie-b')} inner="#EFC684" outer="#B9772F" cx="38%" cy="32%" />
             </defs>
-            <rect width={S} height={S} fill="url(#ckie-bg)" />
-            <circle cx="30" cy="30" r="20" fill="url(#ckie-b)" />
+            <rect width={S} height={S} fill={`url(#${u('ckie-bg')})`} />
+            <circle cx="30" cy="30" r="20" fill={`url(#${u('ckie-b')})`} />
             <circle cx="30" cy="30" r="20" fill="none" stroke="rgba(80,46,20,0.30)" strokeWidth="1.4" />
             <path d="M16,21 A17,17 0 0 1 30,13" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
             {chips.map(([cx, cy, r], i) => (
@@ -859,10 +893,11 @@ function CookieIcon() {
 }
 
 export function FlappyIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="flpy" top="#7FE0EC" mid="#4EC0CA" bot="#2E9CA8" angle={170} /></defs>
-            <rect width={S} height={S} fill="url(#flpy)" />
+            <defs><LinearGrad id={u('flpy')} top="#7FE0EC" mid="#4EC0CA" bot="#2E9CA8" angle={170} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('flpy')})`} />
             <rect x="40" y="0"  width="12" height="20" rx="2" fill="#5BBA4A" />
             <rect x="40" y="34" width="12" height="26" rx="2" fill="#5BBA4A" />
             <rect x="38" y="16" width="16" height="6" rx="2" fill="#4C9E3E" />
@@ -877,6 +912,7 @@ export function FlappyIcon() {
 }
 
 function PasswordsIcon() {
+    const u = useIconIds();
     const BG = '#202022';
     const SHAFT = 'M -3.6 8 L -3.6 33 L 9 33 L 9 28 L 3.6 28 L 3.6 24.4 L 7.8 24.4 L 7.8 19.8 L 3.6 19.8 L 3.6 8 Z';
     const key = (grad: string, hole: boolean) => (
@@ -895,14 +931,14 @@ function PasswordsIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="pwy" top="#FFE03D" bot="#F5A623" angle={160} />
-                <LinearGrad id="pwg" top="#5BE372" bot="#1FAE43" angle={160} />
-                <LinearGrad id="pwb" top="#56C8FF" bot="#0A6CDE" angle={160} />
+                <LinearGrad id={u('pwy')} top="#FFE03D" bot="#F5A623" angle={160} />
+                <LinearGrad id={u('pwg')} top="#5BE372" bot="#1FAE43" angle={160} />
+                <LinearGrad id={u('pwb')} top="#56C8FF" bot="#0A6CDE" angle={160} />
             </defs>
             <rect width={S} height={S} fill={BG} />
-            <g transform="translate(23 19.5)">{key('url(#pwy)', false)}</g>
-            <g transform="translate(29.7 19)">{key('url(#pwg)', false)}</g>
-            <g transform="translate(36.4 18.5)">{key('url(#pwb)', true)}</g>
+            <g transform="translate(23 19.5)">{key(`url(#${u('pwy')})`, false)}</g>
+            <g transform="translate(29.7 19)">{key(`url(#${u('pwg')})`, false)}</g>
+            <g transform="translate(36.4 18.5)">{key(`url(#${u('pwb')})`, true)}</g>
         </svg>
     );
 }
@@ -927,6 +963,7 @@ export function WordleIcon() {
 }
 
 export function BlocksIcon() {
+    const u = useIconIds();
     const c = 11;
     const ox = 8, oy = 9;
     const cell = (cx: number, cy: number, fill: string) => (
@@ -934,8 +971,8 @@ export function BlocksIcon() {
     );
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="blk" top="#3A3550" mid="#241F38" bot="#15111F" angle={150} /></defs>
-            <rect width={S} height={S} fill="url(#blk)" />
+            <defs><LinearGrad id={u('blk')} top="#3A3550" mid="#241F38" bot="#15111F" angle={150} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('blk')})`} />
             {cell(0, 0, '#A65CFF')}{cell(1, 0, '#A65CFF')}{cell(2, 0, '#A65CFF')}{cell(1, 1, '#A65CFF')}
             {cell(3, 2, '#F2C53D')}{cell(4, 2, '#F2C53D')}{cell(3, 3, '#F2C53D')}{cell(4, 3, '#F2C53D')}
             {cell(0, 2, '#36C9E0')}{cell(0, 3, '#36C9E0')}{cell(1, 3, '#36C9E0')}{cell(2, 3, '#36C9E0')}
@@ -944,10 +981,11 @@ export function BlocksIcon() {
 }
 
 export function BlackjackIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="bjk" top="#22945A" mid="#16804A" bot="#0C5E36" angle={150} /></defs>
-            <rect width={S} height={S} fill="url(#bjk)" />
+            <defs><LinearGrad id={u('bjk')} top="#22945A" mid="#16804A" bot="#0C5E36" angle={150} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('bjk')})`} />
             <g transform="rotate(-13 26 34)">
                 <rect x="13" y="16" width="24" height="33" rx="4" fill="#F3F6F4" stroke="rgba(0,0,0,0.12)" strokeWidth="0.8" />
                 <text x="25" y="36" textAnchor="middle" fontSize="15" fill="#E0233A" fontFamily="-apple-system,sans-serif">♥</text>
@@ -962,6 +1000,7 @@ export function BlackjackIcon() {
 }
 
 export function CasinoIcon() {
+    const u = useIconIds();
     const cx = 30;
     const cy = 28;
     const inner = 6;
@@ -980,14 +1019,14 @@ export function CasinoIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="csn"  top="#1B8A54" mid="#0F5F3A" bot="#073E27" angle={150} />
-                <LinearGrad id="csng" top="#F0D48A" mid="#D4AF5F" bot="#A97F31" angle={160} />
+                <LinearGrad id={u('csn')}  top="#1B8A54" mid="#0F5F3A" bot="#073E27" angle={150} />
+                <LinearGrad id={u('csng')} top="#F0D48A" mid="#D4AF5F" bot="#A97F31" angle={160} />
             </defs>
-            <rect width={S} height={S} fill="url(#csn)" />
+            <rect width={S} height={S} fill={`url(#${u('csn')})`} />
             <circle cx={cx} cy={cy} r="16.5" fill="rgba(0,0,0,0.22)" />
             {wedges}
-            <circle cx={cx} cy={cy} r="15" fill="none" stroke="url(#csng)" strokeWidth="4" />
-            <circle cx={cx} cy={cy} r="4" fill="url(#csng)" />
+            <circle cx={cx} cy={cy} r="15" fill="none" stroke={`url(#${u('csng')})`} strokeWidth="4" />
+            <circle cx={cx} cy={cy} r="4" fill={`url(#${u('csng')})`} />
             <circle cx="43" cy="45" r="9" fill="#F3F6F4" stroke="rgba(0,0,0,0.18)" strokeWidth="0.9" />
             <circle cx="43" cy="45" r="6.5" fill="none" stroke="#C1272D" strokeWidth="3" strokeDasharray="4 3" />
         </svg>
@@ -995,10 +1034,11 @@ export function CasinoIcon() {
 }
 
 export function ClimberIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="clm" top="#9CCC52" mid="#7CB342" bot="#5C9A2A" angle={160} /></defs>
-            <rect width={S} height={S} fill="url(#clm)" />
+            <defs><LinearGrad id={u('clm')} top="#9CCC52" mid="#7CB342" bot="#5C9A2A" angle={160} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('clm')})`} />
             <rect x="8"  y="46" width="18" height="5" rx="2.5" fill="#FFFFFF" opacity="0.92" />
             <rect x="34" y="36" width="18" height="5" rx="2.5" fill="#FFFFFF" opacity="0.92" />
             <rect x="13" y="24" width="18" height="5" rx="2.5" fill="#FFFFFF" opacity="0.92" />
@@ -1013,6 +1053,7 @@ export function ClimberIcon() {
 }
 
 export function ConnectFourIcon() {
+    const u = useIconIds();
     const discs: Record<string, string> = {
         '0-2': '#F2C53D', '1-2': '#E0413B', '2-2': '#F2C53D',
         '2-1': '#E0413B', '1-1': '#F2C53D',
@@ -1021,8 +1062,8 @@ export function ConnectFourIcon() {
     const cy = [16, 30, 44];
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="c4" top="#2E78E8" mid="#1E66D0" bot="#1149A0" angle={150} /></defs>
-            <rect width={S} height={S} fill="url(#c4)" />
+            <defs><LinearGrad id={u('c4')} top="#2E78E8" mid="#1E66D0" bot="#1149A0" angle={150} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('c4')})`} />
             {cy.map((y, r) => cx.map((x, c) => (
                 <circle key={`${c}-${r}`} cx={x} cy={y} r="6.2" fill={discs[`${c}-${r}`] ?? '#123E86'} />
             )))}
@@ -1031,14 +1072,15 @@ export function ConnectFourIcon() {
 }
 
 export function BattleshipIcon() {
+    const u = useIconIds();
     const xs = [12, 24, 36, 48];
     const ys = [12, 24, 36, 48];
     const hit  = new Set(['1-1', '2-1', '0-3']);
     const miss = new Set(['3-0', '0-0']);
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="bship" top="#1E7C99" mid="#0E5070" bot="#06304A" angle={150} /></defs>
-            <rect width={S} height={S} fill="url(#bship)" />
+            <defs><LinearGrad id={u('bship')} top="#1E7C99" mid="#0E5070" bot="#06304A" angle={150} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('bship')})`} />
             {ys.map((y, r) => xs.map((x, c) => {
                 const k = `${c}-${r}`;
                 const fill = hit.has(k) ? '#FF5A5A' : miss.has(k) ? '#EAF2F8' : '#0A2A40';
@@ -1049,13 +1091,14 @@ export function BattleshipIcon() {
 }
 
 export function ChessIcon() {
+    const u = useIconIds();
     const strip = Array.from({ length: 8 }, (_, i) => (
         <rect key={i} x={i * 7.5} y={50} width={7.5} height={10} fill={i % 2 === 0 ? '#EBECD0' : '#769656'} />
     ));
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="chess" top="#54545A" mid="#3A3A40" bot="#222226" angle={150} /></defs>
-            <rect width={S} height={S} fill="url(#chess)" />
+            <defs><LinearGrad id={u('chess')} top="#54545A" mid="#3A3A40" bot="#222226" angle={150} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('chess')})`} />
             {strip}
             <text
                 x="30" y="27" textAnchor="middle" dominantBaseline="central"
@@ -1069,40 +1112,41 @@ export function ChessIcon() {
 }
 
 function VibezIcon() {
+    const u = useIconIds();
     const play = 'M18.5,18 L41.5,30 L18.5,42 Z';
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="vbzBg" x1="0" y1="0" x2="1" y2="1">
+                <linearGradient id={u('vbzBg')} x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#B569FF" />
                     <stop offset="50%" stopColor="#8B5CF6" />
                     <stop offset="100%" stopColor="#F472B6" />
                 </linearGradient>
-                <radialGradient id="vbzHot" cx="26%" cy="15%" r="80%">
+                <radialGradient id={u('vbzHot')} cx="26%" cy="15%" r="80%">
                     <stop offset="0%" stopColor="#E3BDFF" stopOpacity="0.9" />
                     <stop offset="55%" stopColor="#E3BDFF" stopOpacity="0" />
                 </radialGradient>
-                <linearGradient id="vbzVig" x1="0.15" y1="0" x2="0.9" y2="1">
+                <linearGradient id={u('vbzVig')} x1="0.15" y1="0" x2="0.9" y2="1">
                     <stop offset="50%" stopColor="#2A0B4E" stopOpacity="0" />
                     <stop offset="100%" stopColor="#2A0B4E" stopOpacity="0.45" />
                 </linearGradient>
-                <linearGradient id="vbzFace" x1="0" y1="0" x2="0.2" y2="1">
+                <linearGradient id={u('vbzFace')} x1="0" y1="0" x2="0.2" y2="1">
                     <stop offset="0%" stopColor="#ffffff" />
                     <stop offset="55%" stopColor="#FBF6FF" />
                     <stop offset="100%" stopColor="#E4D0FA" />
                 </linearGradient>
-                <filter id="vbzLift" x="-60%" y="-60%" width="220%" height="220%">
+                <filter id={u('vbzLift')} x="-60%" y="-60%" width="220%" height="220%">
                     <feDropShadow dx="0" dy="1.6" stdDeviation="1.9" floodColor="#3B0F6B" floodOpacity="0.55" />
                 </filter>
             </defs>
-            <rect width={S} height={S} fill="url(#vbzBg)" />
-            <rect width={S} height={S} fill="url(#vbzHot)" />
-            <rect width={S} height={S} fill="url(#vbzVig)" />
-            <g filter="url(#vbzLift)">
+            <rect width={S} height={S} fill={`url(#${u('vbzBg')})`} />
+            <rect width={S} height={S} fill={`url(#${u('vbzHot')})`} />
+            <rect width={S} height={S} fill={`url(#${u('vbzVig')})`} />
+            <g filter={`url(#${u('vbzLift')})`}>
                 <path
                     d={play}
-                    fill="url(#vbzFace)"
-                    stroke="url(#vbzFace)"
+                    fill={`url(#${u('vbzFace')})`}
+                    stroke={`url(#${u('vbzFace')})`}
                     strokeWidth="7.5"
                     strokeLinejoin="round"
                     strokeLinecap="round"
@@ -1114,17 +1158,18 @@ function VibezIcon() {
 }
 
 function WeazelNewsIcon() {
+    const u = useIconIds();
     const NEWS_FONT = "Arial, 'Helvetica Neue', Inter, sans-serif";
     const bx = 5, by = 30.5, bw = 31, bh = 16.5;
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <linearGradient id="wzlbg" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('wzlbg')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#E81F1F" />
                     <stop offset="0.55" stopColor="#C81616" />
                     <stop offset="1" stopColor="#8C0B0B" />
                 </linearGradient>
-                <mask id="wzlnews">
+                <mask id={u('wzlnews')}>
                     <rect x={bx} y={by} width={bw} height={bh} fill="#fff" />
                     <text
                         x={bx + bw / 2} y={by + bh / 2 + 6.1}
@@ -1140,7 +1185,7 @@ function WeazelNewsIcon() {
                     </text>
                 </mask>
             </defs>
-            <rect width={S} height={S} fill="url(#wzlbg)" />
+            <rect width={S} height={S} fill={`url(#${u('wzlbg')})`} />
 
             <text
                 x="30" y="26.5"
@@ -1155,7 +1200,7 @@ function WeazelNewsIcon() {
                 WEAZEL
             </text>
 
-            <rect x={bx} y={by} width={bw} height={bh} fill="#fff" mask="url(#wzlnews)" />
+            <rect x={bx} y={by} width={bw} height={bh} fill="#fff" mask={`url(#${u('wzlnews')})`} />
 
             {[0, 1, 2, 3].map(i => (
                 <rect key={i} x="39" y={by + 0.5 + i * 4.5} width="16" height="2.5" fill="#fff" />
@@ -1167,6 +1212,7 @@ function WeazelNewsIcon() {
 type IconComponent = React.FC;
 
 function VoiceMemosIcon() {
+    const u = useIconIds();
     const heights = [12, 24, 16, 38, 46, 32, 20, 28, 14];
     const bw = 3, gap = 3.2;
     const total = heights.length * bw + (heights.length - 1) * gap;
@@ -1174,9 +1220,9 @@ function VoiceMemosIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="vmbg" top="#3A3A3C" bot="#161618" angle={160} />
+                <LinearGrad id={u('vmbg')} top="#3A3A3C" bot="#161618" angle={160} />
             </defs>
-            <rect width={S} height={S} fill="url(#vmbg)" />
+            <rect width={S} height={S} fill={`url(#${u('vmbg')})`} />
             {heights.map((h, i) => (
                 <rect key={i} x={x0 + i * (bw + gap)} y={(S - h) / 2} width={bw} height={h} rx={bw / 2} fill="#FFFFFF" />
             ))}
@@ -1185,10 +1231,11 @@ function VoiceMemosIcon() {
 }
 
 function StocksIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="stkbg" top="#22D67F" mid="#16C784" bot="#0E9C63" angle={160} /></defs>
-            <rect width={S} height={S} fill="url(#stkbg)" />
+            <defs><LinearGrad id={u('stkbg')} top="#22D67F" mid="#16C784" bot="#0E9C63" angle={160} /></defs>
+            <rect width={S} height={S} fill={`url(#${u('stkbg')})`} />
             <g opacity="0.30" fill="#FFFFFF">
                 <rect x="13" y="40" width="4" height="9"  rx="1.4" />
                 <rect x="22" y="36" width="4" height="13" rx="1.4" />
@@ -1205,14 +1252,15 @@ function StocksIcon() {
 }
 
 function RadioIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="rdbg" top="#3C3C3E" mid="#262628" bot="#161618" angle={160} />
-                <RadialGrad id="rdsh" inner="rgba(255,255,255,0.13)" outer="rgba(255,255,255,0)" cx="32%" cy="15%" />
+                <LinearGrad id={u('rdbg')} top="#3C3C3E" mid="#262628" bot="#161618" angle={160} />
+                <RadialGrad id={u('rdsh')} inner="rgba(255,255,255,0.13)" outer="rgba(255,255,255,0)" cx="32%" cy="15%" />
             </defs>
-            <rect width={S} height={S} fill="url(#rdbg)" />
-            <rect width={S} height={S} fill="url(#rdsh)" />
+            <rect width={S} height={S} fill={`url(#${u('rdbg')})`} />
+            <rect width={S} height={S} fill={`url(#${u('rdsh')})`} />
 
             <rect x="24.5" y="7.5" width="3" height="10" rx="1.5" fill="#FFFFFF" />
 
@@ -1230,10 +1278,11 @@ function RadioIcon() {
 }
 
 function ReviewIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
-            <defs><LinearGrad id="rv" top="#FF6B6B" mid="#F03E3E" bot="#C92A2A" /></defs>
-            <rect width={S} height={S} fill="url(#rv)" />
+            <defs><LinearGrad id={u('rv')} top="#FF6B6B" mid="#F03E3E" bot="#C92A2A" /></defs>
+            <rect width={S} height={S} fill={`url(#${u('rv')})`} />
             <path d="M11 13h38a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H26l-9 8 1.5-8H11a4 4 0 0 1-4-4V17a4 4 0 0 1 4-4z" fill="#FFFFFF" />
             <path
                 transform="translate(18 12) scale(1)"
@@ -1248,30 +1297,31 @@ const FLAME_D =
     'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z';
 
 function StreaksIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="strkbg" top="#F07E18" mid="#E84A0E" bot="#BC1906" angle={160} />
-                <linearGradient id="strkflame" x1="0" y1="0" x2="0" y2="1">
+                <LinearGrad id={u('strkbg')} top="#F07E18" mid="#E84A0E" bot="#BC1906" angle={160} />
+                <linearGradient id={u('strkflame')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0"   stopColor="#FFFFFF" />
                     <stop offset="1"   stopColor="#FFF1DE" />
                 </linearGradient>
-                <linearGradient id="strkcore" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={u('strkcore')} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0"    stopColor="#FFE873" />
                     <stop offset="0.5"  stopColor="#FFC23B" />
                     <stop offset="1"    stopColor="#FF8A1E" />
                 </linearGradient>
-                <filter id="strksh" x="-35%" y="-35%" width="170%" height="170%">
+                <filter id={u('strksh')} x="-35%" y="-35%" width="170%" height="170%">
                     <feDropShadow dx="0" dy="1" stdDeviation="1.3"
                         floodColor="#6E1300" floodOpacity="0.5" />
                 </filter>
             </defs>
-            <rect width={S} height={S} fill="url(#strkbg)" />
-            <svg x="8" y="5.5" width="44" height="49" viewBox="0 0 24 24" filter="url(#strksh)">
-                <path d={FLAME_D} fill="url(#strkflame)" />
+            <rect width={S} height={S} fill={`url(#${u('strkbg')})`} />
+            <svg x="8" y="5.5" width="44" height="49" viewBox="0 0 24 24" filter={`url(#${u('strksh')})`}>
+                <path d={FLAME_D} fill={`url(#${u('strkflame')})`} />
             </svg>
             <svg x="15.5" y="15" width="29" height="34" viewBox="0 0 24 24">
-                <path d={FLAME_D} fill="url(#strkcore)" />
+                <path d={FLAME_D} fill={`url(#${u('strkcore')})`} />
             </svg>
             <path d={`M0 0 H${S} V19 Q${S / 2} 27 0 19 Z`} fill="rgba(255,255,255,0.13)" />
         </svg>
@@ -1279,17 +1329,18 @@ function StreaksIcon() {
 }
 
 function EmsMdtIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="emsbg" top="#F2456B" mid="#E11D48" bot="#5C0A20" angle={160} />
-                <filter id="emssh" x="-30%" y="-30%" width="160%" height="160%">
+                <LinearGrad id={u('emsbg')} top="#F2456B" mid="#E11D48" bot="#5C0A20" angle={160} />
+                <filter id={u('emssh')} x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" floodColor="#2E0510" floodOpacity="0.45" />
                 </filter>
             </defs>
-            <rect width={S} height={S} fill="url(#emsbg)" />
+            <rect width={S} height={S} fill={`url(#${u('emsbg')})`} />
             <path d={`M0 0 H${S} V19 Q${S / 2} 27 0 19 Z`} fill="rgba(255,255,255,0.12)" />
-            <g filter="url(#emssh)">
+            <g filter={`url(#${u('emssh')})`}>
                 <path
                     d="M30 9.5 46 15.4V31.2c0 9-6.8 15.7-16 19.3-9.2-3.6-16-10.3-16-19.3V15.4Z"
                     fill="#FFFFFF"
@@ -1311,13 +1362,14 @@ function EmsMdtIcon() {
 }
 
 function DojMdtIcon() {
+    const u = useIconIds();
     const pan = (cx: number) => (
         <g key={cx}>
             <path
                 d={`M${cx - 7.4} 27.8 Q${cx} 37 ${cx + 7.4} 27.8 Z`}
-                fill="url(#dojbrassDeep)"
+                fill={`url(#${u('dojbrassDeep')})`}
             />
-            <ellipse cx={cx} cy="27.8" rx="7.4" ry="1.7" fill="url(#dojbrass)" />
+            <ellipse cx={cx} cy="27.8" rx="7.4" ry="1.7" fill={`url(#${u('dojbrass')})`} />
             <ellipse cx={cx} cy="27.8" rx="5.2" ry="0.8" fill="#7A5A18" fillOpacity="0.32" />
         </g>
     );
@@ -1325,38 +1377,38 @@ function DojMdtIcon() {
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="dojbg" top="#7C4DFF" mid="#5B21B6" bot="#1E0942" angle={158} />
-                <RadialGrad id="dojglow" inner="rgba(196,168,255,0.42)" outer="rgba(196,168,255,0)" cx="34%" cy="24%" />
-                <LinearGrad id="dojbrass" top="#FFF3C4" mid="#E8B84B" bot="#A9741F" angle={0} />
-                <LinearGrad id="dojbrassDeep" top="#D9A63C" bot="#7A4E12" angle={0} />
-                <filter id="dojsh" x="-40%" y="-40%" width="180%" height="180%">
+                <LinearGrad id={u('dojbg')} top="#7C4DFF" mid="#5B21B6" bot="#1E0942" angle={158} />
+                <RadialGrad id={u('dojglow')} inner="rgba(196,168,255,0.42)" outer="rgba(196,168,255,0)" cx="34%" cy="24%" />
+                <LinearGrad id={u('dojbrass')} top="#FFF3C4" mid="#E8B84B" bot="#A9741F" angle={0} />
+                <LinearGrad id={u('dojbrassDeep')} top="#D9A63C" bot="#7A4E12" angle={0} />
+                <filter id={u('dojsh')} x="-40%" y="-40%" width="180%" height="180%">
                     <feDropShadow dx="0" dy="1.4" stdDeviation="1.3" floodColor="#12042C" floodOpacity="0.55" />
                 </filter>
             </defs>
 
-            <rect width={S} height={S} fill="url(#dojbg)" />
-            <rect width={S} height={S} fill="url(#dojglow)" />
+            <rect width={S} height={S} fill={`url(#${u('dojbg')})`} />
+            <rect width={S} height={S} fill={`url(#${u('dojglow')})`} />
             <path d={`M0 0 H${S} V19 Q${S / 2} 27 0 19 Z`} fill="rgba(255,255,255,0.10)" />
 
-            <g filter="url(#dojsh)">
-                <path d="M21.2 44.6 H38.8 L42 50 H18Z" fill="url(#dojbrassDeep)" />
-                <rect x="16.2" y="49.6" width="27.6" height="3.9" rx="1.95" fill="url(#dojbrass)" />
+            <g filter={`url(#${u('dojsh')})`}>
+                <path d="M21.2 44.6 H38.8 L42 50 H18Z" fill={`url(#${u('dojbrassDeep')})`} />
+                <rect x="16.2" y="49.6" width="27.6" height="3.9" rx="1.95" fill={`url(#${u('dojbrass')})`} />
 
-                <rect x="28.35" y="12.8" width="3.3" height="32.4" fill="url(#dojbrass)" />
+                <rect x="28.35" y="12.8" width="3.3" height="32.4" fill={`url(#${u('dojbrass')})`} />
 
                 <g stroke="#C08A28" strokeWidth="1.25" strokeLinecap="round">
                     <path d="M13.2 20.6 10.6 27M13.2 20.6 21.6 27" />
                     <path d="M46.8 20.6 38.4 27M46.8 20.6 49.4 27" />
                 </g>
 
-                <rect x="10.6" y="16.9" width="38.8" height="3.4" rx="1.7" fill="url(#dojbrass)" />
-                <circle cx="13.2" cy="18.6" r="2.35" fill="url(#dojbrass)" />
-                <circle cx="46.8" cy="18.6" r="2.35" fill="url(#dojbrass)" />
+                <rect x="10.6" y="16.9" width="38.8" height="3.4" rx="1.7" fill={`url(#${u('dojbrass')})`} />
+                <circle cx="13.2" cy="18.6" r="2.35" fill={`url(#${u('dojbrass')})`} />
+                <circle cx="46.8" cy="18.6" r="2.35" fill={`url(#${u('dojbrass')})`} />
 
                 {pan(16.1)}
                 {pan(43.9)}
 
-                <circle cx="30" cy="11.4" r="3.9" fill="url(#dojbrass)" />
+                <circle cx="30" cy="11.4" r="3.9" fill={`url(#${u('dojbrass')})`} />
                 <circle cx="30" cy="10.4" r="1.35" fill="#FFF8DC" fillOpacity="0.8" />
             </g>
         </svg>
@@ -1364,18 +1416,19 @@ function DojMdtIcon() {
 }
 
 function MdtIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="mdtbg" top="#3D67D6" mid="#1D4ED8" bot="#0B1D4E" angle={160} />
-                <LinearGrad id="mdtstar" top="#4271E4" bot="#12296B" angle={0} />
-                <filter id="mdtsh" x="-30%" y="-30%" width="160%" height="160%">
+                <LinearGrad id={u('mdtbg')} top="#3D67D6" mid="#1D4ED8" bot="#0B1D4E" angle={160} />
+                <LinearGrad id={u('mdtstar')} top="#4271E4" bot="#12296B" angle={0} />
+                <filter id={u('mdtsh')} x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" floodColor="#050C24" floodOpacity="0.45" />
                 </filter>
             </defs>
-            <rect width={S} height={S} fill="url(#mdtbg)" />
+            <rect width={S} height={S} fill={`url(#${u('mdtbg')})`} />
             <path d={`M0 0 H${S} V19 Q${S / 2} 27 0 19 Z`} fill="rgba(255,255,255,0.12)" />
-            <g filter="url(#mdtsh)">
+            <g filter={`url(#${u('mdtsh')})`}>
                 <path
                     d="M30 9.5 46 15.4V31.2c0 9-6.8 15.7-16 19.3-9.2-3.6-16-10.3-16-19.3V15.4Z"
                     fill="#FFFFFF"
@@ -1391,7 +1444,7 @@ function MdtIcon() {
             <svg x="19.5" y="18.5" width="21" height="21" viewBox="0 0 24 24">
                 <path
                     d="M12 3.2l2.7 5.47 6.04.88-4.37 4.26 1.03 6.02L12 17.06l-5.4 2.84 1.03-6.02L3.26 9.55l6.04-.88z"
-                    fill="url(#mdtstar)"
+                    fill={`url(#${u('mdtstar')})`}
                 />
             </svg>
         </svg>
@@ -1414,22 +1467,23 @@ const RACING_CHECKS = [-1.3, -2.6, -1.3, 1.3, 2.6, 1.3].flatMap((lift, col) =>
 );
 
 function RacingIcon() {
+    const u = useIconIds();
     return (
         <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S}>
             <defs>
-                <LinearGrad id="apxbg" top="#17C79A" mid="#0A8C72" bot="#044E43" angle={160} />
-                <LinearGrad id="apxcloth" top="#FFFFFF" bot="#F2FCF9" angle={0} />
-                <clipPath id="apxclip"><path d={RACING_CLOTH} /></clipPath>
-                <filter id="apxsh" x="-30%" y="-30%" width="160%" height="160%">
+                <LinearGrad id={u('apxbg')} top="#17C79A" mid="#0A8C72" bot="#044E43" angle={160} />
+                <LinearGrad id={u('apxcloth')} top="#FFFFFF" bot="#F2FCF9" angle={0} />
+                <clipPath id={u('apxclip')}><path d={RACING_CLOTH} /></clipPath>
+                <filter id={u('apxsh')} x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" floodColor="#02201B" floodOpacity="0.45" />
                 </filter>
             </defs>
-            <rect width={S} height={S} fill="url(#apxbg)" />
+            <rect width={S} height={S} fill={`url(#${u('apxbg')})`} />
             <path d={`M0 0 H${S} V19 Q${S / 2} 27 0 19 Z`} fill="rgba(255,255,255,0.13)" />
-            <g filter="url(#apxsh)">
+            <g filter={`url(#${u('apxsh')})`}>
                 <rect x="12.8" y="9" width="3.2" height="42" rx="1.6" fill="#052722" />
-                <path d={RACING_CLOTH} fill="url(#apxcloth)" />
-                <g clipPath="url(#apxclip)">
+                <path d={RACING_CLOTH} fill={`url(#${u('apxcloth')})`} />
+                <g clipPath={`url(#${u('apxclip')})`}>
                     {RACING_CHECKS.map(cell => (
                         <rect key={cell.id} x={cell.x} y={cell.y} width="5.3334" height={cell.height} fill="#052722" />
                     ))}

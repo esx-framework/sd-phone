@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { ChevronRight, MessageCircle, SearchX, SquarePen } from 'lucide-react';
 
 import { EmptyState } from '@/ui/EmptyState';
@@ -118,18 +118,20 @@ export function ConversationList({ conversations, onOpen, onCompose, onMarkRead,
                             // Same containment as the contact rows: a ConvRow is ~20 nodes and a
                             // migrated mailbox has 550 of them, all restyled on every deck
                             // re-parent and .app-anim-flatten toggle. Off-screen rows now skip it.
-                            <div key={c.id} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100px' }}>
-                                <ConvRow
-                                    conv={c}
-                                    editing={editing}
-                                    selected={selected.has(c.id)}
-                                    onOpen={onOpen}
-                                    onToggleSelect={toggleSelect}
-                                />
+                            <Fragment key={c.id}>
+                                <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100px' }}>
+                                    <ConvRow
+                                        conv={c}
+                                        editing={editing}
+                                        selected={selected.has(c.id)}
+                                        onOpen={onOpen}
+                                        onToggleSelect={toggleSelect}
+                                    />
+                                </div>
                                 {i < filtered.length - 1 && (
                                     <div className="hairline-y pointer-events-none mx-[6%] bg-hairline/20" />
                                 )}
-                            </div>
+                            </Fragment>
                         ))}
                     </div>
                 )}

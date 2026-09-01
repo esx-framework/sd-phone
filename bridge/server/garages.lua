@@ -53,7 +53,10 @@ end
 --   aty_garage_v2                                  : framework table for ownership, but the
 --       garage a car is parked in may live in its own `aty_garage_parked` table instead of a
 --       column, and its garages are built in-game into `aty_garages`. Both are read by
---       discovery (see atyGarages/columnsOf) because ATY publishes no schema.
+--       discovery (see discoveredGarages/columnsOf) because ATY publishes no schema.
+--   mt_garages                                    : player_vehicles, garage=`garage`,
+--       state=`state` (0 out / 1 stored / 2 impound) - the qb-garages schema. Its garages are
+--       built in-game into a table it publishes no schema for, so they are discovered too.
 ---@type table Permissive fallback column profile for systems without an exact entry.
 local DEFAULT_PROFILE = {
     garage     = { 'garage', 'parking', 'garage_id', 'garagename' },
@@ -78,8 +81,13 @@ local PROFILES = {
     ['esx_garage']         = { garage = { 'parking', 'garage' },  state = { 'stored', 'state' } },
     ['aty_garage']         = { garage = { 'garage', 'parking' },  state = { 'state', 'stored' } },
     ['aty_garage_v2']      = { garage = { 'garage', 'parking' },  state = { 'state', 'stored' }, parkedTable = 'aty_garage_parked' },
+    ['mt_garages']         = { garage = { 'garage' },             state = { 'state' } },
     ['ND_Core']            = { garage = {},                       state = { 'stored' }, impoundCol = 'impounded' },
 }
+
+---@type table<string, boolean> Systems whose garages are discovered from their own config/table
+---rather than read from a runtime export, because they publish no schema for them.
+local DISCOVERS_GARAGES = { ['aty_garage'] = true, ['aty_garage_v2'] = true, ['mt_garages'] = true }
 
 ---Resolve which supported garage system is running: an explicit config override wins, else the
 ---first resource in G.Resources that reports `started`.
@@ -371,10 +379,11 @@ local function qsGarages()
     return qsCache
 end
 
----@type table|nil Normalised ATY garage map, held until that resource restarts.
-local atyCache
----@type boolean Whether the ATY garages have been resolved since the last restart.
-local atyResolved = false
+---@type table|nil Normalised garage map for the systems whose garages are discovered rather than
+---exported (ATY v1/v2, mt_garages), held until that resource restarts.
+local discoveredCache
+---@type boolean Whether the discovered garages have been resolved since the last restart.
+local discoveredResolved = false
 
 ---x/y out of any of the coordinate shapes a garage config can hold: a vector3/vector4, a
 ---{ x, y, z } table, or a positional { [1], [2], [3] } array.
@@ -396,10 +405,11 @@ local function atyV1Point(g)
     return coordsOf(g.pedCoords) or coordsOf(g.vehicleCoords)
 end
 
----The point inside an ATY v2 coordinate blob, which may be the point itself or wrap named points.
+---The point inside a garage row's coordinate blob, which may be the point itself or wrap named
+---points.
 ---@param blob any decoded coordinate column
 ---@return { x: number, y: number }|nil
-local function atyV2Point(blob)
+local function blobPoint(blob)
     if type(blob) ~= 'table' then return nil end
     return coordsOf(blob) or coordsOf(blob.pedCoords) or coordsOf(blob.ped) or coordsOf(blob.menu)
 end
@@ -421,11 +431,12 @@ local function atyV1Config()
     return nil
 end
 
----Every row of ATY v2's in-game-built `aty_garages` table.
+---Every row of an in-game-built garage table (ATY v2's `aty_garages`, mt_garages' own).
+---@param tbl string table name
 ---@return table|nil rows raw garage rows, nil when the table is absent
-local function atyV2Rows()
-    if next(columnsOf('aty_garages')) == nil then return nil end
-    local ok, rows = pcall(function() return MySQL.query.await('SELECT * FROM `aty_garages`') end)
+local function garageTableRows(tbl)
+    if next(columnsOf(tbl)) == nil then return nil end
+    local ok, rows = pcall(function() return MySQL.query.await(('SELECT * FROM `%s`'):format(tbl)) end)
     return (ok and type(rows) == 'table') and rows or nil
 end
 
@@ -441,12 +452,28 @@ local function atyV1Garage(key, g)
     return tostring(g.garage or g.name or key), { x = c.x, y = c.y, impound = isFlagSet(g.isImpound or g.impound) }
 end
 
----One ATY v2 row as a normalised garage, read through the columns discovered on its table.
+---@type table<string, boolean> Values an impound column can hold that mean "this row is the pound".
+local IMPOUND_WORDS = { impound = true, depot = true, pound = true, seized = true }
+
+---Whether a discovered impound column's value marks the row as the pound. A word is judged by
+---meaning rather than truthiness: these columns are found by name, and one named `type` holds
+---'garage' as often as 'impound', so reading any non-empty string as a set flag would mark every
+---garage a pound. Numbers and boolean-ish strings still read as plain flags.
+---@param v any impound column value
+---@return boolean
+local function isImpoundValue(v)
+    if type(v) ~= 'string' then return isFlagSet(v) end
+    local w = v:lower()
+    if tonumber(w) or w == 'true' or w == 'false' then return isFlagSet(v) end
+    return IMPOUND_WORDS[w] == true
+end
+
+---One garage-table row as a normalised garage, read through the columns discovered on its table.
 ---@param row table garage row
 ---@param cols { id: string|nil, blob: string|nil, x: string|nil, y: string|nil, impound: string|nil }
 ---@return string|nil id
 ---@return { x: number, y: number, impound: boolean }|nil garage
-local function atyV2Garage(row, cols)
+local function tableGarage(row, cols)
     local c
     if cols.blob and row[cols.blob] ~= nil then
         local raw = row[cols.blob]
@@ -454,7 +481,7 @@ local function atyV2Garage(row, cols)
             local ok, decoded = pcall(json.decode, raw)
             raw = ok and decoded or nil
         end
-        c = atyV2Point(raw)
+        c = blobPoint(raw)
     end
     if not c and cols.x and cols.y then
         c = coordsOf({ x = tonumber(row[cols.x]), y = tonumber(row[cols.y]) })
@@ -463,41 +490,89 @@ local function atyV2Garage(row, cols)
     local id = cols.id and row[cols.id]
     if not c or id == nil then return nil, nil end
 
-    local imp = cols.impound and row[cols.impound]
-    return tostring(id), { x = c.x, y = c.y, impound = imp == 'impound' or isFlagSet(imp) }
+    return tostring(id), { x = c.x, y = c.y, impound = isImpoundValue(cols.impound and row[cols.impound]) }
 end
 
----Both ATY variants normalised to one map: garage id -> { x, y, impound }. Nil when nothing
----readable was found, which leaves ATY vehicles on the manual Locations map.
+---Garages read out of one table whose schema the owning resource never published: the id,
+---coordinate and impound columns are discovered, then every row is normalised. A table carrying a
+---`plate` column is a vehicle list, not a garage list, and is rejected outright - that shape check
+---is what makes it safe to look a table up by name pattern. Nil unless at least one row resolved.
+---@param tbl string|nil table name
 ---@return table<string, { x: number, y: number, impound: boolean }>|nil
-local function atyGarages()
-    if atyResolved then return atyCache end
-    atyResolved = true
+local function garagesFromTable(tbl)
+    if not tbl then return nil end
+    local present = columnsOf(tbl)
+    if next(present) == nil or present.plate then return nil end
+
+    local cols = {
+        id      = firstColumn(tbl, { 'garage', 'identifier', 'name', 'garage_id', 'label', 'id' }),
+        blob    = firstColumn(tbl, { 'coords', 'position', 'data', 'pedCoords', 'ped_coords' }),
+        x       = firstColumn(tbl, { 'x', 'pos_x', 'coord_x' }),
+        y       = firstColumn(tbl, { 'y', 'pos_y', 'coord_y' }),
+        impound = firstColumn(tbl, { 'isImpound', 'is_impound', 'impound', 'type' }),
+    }
+    if not cols.id or not (cols.blob or (cols.x and cols.y)) then return nil end
 
     local out, found = {}, false
+    local rows = garageTableRows(tbl) or {}
+    for i = 1, #rows do
+        local id, garage = tableGarage(rows[i], cols)
+        if id then out[id], found = garage, true end
+    end
+    return found and out or nil
+end
 
+---Tables mt_garages could keep its in-game-built garages in. It ships no SQL and documents no
+---schema, so the table is found by name (`mt_`...`garage`...) and only accepted once
+---garagesFromTable confirms its shape. Shortest name first, so the resource's own table is tried
+---before any suffixed sibling.
+---@return string[] names ordered candidates, empty when the schema has none
+local function mtGarageTables()
+    local ok, rows = pcall(function()
+        return MySQL.query.await([[
+            SELECT TABLE_NAME AS name FROM information_schema.tables
+            WHERE table_schema = DATABASE() AND TABLE_NAME LIKE 'mt/_%garage%' ESCAPE '/'
+            ORDER BY LENGTH(TABLE_NAME), TABLE_NAME
+        ]])
+    end)
+    local out = {}
+    if ok and type(rows) == 'table' then
+        for i = 1, #rows do
+            if type(rows[i].name) == 'string' then out[#out + 1] = rows[i].name end
+        end
+    end
+    return out
+end
+
+---The garages of every system that publishes no collection export, normalised to one map:
+---garage id -> { x, y, impound }. ATY v1 comes from its plain-Lua config; ATY v2 and mt_garages
+---from the table their in-game creator writes. Nil when nothing readable was found, which leaves
+---those vehicles on the manual Locations map.
+---@return table<string, { x: number, y: number, impound: boolean }>|nil
+local function discoveredGarages()
+    if discoveredResolved then return discoveredCache end
+    discoveredResolved = true
+
+    local out
     if ACTIVE == 'aty_garage' then
+        local map, found = {}, false
         for key, g in pairs(atyV1Config() or {}) do
             local id, garage = atyV1Garage(key, g)
-            if id then out[id], found = garage, true end
+            if id then map[id], found = garage, true end
         end
+        out = found and map or nil
     elseif ACTIVE == 'aty_garage_v2' then
-        local cols = {
-            id      = firstColumn('aty_garages', { 'garage', 'identifier', 'name', 'garage_id', 'label', 'id' }),
-            blob    = firstColumn('aty_garages', { 'coords', 'position', 'data', 'pedCoords', 'ped_coords' }),
-            x       = firstColumn('aty_garages', { 'x', 'pos_x', 'coord_x' }),
-            y       = firstColumn('aty_garages', { 'y', 'pos_y', 'coord_y' }),
-            impound = firstColumn('aty_garages', { 'isImpound', 'is_impound', 'impound', 'type' }),
-        }
-        local rows = atyV2Rows() or {}
-        for i = 1, #rows do
-            local id, garage = atyV2Garage(rows[i], cols)
-            if id then out[id], found = garage, true end
+        out = garagesFromTable('aty_garages')
+    elseif ACTIVE == 'mt_garages' then
+        local names = mtGarageTables()
+        for i = 1, #names do
+            out = garagesFromTable(names[i])
+            if out then break end
         end
     end
 
-    atyCache = found and out or nil
-    return atyCache
+    discoveredCache = out
+    return discoveredCache
 end
 
 ---Plate to garage id from the profile's side table (ATY v2's `aty_garage_parked`), for just these
@@ -564,7 +639,7 @@ local function loadGarageCollection()
         if ACTIVE == 'jg-advancedgarages' then return exports['jg-advancedgarages']:getAllGarages() end
         if ACTIVE == 'cd_garage'          then return exports['cd_garage']:GetConfig() end
         if ACTIVE == 'qs-advancedgarages' then return qsGarages() end
-        if ACTIVE == 'aty_garage' or ACTIVE == 'aty_garage_v2' then return atyGarages() end
+        if DISCOVERS_GARAGES[ACTIVE] then return discoveredGarages() end
         return nil
     end)
     gcolCache, gcolAt = ok and data or nil, now
@@ -578,7 +653,7 @@ if ACTIVE then
         if name == ACTIVE then
             gcolCache, gcolAt   = nil, 0
             qsCache, qsParsed   = nil, false
-            atyCache, atyResolved = nil, false
+            discoveredCache, discoveredResolved = nil, false
             columnCache = {}
         end
     end
@@ -602,7 +677,7 @@ local function systemCoords(gcol, row, garageId)
             return g and (g.CenterOfZone or g.AccessPoint)
         end
         if not gcol then return nil end
-        if ACTIVE == 'aty_garage' or ACTIVE == 'aty_garage_v2' then
+        if DISCOVERS_GARAGES[ACTIVE] then
             return garageId and gcol[tostring(garageId)]
         elseif ACTIVE == 'qs-advancedgarages' then
             local g = garageId and gcol[garageId]
@@ -665,7 +740,7 @@ local function impoundCoords(gcol, row, garageId)
             return g and g.Coords
         end
         if not gcol then return nil end
-        if ACTIVE == 'aty_garage' or ACTIVE == 'aty_garage_v2' then
+        if DISCOVERS_GARAGES[ACTIVE] then
             local own = garageId and gcol[tostring(garageId)]
             if own and own.impound then return own end
             for _, g in pairs(gcol) do

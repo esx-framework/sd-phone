@@ -49,7 +49,7 @@ export function BankCard({ holder, last4, expiry, style }: {
 
     return (
         <div
-            className="relative mx-auto w-full max-w-[420px] select-none overflow-hidden rounded-[20px] font-sf text-white"
+            className="relative mx-auto w-full max-w-[420px] select-none overflow-hidden rounded-[20px] text-left font-sf text-white"
             style={{
                 aspectRatio: '1.586',
                 background: color.background,
