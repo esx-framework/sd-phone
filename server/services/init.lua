@@ -45,6 +45,11 @@ elseif framework.name == 'esx' then
     AddEventHandler('esx:playerLoaded', function(playerId)
         if playerId then SetTimeout(1500, function() actions.reconcileJobs(playerId) end) end
     end)
+elseif framework.name == 'nd' then
+    AddEventHandler('ND:characterLoaded', function(character)
+        local src = character and character.source
+        if src then SetTimeout(1500, function() actions.reconcileJobs(src) end) end
+    end)
 end
 
 ---Refreshes a disconnecting player's company rosters.
@@ -102,7 +107,7 @@ end)
 ---@param payload table
 ---@return { success: boolean, message?: string }
 exports('messageCompany', function(source, payload)
-    if type(source) ~= 'number' then return util.fail('Player not found') end
+    if type(source) ~= 'number' then return util.fail('services.playerNotFound', 'Player not found') end
     local result = actions.messageCompany(source, payload)
     return { success = result.success == true, message = result.message }
 end)

@@ -274,12 +274,12 @@ end
 ---Validates a save payload into row-ready report fields plus its child rows.
 ---@param payload table client draft
 ---@return table|nil draft { title, type, body, involved, charges }
----@return string? message failure reason when draft is nil
+---@return table? refusal failure envelope when draft is nil
 local function sanitizeReport(payload, me)
     local types, defaultType, roles = vocabulary(me)
 
     local title = util.limitedString(payload.title, tonumber(LIMITS.ReportTitle) or 160)
-    if not title then return nil, 'A title is required' end
+    if not title then return nil, util.fail('mdt.titleRequired', 'A title is required') end
 
     local kind = type(payload.type) == 'string' and payload.type or ''
     if not types[kind] then kind = defaultType end
@@ -320,7 +320,7 @@ local function sanitizeReport(payload, me)
             if type(c) == 'table' and #raw < MAX_CHARGES then
                 local cid = util.limitedString(c.citizenid, 64)
                 if not cid or not suspects[cid] then
-                    return nil, 'Every charge must be attributed to a listed suspect'
+                    return nil, util.fail('mdt.everyChargeMustAttributed', 'Every charge must be attributed to a listed suspect')
                 end
                 raw[#raw + 1] = { code = c.code, count = c.count, citizenid = cid }
             end
@@ -328,7 +328,9 @@ local function sanitizeReport(payload, me)
     end
 
     local charges = offences.totalFor(raw)
-    if #raw > 0 and #charges == 0 then return nil, 'None of those charges are in the penal code' end
+    if #raw > 0 and #charges == 0 then
+        return nil, util.fail('mdt.noneThoseChargesPenalCode', 'None of those charges are in the penal code')
+    end
 
     return { title = title, type = kind, body = body, evidence = sanitizeEvidence(payload.evidence), involved = involved, charges = charges }
 end
@@ -396,18 +398,18 @@ end)
 paperwork.reportsGet = access.gated('reports.view', function(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and readable(me, ref)
-    if not row then return util.fail('That report is not available') end
+    if not row then return util.fail('mdt.reportNotAvailable', 'That report is not available') end
     return util.ok({ report = detailOf(me, src, row) })
 end)
 
 ---Files a new report: the report row, its involved people, its charges, and the jobtype
 ---restriction that scopes it to the author's own department.
 local function createReport(src, payload, me)
-    local draft, message = sanitizeReport(payload, me)
-    if not draft then return util.fail(message) end
+    local draft, refusal = sanitizeReport(payload, me)
+    if not draft then return refusal end
 
     local ref = store.nextRef('report')
-    if not ref then return util.fail('Could not allocate a report number') end
+    if not ref then return util.fail('mdt.couldNotAllocateReportNumber', 'Could not allocate a report number') end
 
     local now = os.time()
     local id = MySQL.insert.await([[
@@ -415,7 +417,7 @@ local function createReport(src, payload, me)
             (ref, title, type, body, evidence, author_cid, author_name, author_callsign, department, domain, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ]], { ref, draft.title, draft.type, draft.body, draft.evidence, me.citizenid, me.name, me.callsign, me.job, access.domain(me), now, now })
-    if not id then return util.fail('The report could not be filed') end
+    if not id then return util.fail('mdt.reportCouldNotFiled', 'The report could not be filed') end
 
     local queries = {
         {
@@ -427,7 +429,7 @@ local function createReport(src, payload, me)
     MySQL.transaction.await(queries)
 
     local row = MySQL.single.await('SELECT * FROM phone_mdt_reports WHERE id = ?', { id })
-    if not row then return util.fail('The report could not be filed') end
+    if not row then return util.fail('mdt.reportCouldNotFiled', 'The report could not be filed') end
 
     return util.ok({ report = detailOf(me, src, row) }),
         { entityType = 'report', entityId = ref, details = { title = draft.title, type = draft.type } }
@@ -438,10 +440,10 @@ end
 local function updateReport(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and readable(me, ref)
-    if not row then return util.fail('That report is not available') end
+    if not row then return util.fail('mdt.reportNotAvailable', 'That report is not available') end
 
-    local draft, message = sanitizeReport(payload, me)
-    if not draft then return util.fail(message) end
+    local draft, refusal = sanitizeReport(payload, me)
+    if not draft then return refusal end
 
     local queries = {
         {
@@ -455,7 +457,7 @@ local function updateReport(src, payload, me)
     MySQL.transaction.await(queries)
 
     local saved = MySQL.single.await('SELECT * FROM phone_mdt_reports WHERE id = ?', { row.id })
-    if not saved then return util.fail('The report could not be saved') end
+    if not saved then return util.fail('mdt.reportCouldNotSaved', 'The report could not be saved') end
 
     return util.ok({ report = detailOf(me, src, saved) }),
         { entityType = 'report', entityId = ref, details = { title = draft.title, type = draft.type } }
@@ -468,13 +470,13 @@ end
 ---@return table envelope
 function paperwork.reportsSave(src, payload)
     local me = access.identity(src)
-    if not me then return util.fail('You do not have access to this terminal') end
+    if not me then return util.fail('mdt.doNotHaveAccessTerminal', 'You do not have access to this terminal') end
 
     local ref = util.limitedString(payload.ref, 16)
     if not ref then return access.audited('reports.create', createReport)(src, payload) end
 
     local author = MySQL.scalar.await('SELECT author_cid FROM phone_mdt_reports WHERE ref = ? LIMIT 1', { ref })
-    if not author then return util.fail('That report is not available') end
+    if not author then return util.fail('mdt.reportNotAvailable', 'That report is not available') end
 
     local key = author == me.citizenid and 'reports.edit.own' or 'reports.edit.any'
     return access.audited(key, updateReport)(src, payload)
@@ -484,7 +486,7 @@ end
 paperwork.reportsDelete = access.audited('reports.delete', function(_, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and readable(me, ref)
-    if not row then return util.fail('That report is not available') end
+    if not row then return util.fail('mdt.reportNotAvailable', 'That report is not available') end
 
     MySQL.transaction.await({
         { query = 'DELETE FROM phone_mdt_report_charges WHERE report_id = ?',      values = { row.id } },
@@ -620,17 +622,30 @@ local CASE_SELECT = [[
     FROM phone_mdt_cases c
 ]]
 
+---@type string Detail projection: the list columns plus the two bodies only the detail pane reads.
+---Kept apart from CASE_SELECT so listing a page of cases never drags a TEXT summary and a
+---MEDIUMTEXT evidence blob per row. Reading a single case through the list projection is what left
+---every summary blank: the column was never selected, so `row.summary` was always nil.
+local CASE_SELECT_ONE = [[
+    SELECT c.id, c.ref, c.title, c.summary, c.evidence, c.status, c.priority,
+           c.created_name, c.created_at, c.updated_at,
+           (SELECT COUNT(*) FROM phone_mdt_case_officers o WHERE o.case_id = c.id) AS officer_count,
+           (SELECT COUNT(*) FROM phone_mdt_case_reports l WHERE l.case_id = c.id) AS report_count
+    FROM phone_mdt_cases c
+]]
+
 ---@type string Case scoping clause, against the alias `c`: a case file belongs to the department
 ---that opened it, and an unstamped row is shared.
 local CASE_SCOPE = '(c.department = ? OR c.department = ?)'
 
----Loads a case row of the caller's own department by ref, or nil.
+---Loads a case row of the caller's own department by ref, or nil. Reads the detail projection:
+---every caller feeds the row to caseDetail, which needs the summary and evidence bodies.
 ---@param me table caller identity from access.identity
 ---@param ref string
 ---@return table|nil row
 local function caseRow(me, ref)
     return MySQL.single.await(
-        ('%s WHERE c.ref = ? AND %s LIMIT 1'):format(CASE_SELECT, CASE_SCOPE), { ref, me.job, '' })
+        ('%s WHERE c.ref = ? AND %s LIMIT 1'):format(CASE_SELECT_ONE, CASE_SCOPE), { ref, me.job, '' })
 end
 
 ---Composes the case the detail pane renders.
@@ -691,17 +706,17 @@ end)
 paperwork.casesGet = access.gated('cases.view', function(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
     return util.ok({ case = caseDetail(src, row) })
 end)
 
 ---Opens a new case file and puts its creator on it as the primary officer.
 local function createCase(src, payload, me)
     local title = util.limitedString(payload.title, tonumber(LIMITS.CaseTitle) or 160)
-    if not title then return util.fail('A title is required') end
+    if not title then return util.fail('mdt.titleRequired', 'A title is required') end
 
     local ref = store.nextRef('case')
-    if not ref then return util.fail('Could not allocate a case number') end
+    if not ref then return util.fail('mdt.couldNotAllocateCaseNumber', 'Could not allocate a case number') end
 
     local summary  = util.limitedString(payload.summary, tonumber(LIMITS.CaseSummary) or 4000) or ''
     local status   = STATUSES[payload.status] and payload.status or 'open'
@@ -713,7 +728,7 @@ local function createCase(src, payload, me)
             (ref, title, summary, evidence, status, priority, department, created_cid, created_name, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ]], { ref, title, summary, sanitizeEvidence(payload.evidence), status, priority, me.job, me.citizenid, me.name, now, now })
-    if not id then return util.fail('The case could not be opened') end
+    if not id then return util.fail('mdt.caseCouldNotOpened', 'The case could not be opened') end
 
     MySQL.query.await([[
         INSERT IGNORE INTO phone_mdt_case_officers (case_id, citizenid, role, assigned_by, assigned_at)
@@ -728,10 +743,10 @@ end
 local function updateCase(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
 
     local title = util.limitedString(payload.title, tonumber(LIMITS.CaseTitle) or 160)
-    if not title then return util.fail('A title is required') end
+    if not title then return util.fail('mdt.titleRequired', 'A title is required') end
 
     local summary  = util.limitedString(payload.summary, tonumber(LIMITS.CaseSummary) or 4000) or ''
     local status   = STATUSES[payload.status] and payload.status or row.status
@@ -751,7 +766,7 @@ end
 ---@param payload table client draft
 ---@return table envelope
 function paperwork.casesSave(src, payload)
-    if not access.canAccess(src) then return util.fail('You do not have access to this terminal') end
+    if not access.canAccess(src) then return util.fail('mdt.doNotHaveAccessTerminal', 'You do not have access to this terminal') end
     local ref = util.limitedString(payload.ref, 16)
     if not ref then return access.audited('cases.create', createCase)(src, payload) end
     return access.audited('cases.edit', updateCase)(src, payload)
@@ -761,7 +776,7 @@ end
 paperwork.casesDelete = access.audited('cases.delete', function(_, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
 
     MySQL.transaction.await({
         { query = 'DELETE FROM phone_mdt_case_officers WHERE case_id = ?', values = { row.id } },
@@ -777,10 +792,10 @@ end)
 paperwork.casesNote = access.audited('cases.edit', function(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
 
     local body = util.limitedString(payload.body, tonumber(LIMITS.CaseNote) or 1000)
-    if not body then return util.fail('Write something first') end
+    if not body then return util.fail('mdt.writeSomethingFirst', 'Write something first') end
 
     local now = os.time()
     MySQL.transaction.await({
@@ -798,10 +813,10 @@ end)
 paperwork.casesAssign = access.audited('cases.edit', function(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
 
     local cid = util.limitedString(payload.citizenid, 64)
-    if not cid then return util.fail('Pick an officer') end
+    if not cid then return util.fail('mdt.pickOfficer', 'Pick an officer') end
 
     local now = os.time()
     if payload.assigned == false then
@@ -826,13 +841,13 @@ end)
 paperwork.casesLinkReport = access.audited('cases.edit', function(src, payload, me)
     local ref = util.limitedString(payload.ref, 16)
     local row = ref and caseRow(me, ref)
-    if not row then return util.fail('That case no longer exists') end
+    if not row then return util.fail('mdt.caseNoLongerExists', 'That case no longer exists') end
 
     local reportRef = util.limitedString(payload.reportRef, 16)
-    if not reportRef then return util.fail('Pick a report') end
+    if not reportRef then return util.fail('mdt.pickAReport', 'Pick a report') end
 
     local report = readable(me, reportRef)
-    if not report then return util.fail('That report is not available') end
+    if not report then return util.fail('mdt.reportNotAvailable', 'That report is not available') end
 
     if payload.linked == false then
         MySQL.update.await(

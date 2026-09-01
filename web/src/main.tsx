@@ -15,6 +15,7 @@ import '@fontsource/great-vibes/greek-ext-400.css';
 import '@fontsource/great-vibes/vietnamese-400.css';
 
 import { App } from './App';
+import { ErrorBoundary } from '@/shell/ErrorBoundary';
 import { useMocks } from '@/core/demo';
 import { initTileCheck } from '@/apps/maps/tileCheck';
 import { installScrollGuard } from '@/core/scrollGuard';
@@ -43,6 +44,8 @@ if (useMocks) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <App />
+        <ErrorBoundary>
+            <App />
+        </ErrorBoundary>
     </React.StrictMode>,
 );

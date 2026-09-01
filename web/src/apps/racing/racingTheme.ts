@@ -2,7 +2,7 @@ import type { PillTone } from '@/ui/Pill';
 import { device } from '@device';
 import type { RaceClass, RaceStatus } from './data';
 
-const PHONE_ENTER = device.id === 'phone';
+const PHONE = device.id === 'phone';
 
 export const RACING_STATUS_RESERVE = 54;
 
@@ -20,8 +20,12 @@ export const racingAccentRing = 'ring-1 ring-ios-blue/30 dark:ring-ios-blue/35';
 export const racingAccentBar = 'bg-ios-blue';
 
 export const racingSegmented = '[&>button]:flex-auto [&>button]:min-w-0 [&>button]:truncate [&>button]:px-2';
-export const racingViewEnter = PHONE_ENTER ? 'animate-swipe-in-left' : 'animate-mdt-pane';
-export const racingDetailEnter = PHONE_ENTER ? 'animate-swipe-in-left' : 'animate-mdt-detail';
+export const racingViewEnter = PHONE ? 'animate-swipe-in-left' : 'animate-mdt-pane';
+export const racingDetailEnter = PHONE ? 'animate-swipe-in-left' : 'animate-mdt-detail';
+
+export const racingSheetHint = 'text-[16px] leading-snug text-black/70 dark:text-white/70';
+export const racingJsonField = 'h-[216px] w-full resize-none rounded-[12px] bg-black/[0.05] px-3 py-2.5 font-mono text-[14px] leading-relaxed text-black outline-none dark:bg-white/[0.08] dark:text-white';
+export const racingJsonPlaceholder = 'placeholder:text-black/55 dark:placeholder:text-white/45';
 
 export const racingStat = 'text-[26px] font-bold tabular-nums tracking-tight text-black dark:text-white';
 export const racingStatLabel = 'text-[12px] font-medium uppercase tracking-wider text-ios-gray';

@@ -4,6 +4,8 @@ local config   = require 'configs.config'
 local player   = require 'bridge.server.player'
 ---@type table Photos persistence layer (server.photos.store): photo/album row CRUD.
 local store    = require 'server.photos.store'
+---@type table AirShare handshake (server.share.core): offers a payload to a nearby phone.
+local share    = require 'server.share.core'
 
 ---@type table Photos config (config.Photos): retention cap, album cap, name length bounds.
 local photosCfg = config.Photos
@@ -40,7 +42,7 @@ local PAGE_SIZE <const> = 200
 ---@return table result { success, data = { photos, nextCursor, counts, canImport } }
 function actions.list(source, payload)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
 
     payload = type(payload) == 'table' and payload or {}
     local cursor = type(payload.cursor) == 'string' and payload.cursor ~= '' and payload.cursor or nil
@@ -172,24 +174,24 @@ function actions.saveFromUrl(source, url)
     local cid = player.getIdentifier(source)
     if not cid then
         print('^1[sd-phone:photos]^0 saveFromUrl: no citizenid for source')
-        return fail('Player not found')
+        return fail('photos.playerNotFound', 'Player not found')
     end
     if type(url) ~= 'string' or url == '' then
         print('^1[sd-phone:photos]^0 saveFromUrl: empty url')
-        return fail('No URL')
+        return fail('photos.noUrl', 'No URL')
     end
     if not (lib.string.startsWith(url, 'https://') or lib.string.startsWith(url, 'http://')) then
         print('^1[sd-phone:photos]^0 saveFromUrl: url not http(s)')
-        return fail('Invalid URL')
+        return fail('photos.invalidUrl', 'Invalid URL')
     end
     if #url > MAX_URL_BYTES then
-        return fail('Invalid URL')
+        return fail('photos.invalidUrl', 'Invalid URL')
     end
 
     local id = store.newId()
     if not store.insertPhoto(id, cid, url) then
         print('^1[sd-phone:photos]^0 DB insert failed')
-        return fail('Failed to save photo')
+        return fail('photos.failedSavePhoto', 'Failed to save photo')
     end
 
     store.pruneOldest(cid, photosCfg.MaxPhotosPerPlayer)
@@ -215,10 +217,10 @@ end
 ---@return table result { success, data = { id, favorite } }
 function actions.setFavorite(source, photoId, value)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
-    if type(photoId) ~= 'string' or photoId == '' then return fail('Photo id required') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(photoId) ~= 'string' or photoId == '' then return fail('photos.photoIdRequired', 'Photo id required') end
     if not store.setFavorite(photoId, cid, value and true or false) then
-        return fail('Photo not found')
+        return fail('photos.photoNotFound', 'Photo not found')
     end
     return ok({ id = photoId, favorite = value and true or false })
 end
@@ -229,17 +231,62 @@ end
 ---@return table result { success, data = { id } }
 function actions.delete(source, photoId)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
     if type(photoId) ~= 'string' or photoId == '' then
-        return fail('Photo id required')
+        return fail('photos.photoIdRequired', 'Photo id required')
     end
     local url = store.deletePhoto(photoId, cid)
     if not url then
-        return fail('Photo not found')
+        return fail('photos.photoNotFound', 'Photo not found')
     end
     ---Fires the first-party photos:deleted hook once per owner-initiated delete; server-local and synchronous.
     TriggerEvent('sd-phone:server:photos:deleted', { source = source, citizenid = cid, id = photoId, url = url })
     return ok({ id = photoId })
+end
+
+---Offers one of the caller's photos to a nearby phone. Sends only the hosted URL.
+---@param source number sender server id
+---@param target any recipient server id, client-chosen and validated by share.request
+---@param photoId any client-supplied photo row id
+---@return table result { success, message? }
+function actions.requestShare(source, target, photoId)
+    local cid = player.getIdentifier(source)
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(photoId) ~= 'string' or photoId == '' then return fail('photos.photoIdRequired', 'Photo id required') end
+
+    local url = store.urlFor(photoId, cid)
+    if not url then return fail('photos.photoNotFound', 'Photo not found') end
+
+    local sent, refusal = share.request(source, target, 'photo', { url = url })
+    if not sent then return refusal or fail('photos.couldNotSendRequest', 'Could not send request') end
+    return ok({})
+end
+
+---Saves an accepted photo share into the recipient's gallery and pushes it live. Refused when
+---they already hold that exact URL.
+---@param targetSrc number recipient server id
+---@param payload { url: string } stored share payload
+---@return boolean delivered
+---@return string? reason shown to the recipient when refused
+function actions.deliverShare(targetSrc, payload)
+    local cid = player.getIdentifier(targetSrc)
+    if not cid then return false end
+
+    local url = type(payload) == 'table' and payload.url or nil
+    if type(url) ~= 'string' or url == '' then return false end
+    if store.hasUrl(cid, url) then return false, 'Already in your gallery' end
+
+    local id = store.newId()
+    if not store.insertPhoto(id, cid, url) then return false end
+    store.pruneOldest(cid, photosCfg.MaxPhotosPerPlayer)
+
+    TriggerClientEvent('sd-phone:client:photos:added', targetSrc, {
+        id        = id,
+        url       = url,
+        favorite  = false,
+        createdAt = os.date('!%Y-%m-%d %H:%M:%S'),
+    })
+    return true
 end
 
 ---Lists the caller's custom albums, each annotated with a photo count and a cover URL (newest
@@ -248,7 +295,7 @@ end
 ---@return table result { success, data = { albums } }
 function actions.listAlbums(source)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
     local rows = store.listAlbums(cid)
     local out = {}
     for i = 1, #rows do
@@ -270,20 +317,22 @@ end
 ---@return table result { success, data = { album } }
 function actions.createAlbum(source, name)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
 
     name = type(name) == 'string' and name:gsub('^%s+', ''):gsub('%s+$', '') or ''
     if #name < photosCfg.MinAlbumNameLength or #name > photosCfg.MaxAlbumNameLength then
-        return fail(('Album name must be %d–%d characters')
-            :format(photosCfg.MinAlbumNameLength, photosCfg.MaxAlbumNameLength))
+        return fail('photos.albumNameMustCharacters', 'Album name must be {min}–{max} characters', {
+            min = photosCfg.MinAlbumNameLength,
+            max = photosCfg.MaxAlbumNameLength,
+        })
     end
     if store.countAlbums(cid) >= photosCfg.MaxAlbumsPerPlayer then
-        return fail('Album limit reached')
+        return fail('photos.albumLimitReached', 'Album limit reached')
     end
 
     local id = store.newId()
     if not store.createAlbum(id, cid, name) then
-        return fail('Failed to create album')
+        return fail('photos.failedCreateAlbum', 'Failed to create album')
     end
     return ok({
         album = { id = id, name = name, count = 0, cover = nil, createdAt = os.date('!%Y-%m-%d %H:%M:%S') },
@@ -297,10 +346,10 @@ end
 ---@return table result { success, data = { id } }
 function actions.deleteAlbum(source, albumId)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
-    if type(albumId) ~= 'string' or albumId == '' then return fail('Album id required') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(albumId) ~= 'string' or albumId == '' then return fail('photos.albumIdRequired', 'Album id required') end
     if not store.deleteAlbum(albumId, cid) then
-        return fail('Album not found')
+        return fail('photos.albumNotFound', 'Album not found')
     end
     return ok({ id = albumId })
 end
@@ -313,15 +362,15 @@ end
 ---@return table result { success, data = { id, added } }
 function actions.addPhotosToAlbum(source, albumId, photoIds)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
-    if type(albumId) ~= 'string' or albumId == '' then return fail('Album id required') end
-    if type(photoIds) ~= 'table' or #photoIds == 0 then return fail('No photos selected') end
-    if #photoIds > photosCfg.MaxPhotosPerPlayer then return fail('Too many photos') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(albumId) ~= 'string' or albumId == '' then return fail('photos.albumIdRequired', 'Album id required') end
+    if type(photoIds) ~= 'table' or #photoIds == 0 then return fail('photos.noPhotosSelected', 'No photos selected') end
+    if #photoIds > photosCfg.MaxPhotosPerPlayer then return fail('photos.tooManyPhotos', 'Too many photos') end
     for i = 1, #photoIds do
-        if type(photoIds[i]) ~= 'string' or photoIds[i] == '' then return fail('Photo id required') end
+        if type(photoIds[i]) ~= 'string' or photoIds[i] == '' then return fail('photos.photoIdRequired', 'Photo id required') end
     end
     if not store.addPhotosToAlbum(albumId, cid, photoIds) then
-        return fail('Album not found')
+        return fail('photos.albumNotFound', 'Album not found')
     end
     return ok({ id = albumId, added = #photoIds })
 end
@@ -333,11 +382,11 @@ end
 ---@return table result { success, data = { albumId, photoId } }
 function actions.removePhotoFromAlbum(source, albumId, photoId)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
-    if type(albumId) ~= 'string' or albumId == '' then return fail('Album id required') end
-    if type(photoId) ~= 'string' or photoId == '' then return fail('Photo id required') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(albumId) ~= 'string' or albumId == '' then return fail('photos.albumIdRequired', 'Album id required') end
+    if type(photoId) ~= 'string' or photoId == '' then return fail('photos.photoIdRequired', 'Photo id required') end
     if not store.removePhotoFromAlbum(albumId, photoId, cid) then
-        return fail('Not in album')
+        return fail('photos.notAlbum', 'Not in album')
     end
     return ok({ albumId = albumId, photoId = photoId })
 end
@@ -349,8 +398,8 @@ end
 ---@return table result { success, data = { photos } }
 function actions.listAlbumPhotos(source, albumId)
     local cid = player.getIdentifier(source)
-    if not cid then return fail('Player not found') end
-    if type(albumId) ~= 'string' or albumId == '' then return fail('Album id required') end
+    if not cid then return fail('photos.playerNotFound', 'Player not found') end
+    if type(albumId) ~= 'string' or albumId == '' then return fail('photos.albumIdRequired', 'Album id required') end
     local rows = store.listAlbumPhotos(albumId, cid)
     local out = {}
     for i = 1, #rows do

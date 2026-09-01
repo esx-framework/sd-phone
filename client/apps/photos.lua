@@ -7,6 +7,7 @@ proxyCallback('sd-phone:photos:list',        'sd-phone:server:photos:list')
 proxyCallback('sd-phone:photos:delete',      'sd-phone:server:photos:delete')
 proxyCallback('sd-phone:photos:setFavorite', 'sd-phone:server:photos:setFavorite')
 proxyCallback('sd-phone:photos:saveUrl',     'sd-phone:server:photos:saveUrl')
+proxyCallback('sd-phone:photos:share',       'sd-phone:server:photos:share')
 
 proxyCallback('sd-phone:albums:list',        'sd-phone:server:albums:list')
 proxyCallback('sd-phone:albums:create',      'sd-phone:server:albums:create')
@@ -20,4 +21,11 @@ proxyCallback('sd-phone:albums:photos',      'sd-phone:server:albums:photos')
 ---@param photo table photo record from server/photos/init.lua
 RegisterNetEvent('sd-phone:client:photos:added', function(photo)
     SendNUIMessage({ action = 'sd-phone:photos:added', data = photo })
+end)
+
+---Server push: a capture upload will not arrive. Carries a stable reason code the Camera turns
+---into a translated line, so the shutter overlay can say why instead of timing out in silence.
+---@param payload { code: string } reason token from server/photos/init.lua
+RegisterNetEvent('sd-phone:client:photos:uploadFailed', function(payload)
+    SendNUIMessage({ action = 'sd-phone:photos:uploadFailed', data = payload })
 end)

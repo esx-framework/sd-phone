@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { t } from '@/i18n';
 import { Leaderboard } from '@/apps/_games/Leaderboard';
 import { loadLeaderboard, type GameLeaderboard } from '@/apps/_games/statsApi';
 import { useSessionState } from '@/hooks/useSessionState';
 
-import type { CasinoGame } from './casinoApi';
+import { casinoGames, type CasinoGame } from './casinoApi';
 import { ACCENT, SURFACE } from './theme';
-
-const BOARD_GAMES: CasinoGame[] = ['blackjack', 'holdem', 'crash', 'baccarat', 'roulette', 'slots'];
 
 const BOARD_LABEL: Record<CasinoGame, () => string> = {
     blackjack: () => t('casino.blackjack', 'Blackjack'),
@@ -20,7 +18,9 @@ const BOARD_LABEL: Record<CasinoGame, () => string> = {
 };
 
 export function LeaderboardScreen() {
-    const [game, setGame] = useSessionState<CasinoGame>('casino:lbGame', 'blackjack');
+    const boardGames = useMemo(() => casinoGames(), []);
+    const [stored, setGame] = useSessionState<CasinoGame>('casino:lbGame', 'blackjack');
+    const game = boardGames.includes(stored) ? stored : (boardGames[0] ?? stored);
     const cache = useRef<Partial<Record<CasinoGame, GameLeaderboard>>>({});
     const [board, setBoard] = useState<GameLeaderboard | null>(() => cache.current[game] ?? null);
     const [loading, setLoading] = useState(false);
@@ -44,7 +44,7 @@ export function LeaderboardScreen() {
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 px-5 pb-1 pt-1">
                 <div className="flex flex-wrap gap-2">
-                    {BOARD_GAMES.map(g => {
+                    {boardGames.map(g => {
                         const on = g === game;
                         return (
                             <button

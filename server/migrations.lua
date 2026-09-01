@@ -45,6 +45,7 @@ local COLUMNS = {
         island_pet        = 'island_pet VARCHAR(16) NULL',
         device            = "device VARCHAR(16) NOT NULL DEFAULT 'phone'",
         home_density      = 'home_density VARCHAR(12) NULL',
+        home_icon_scale   = 'home_icon_scale SMALLINT NULL',
     },
 
     -- Verification tier shown next to a handle: blue (individual), gold (business), grey
@@ -104,6 +105,13 @@ local COLUMNS = {
     phone_racing_results = {
         best_lap_ms = 'best_lap_ms INT NULL',
         sectors     = 'sectors VARCHAR(64) NULL',
+    },
+
+    -- Track approval workflow. publish_status tracks pending/published/rejected state.
+    -- rejection_reason stores admin feedback when a track is rejected.
+    phone_racing_tracks = {
+        publish_status    = "publish_status VARCHAR(20) NOT NULL DEFAULT 'published'",
+        rejection_reason  = 'rejection_reason TEXT NULL',
     },
 }
 

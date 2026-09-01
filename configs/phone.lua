@@ -51,6 +51,14 @@ return {
         -- lengths, and both keep working everywhere.
         Length = 10,
 
+        -- Area code for new numbers, blank by default. It is part of Length
+        -- rather than added to it: '555' with Length 10 gives 555 plus 7 random
+        -- digits, so 5551234567. Formats below are unaffected.
+        --
+        -- It cannot start with 0 or 1 and must leave 4 digits random; break
+        -- either rule and it is ignored, with the reason printed on boot.
+        Prefix = '',
+
         -- How a number is displayed, keyed by how many digits it has. Each X is
         -- replaced by the next digit and every other character is printed
         -- literally, so '+44 XXXX XXXXXX', 'XXX-XXXX' and '(XXX) XXX-XXXX' all
@@ -80,6 +88,13 @@ return {
     BlockWhileDead     = true,
     BlockWhileSwimming = true,
 
+    -- Whether an incoming call throws the whole phone onto the screen. Off, a
+    -- ringing phone shows the same closed-shell banner an alarm does, naming
+    -- the caller, and the player opens their phone when they want to answer.
+    -- On, the call screen takes over the moment the phone rings, which is how
+    -- this behaved before the banner existed.
+    OpenOnIncomingCall = false,
+
     -- The boot animation: your logo over a lit backdrop, played once when the
     -- resource starts and the player first opens their phone, never on ordinary
     -- opens after that. Off by default so an untouched install goes straight to
@@ -106,6 +121,28 @@ return {
     -- buttons, so hold LookKeybind to steer while you walk. Set false to freeze
     -- the player for the length of the video call. Needs AllowMovement.
     AllowMovementInVideoCall = true,
+
+    -- Video calls send the picture peer-to-peer over WebRTC; the call audio stays on your voice
+    -- resource. Public STUN is always used, which is enough when both players share a network.
+    -- A TURN relay is what carries the picture between players on different home connections.
+    -- Without one they get a connected call with a black picture, while their own self-view
+    -- still looks fine, because the self-view never leaves their machine.
+    --
+    -- TURN is only for video calls and nearby-voice capture, the two things that talk browser to
+    -- browser. Live broadcasts and MDT bodycams do NOT need it: Live sends its picture through the
+    -- game server, and a bodycam is drawn on the watching terminal itself.
+    --
+    -- Configure it once in configs/voice.lua; the free Cloudflare path is two convars:
+    --     set sd_cf_turn_token_id  "your-cloudflare-turn-token-id"
+    --     set sd_cf_turn_api_token "your-cloudflare-turn-api-token"
+    --
+    -- A fixed relay of your own (coturn, Metered) can be added for calls on top of that:
+    --     set sd_phone_turn_url        "turn:turn.example.com:3478"
+    --     set sd_phone_turn_username   "your-username"
+    --     set sd_phone_turn_credential "your-password"
+    --
+    -- Set this false to silence the boot warning if you deliberately run STUN-only.
+    WarnAboutTurn = true,
 
     -- Hold this key/button (while the phone is open) to free the mouse for
     -- camera rotation without closing the phone. Releasing it returns to the
@@ -160,6 +197,12 @@ return {
     HoldAnimation = true,
     AnimDict      = 'cellphone@',
     AnimName      = 'cellphone_text_read_base',
+
+    -- Held for the whole of a call, in place of the reading anim above, so the ped puts the phone
+    -- to their ear. Kept up after the phone is stowed: the call is still running, so the arm stays
+    -- there rather than dropping the moment the UI closes.
+    CallAnimDict  = 'cellphone@',
+    CallAnimName  = 'cellphone_call_listen_base',
     PropPrefix    = 'sd_phone_',
     PropBone      = 28422,   -- SKEL_R_Hand
 

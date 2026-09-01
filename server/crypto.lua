@@ -48,6 +48,18 @@ function crypto.verifyPassword(plain, stored)
     return okCall and res == true
 end
 
+---Checks a plaintext password against an lb-phone bcrypt hash. Only ever used to let a migrated
+---account through on the password its owner already knows; the caller rewrites the account to
+---scrypt as soon as one is accepted, so this path retires itself as players sign in.
+---@param plain string plaintext password
+---@param stored string stored bcrypt hash
+---@return boolean verified
+function crypto.verifyBcrypt(plain, stored)
+    if not crypto.available() then return false end
+    local okCall, res = call('sdCryptoVerifyBcrypt', plain, stored)
+    return okCall and res == true
+end
+
 ---Encrypts a vault secret. Nil when the helper is unavailable.
 ---@param plain string
 ---@return string|nil blob

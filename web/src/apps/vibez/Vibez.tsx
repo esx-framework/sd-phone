@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Home, Inbox as InboxIcon, Plus, Search, User } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 import { useStatusBarLight } from '@/shell/useStatusBarLight';
 import { useDeckActive } from '@/shell/deckActive';
@@ -16,12 +16,14 @@ import { AccountSwitcher } from '@/shared/AccountSwitcher';
 import { MAIL_DOMAIN, accountsConfirmReset, accountsLogin, accountsLogout, accountsMe, accountsRegister, accountsRequestReset, accountsSavePassword, accountsSuggestCode, accountsSwitch } from '@/core/accountsApi';
 import { signOutAllForApp } from '@/shared/signOutAll';
 import { t } from '@/i18n';
-import { ACCENT, GRAD_FROM, GRAD_TO, fmt, type VLive, type VPost, type VProfile } from './data';
+import { SlideOver } from '@/ui/SlideOver';
+import { ACCENT, type VLive, type VPost, type VProfile } from './data';
 import {
     apiAddView, apiCounts, apiDeletePost, apiFeed, apiLives, apiPost, apiProfile, apiToggleFollow,
     apiToggleLike, apiToggleSave, apiWatch, type FeedTab,
 } from './vibezApi';
 import { Feed, type FeedHandlers } from './Feed';
+import { TAB_H, TabBar } from './TabBar';
 import { Discover } from './Discover';
 import { Inbox } from './Inbox';
 import { Profile } from './Profile';
@@ -215,7 +217,7 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
     const authScreen = (
             <AppAuth
                 appId="vibez"
-                appName="vibez"
+                appName="Clout"
                 tagline={t('vibez.tagline', 'Catch the vibe. Share yours.')}
                 icon="vibez"
                 theme={{ accent: ACCENT, welcomeBg: '#0a0518', welcomeText: 'light' }}
@@ -249,8 +251,12 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
     if (!authed) return authScreen;
 
     return (
-        <div className={`absolute inset-0 z-10 flex flex-col select-none overflow-hidden bg-black text-white ${justAuthed ? 'animate-swipe-in-left' : ''}`}>
-            <div className="min-h-0 flex-1 overflow-hidden">
+        <div className={`absolute inset-0 z-10 select-none overflow-hidden bg-black text-white ${justAuthed ? 'animate-swipe-in-left' : ''}`}>
+            <div
+                key={tab}
+                className="absolute inset-x-0 top-0 animate-swipe-in-left overflow-hidden"
+                style={{ bottom: TAB_H }}
+            >
                 {tab === 'home' && (
                     <Feed
                         posts={posts}
@@ -291,43 +297,13 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                 )}
             </div>
 
-            <nav className="shrink-0 bg-black px-2 pb-12 pt-2.5">
-                <div className="flex items-end justify-around">
-                    <NavItem label={t('vibez.home', 'Home')} active={tab === 'home'} onClick={() => setTab('home')}>
-                        <Home className="h-[26px] w-[26px]" strokeWidth={tab === 'home' ? 2.4 : 2} fill={tab === 'home' ? 'currentColor' : 'none'} />
-                    </NavItem>
-                    <NavItem label={t('vibez.discover', 'Discover')} active={tab === 'discover'} onClick={() => setTab('discover')}>
-                        <Search className="h-[25px] w-[25px]" strokeWidth={tab === 'discover' ? 2.6 : 2} />
-                    </NavItem>
-
-                    <button
-                        type="button"
-                        aria-label={t('vibez.create', 'Create')}
-                        onClick={() => setUpload(true)}
-                        className="relative flex h-[32px] w-[46px] items-center justify-center rounded-[11px] active:scale-95 transition-transform"
-                        style={{ background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})`, boxShadow: `0 0 14px ${GRAD_FROM}66` }}
-                    >
-                        <Plus className="h-5 w-5 text-white" strokeWidth={3} />
-                    </button>
-
-                    <NavItem label={t('vibez.inbox', 'Inbox')} active={tab === 'inbox'} onClick={() => setTab('inbox')}>
-                        <span className="relative">
-                            <InboxIcon className="h-[25px] w-[25px]" strokeWidth={tab === 'inbox' ? 2.6 : 2} />
-                            {unread > 0 && (
-                                <span
-                                    className="absolute -right-2 -top-1 flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-                                    style={{ background: GRAD_TO }}
-                                >
-                                    {fmt(unread)}
-                                </span>
-                            )}
-                        </span>
-                    </NavItem>
-                    <NavItem label={t('vibez.profile', 'Profile')} active={tab === 'profile'} onClick={() => setTab('profile')}>
-                        <User className="h-[25px] w-[25px]" strokeWidth={tab === 'profile' ? 2.6 : 2} fill={tab === 'profile' ? 'currentColor' : 'none'} />
-                    </NavItem>
-                </div>
-            </nav>
+            <TabBar
+                tab={tab}
+                onTab={next => { setViewer(null); setTab(next); }}
+                onCreate={() => { setViewer(null); setUpload(true); }}
+                unread={unread}
+                avatar={me?.avatar}
+            />
 
             {switching && (
                 <AccountSwitcher
@@ -340,33 +316,50 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
             )}
 
             {profileHandle && (
-                <div className="absolute inset-0 z-20 bg-black">
-                    <Profile
-                        handle={profileHandle}
-                        onBack={() => setProfileHandle(null)}
-                        onOpenPost={openPostList}
-                        refreshKey={refreshKey}
-                    />
-                </div>
+                <SlideOver
+                    direction="soft"
+                    zIndex={20}
+                    className="bg-black"
+                    onClose={() => setProfileHandle(null)}
+                >
+                    {close => (
+                        <Profile
+                            handle={profileHandle}
+                            onBack={() => close()}
+                            onOpenPost={openPostList}
+                            refreshKey={refreshKey}
+                        />
+                    )}
+                </SlideOver>
             )}
 
             {viewer && (
-                <div className="absolute inset-0 z-30 bg-black">
-                    <Feed
-                        posts={viewer.posts}
-                        myHandle={me?.username}
-                        handlers={handlers}
-                        initialIndex={viewer.index}
-                    />
-                    <button
-                        type="button"
-                        aria-label={t('vibez.back', 'Back')}
-                        onClick={() => setViewer(null)}
-                        className="absolute left-3 top-[58px] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm active:opacity-70"
-                    >
-                        <ChevronLeft className="h-5 w-5 text-white" strokeWidth={2.6} />
-                    </button>
-                </div>
+                <SlideOver
+                    direction="soft"
+                    zIndex={30}
+                    className="bg-black"
+                    style={{ bottom: TAB_H }}
+                    onClose={() => setViewer(null)}
+                >
+                    {close => (
+                        <>
+                            <Feed
+                                posts={viewer.posts}
+                                myHandle={me?.username}
+                                handlers={handlers}
+                                initialIndex={viewer.index}
+                            />
+                            <button
+                                type="button"
+                                aria-label={t('vibez.back', 'Back')}
+                                onClick={() => close()}
+                                className="absolute left-3 top-[58px] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm active:opacity-70"
+                            >
+                                <ChevronLeft className="h-5 w-5 text-white" strokeWidth={2.6} />
+                            </button>
+                        </>
+                    )}
+                </SlideOver>
             )}
 
             {commentsPost && (
@@ -423,25 +416,5 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
 
             {adding && <div className="absolute inset-0 z-[70]">{authScreen}</div>}
         </div>
-    );
-}
-
-function NavItem({ label, active, onClick, children }: {
-    label:    string;
-    active:   boolean;
-    onClick:  () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <button
-            type="button"
-            aria-label={label}
-            onClick={onClick}
-            className="flex w-14 flex-col items-center gap-0.5 active:opacity-70"
-            style={{ color: active ? '#fff' : 'rgba(255,255,255,0.6)' }}
-        >
-            {children}
-            <span className="text-[10px] font-medium leading-none">{label}</span>
-        </button>
     );
 }

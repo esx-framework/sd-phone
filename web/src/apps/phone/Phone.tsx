@@ -5,6 +5,8 @@ import { RecentsTab } from './recents/RecentsTab';
 import { KeypadTab } from './keypad/KeypadTab';
 import { FavoritesTab } from './contacts/FavoritesTab';
 import { PhoneTabBar, type PhoneTab } from './PhoneTabBar';
+import { RecordingsTab } from './recordings/RecordingsTab';
+import { recordingEnabled } from './callrecApi';
 import { AlertDialog } from '@/ui/AlertDialog';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useSessionState } from '@/hooks/useSessionState';
@@ -16,11 +18,20 @@ import {
 import { dialCall } from './callsApi';
 import { useContacts, useContactsStore, saveNewContact } from '@/stores/contactsStore';
 import { t } from '@/i18n';
+import { failText } from '@/core/api';
 
 interface CallTarget { number: string; name?: string; video?: boolean }
 
 export function Phone({ onClose: _onClose }: { onClose: () => void }) {
     const [tab,        setTab]        = useSessionState<PhoneTab>('phone:tab', 'contacts');
+    const [recordingsOn, setRecordingsOn] = useState(false);
+
+    useEffect(() => {
+        void recordingEnabled().then(on => {
+            setRecordingsOn(on);
+            if (!on) setTab(prev => (prev === 'recordings' ? 'contacts' : prev));
+        });
+    }, [setTab]);
 
     // Replays the pane slide on a real tab change only. The element never unmounts now, and a
     // CSS animation will not restart on its own, so it is cleared and reassigned around a forced
@@ -80,7 +91,7 @@ export function Phone({ onClose: _onClose }: { onClose: () => void }) {
     async function placeCall(target: CallTarget) {
         if (!target.number) return;
         const res = await dialCall(target.number, target.name, target.video === true);
-        if (!res.success) setDialError(res.message ?? t('phone.unableToPlaceCall','Unable to place call'));
+        if (!res.success) setDialError(failText(res, t('phone.unableToPlaceCall','Unable to place call')));
     }
 
     useNuiEvent('sd-phone:call:ended', useCallback(() => {
@@ -120,6 +131,8 @@ export function Phone({ onClose: _onClose }: { onClose: () => void }) {
                             onDeleteContact={deleteContact}
                             onToggleFavorite={toggleFavorite}
                         />
+                    ) : tab === 'recordings' ? (
+                        <RecordingsTab />
                     ) : tab === 'keypad' ? (
                         <KeypadTab onAddContact={addContact} onCall={placeCall} />
                     ) : (
@@ -135,7 +148,7 @@ export function Phone({ onClose: _onClose }: { onClose: () => void }) {
                 </div>
             </div>
 
-            <PhoneTabBar tab={tab} onChange={setTab} />
+            <PhoneTabBar tab={tab} onChange={setTab} showRecordings={recordingsOn} />
 
             {callTarget !== null && (
                 <AlertDialog

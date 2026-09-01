@@ -1,62 +1,62 @@
--- The media relay: a WebSocket that carries live video straight between the browser producing it
--- and the browsers watching it, instead of pushing every frame through the game's event bus.
+-- LIVE VIDEO RELAY. You almost certainly do not need this. Leave Enabled = false and everything
+-- works: Photogram Live and Vibez Live both stream fine without it.
 --
--- Nothing in here decides who may watch anything. The features that own a stream (the MDT's
--- Cameras section, Photogram Live, Vibez Live) run exactly the permission checks they run today,
--- and only once one has passed does this layer sign a short-lived token saying so. A token is a
--- receipt for a decision already made, never a substitute for making one.
+-- What it is for: those live broadcasts normally send their video through the game server. That is
+-- fine for a few viewers. If you run big broadcasts and want the video to travel between players'
+-- browsers instead of through the game, this sends it down a separate connection.
 --
--- The relay itself is a small Node process you run separately. It is not a FiveM resource, it is
--- not started by this one, and it never talks to the game: it only knows stream names and the
--- tokens this server signs. It needs a hostname with a publicly trusted certificate, because the
--- phone's UI runs on a secure origin: the browser refuses a plain ws:// endpoint outright, and a
--- self-signed certificate fails with close code 1006 and no prompt for the player to accept.
+-- Turning it on needs a domain name with a working SSL certificate (https). There is no way around
+-- that: the phone's screen is a web page, and browsers refuse insecure video connections. If you do
+-- not have one, leave this off.
 --
--- The URL and the signing key are read from server convars, never from this file, so a secret
--- cannot land in a git diff. Put them in your server.cfg:
+-- This is NOT the setting for video calls or voice. That is TURN, in configs/voice.lua.
+-- This is NOT where photo uploads go. That is Provider in configs/photos.lua.
+--
+-- If you do turn it on, put these two lines in your server.cfg (never in this file, so a key cannot
+-- end up in a git commit):
 --     set sd_phone_relay_url "wss://media.example.com/ws"
---     set sd_phone_relay_key "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
---     set sd_phone_relay_ttl "45"
---     set sd_phone_relay_control_url "https://media.example.com/control"
--- Only the first two are needed; the last two fall back to TokenTtlSeconds below and to a control
--- endpoint derived from the relay URL. Generate a key with `openssl rand -hex 32` and give the
--- same 64 characters to the relay process as its SD_PHONE_RELAY_KEY environment variable. The key
--- is specific to the relay: rotating it rotates nothing else, and the relay is never handed the
--- server secret that configs/server and .secret protect.
---
--- With either convar unset, with the Node crypto helper missing, or with Enabled below false, the
--- whole thing reports itself unavailable and every feature keeps streaming the way it does today.
--- That is the shipped default, so an install that never sets a convar never notices this file.
+--     set sd_phone_relay_key "paste-64-random-characters-here"
+-- Generate the key with `openssl rand -hex 32`. The relay program in media-server/ needs the same
+-- key as its SD_PHONE_RELAY_KEY environment variable. It is only used for this: it unlocks nothing
+-- else on your server.
 return {
-    -- Whether the relay is used at all. Off by default: it wants a Node process and a
-    -- certificate, so it is something you turn on deliberately rather than half-have.
+    -- Off by default. Turn on only if you have the domain and certificate described above.
     Enabled = false,
 
-    -- Which features may mint a token. A feature switched off here keeps working, it just keeps
-    -- working the old way, over the event bus.
+    -- Run the relay inside this resource, so there is no separate program to install or keep
+    -- running. Handy for testing on your own machine.
+    --
+    -- It still cannot give you a certificate. On a live server you need https in front of it and
+    -- its address in sd_phone_relay_url, or players will not connect. Set this to false if you
+    -- would rather run media-server/ on its own box.
+    SelfHost = true,
+
+    -- Which features use the relay. Turning one off does not break it, it just goes back to
+    -- sending video through the game server like normal.
+    --
+    -- MDT bodycams are missing on purpose: the watching officer's screen draws the view in-game,
+    -- so there is no video to relay in the first place.
     Features = {
-        Cameras       = true,   -- MDT bodycams and dashcams
         PhotogramLive = true,   -- Photogram Live broadcasts
         VibezLive     = true,   -- Vibez Live broadcasts
     },
 
-    -- Seconds a minted token is good for, clamped to 10..120. Deliberately short: the phone
-    -- re-mints through the feature's own permission check on every reconnect, so taking a camera
-    -- away from somebody is mostly a matter of not issuing the next token. A server convar
-    -- (sd_phone_relay_ttl) overrides this when set.
+    -- The settings below are fine as they are. Only change them if you know why you are.
+
+    -- How long a viewer's pass to watch a stream lasts, in seconds (10 to 120). Kept short so that
+    -- taking someone's permission away actually stops them watching, rather than waiting for a
+    -- long pass to run out. The convar sd_phone_relay_ttl overrides this.
     TokenTtlSeconds = 45,
 
-    -- Seconds before expiry the phone should ask for a fresh token. Served to the UI so the
-    -- refresh cadence follows the lifetime above instead of being guessed a second time.
+    -- How many seconds before a pass expires the phone quietly asks for a new one.
     RefreshLeadSeconds = 15,
 
-    -- Whether this server may call the relay over HTTP to cut a stream short: an officer going
-    -- off duty, a viewing permission revoked, a quality change that invalidates the picture.
-    -- Turning it off costs nothing worse than a stream that lingers until its tokens lapse.
+    -- Let this server tell the relay to cut a stream off straight away, for example when an
+    -- officer goes off duty. Turned off, a stream just lingers until its pass runs out.
     ControlChannel = true,
 
-    -- Convar names the URL and the key are read from. Change these only if the names collide with
-    -- something else on your server. The values themselves never live here.
+    -- The server.cfg setting names the URL and key are read from. Only change these if one of the
+    -- names clashes with another resource on your server. The values themselves never live here.
     UrlConvar        = 'sd_phone_relay_url',
     KeyConvar        = 'sd_phone_relay_key',
     TtlConvar        = 'sd_phone_relay_ttl',

@@ -9,6 +9,16 @@
 -- value still falls back to the legacy `sd_fivemanage_key` server convar. Create a "Media" token
 -- at https://app.fivemanage.com.
 return {
+    -- Which CDN uploads go to: 'fivemanage' or 'qbox'.
+    --
+    -- 'fivemanage' uses the Fivemanage Media token (FivemanageMedia in configs/server/apikeys.lua,
+    -- or the legacy sd_fivemanage_key convar).
+    --
+    -- 'qbox' uses the Qbox Dashboard CDN (QboxCdn in configs/server/apikeys.lua, or the
+    -- sd_qbox_cdn_key convar). Generate the token at https://dashboard.qbox.re -> CDN -> API.
+    -- Anything other than 'qbox' stays on Fivemanage, so a typo never quietly moves your media.
+    Provider = 'fivemanage',
+
     -- JPEG quality (0.0 - 1.0). 0.85 matches NPWD's default and balances
     -- file size against visible compression artefacts.
     Quality = 0.85,

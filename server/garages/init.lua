@@ -38,3 +38,34 @@ lib.callback.register('sd-phone:server:garages:list', function(src)
 end)
 
 -- No boot print: the detected garage system is available via garages.activeSystem() when needed.
+
+---The bridge's resolution report as printable lines.
+---@param src number caller server id
+---@return string[] lines
+local function diagnosticLines(src)
+    local d = garages.diagnose(src)
+    return {
+        ('system      : %s'):format(d.system),
+        ('table       : %s (%d row(s) for you)'):format(d.table, d.rows),
+        ('garage col  : %s'):format(d.garageCol or 'NONE of the profile candidates'),
+        ('state col   : %s'):format(d.stateCol or 'NONE of the profile candidates'),
+        ('parked table: %s'):format(d.parkedTable and (d.parkedTable .. (d.parkedCols and ' (present)' or ' (MISSING)')) or 'n/a'),
+        ('garages     : %d with usable coords'):format(d.garages),
+        ('row columns : %s'):format(table.concat(d.columns, ', ')),
+    }
+end
+
+---Prints what the garage bridge resolved for the caller, for diagnosing a garage system whose
+---schema is not published. Always logged to the server console; a player also gets it in chat.
+lib.addCommand('garagediag', {
+    help = 'Print what the sd-phone garage bridge detected: system, table, resolved columns and garage coords',
+    restricted = 'group.admin',
+}, function(source)
+    local lines = diagnosticLines(source)
+    for i = 1, #lines do
+        print('^5[sd-phone:garagediag]^0 ' .. lines[i])
+        if source and source > 0 then
+            TriggerClientEvent('chat:addMessage', source, { args = { 'garagediag', lines[i] } })
+        end
+    end
+end)

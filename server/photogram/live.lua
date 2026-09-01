@@ -241,10 +241,10 @@ end
 ---@param src integer hosting player server id
 ---@return table result { liveId, startedAt (ms), enc } or failure
 function live.start(src)
-    if not ENABLED then return fail('Live is not available') end
+    if not ENABLED then return fail('photogram.liveNotAvailable', 'Live is not available') end
 
     local acc = viewerAccount(src)
-    if not acc then return fail('Not signed in') end
+    if not acc then return fail('photogram.notSigned', 'Not signed in') end
 
     local existing = hostLive[src]
     if existing and lives[existing] then
@@ -258,7 +258,7 @@ function live.start(src)
 
     -- Only a genuinely new session is gated; the re-entrant path above already short-circuits.
     if not util.rateLimit(player.getIdentifier(src), 'photogram:liveStart', START_WINDOW, START_MAX) then
-        return fail('Slow down a moment')
+        return fail('photogram.slowDownMoment', 'Slow down a moment')
     end
 
     local id = store.newId()
@@ -338,9 +338,14 @@ function live.chunk(src, payload)
         if gop then
             gop[#gop + 1] = chunk
             session.genBytes = (session.genBytes or 0) + #chunk
-            while #gop > 0 and (#gop > MAX_GOP or session.genBytes > MAX_GOP_BYTES) do
-                session.genBytes = session.genBytes - #gop[1]
-                table.remove(gop, 1)
+            -- Dropping the front would leave the header joined to a tail it no longer runs into,
+            -- and these chunks are slices of one encoder byte run rather than standalone segments:
+            -- a viewer primed with a header and a gap cannot decode either side of it. The cache
+            -- goes entirely instead, and the next header starts a fresh one.
+            if #gop > MAX_GOP or session.genBytes > MAX_GOP_BYTES then
+                session.header    = nil
+                session.genChunks = {}
+                session.genBytes  = 0
             end
         end
     end
@@ -360,21 +365,21 @@ end
 function live.join(src, payload)
     payload = tbl(payload)
     local acc = viewerAccount(src)
-    if not acc then return fail('Not signed in') end
+    if not acc then return fail('photogram.notSigned', 'Not signed in') end
     local session = lives[payload.liveId]
-    if not session then return fail('This live has ended') end
-    if session.hostSrc == src then return fail('You are the host') end
+    if not session then return fail('photogram.liveEnded', 'This live has ended') end
+    if session.hostSrc == src then return fail('photogram.youAreTheHost', 'You are the host') end
     -- Bounds the two profile reads below: tapping through a live rail is nowhere near this rate.
     if not util.rateLimit(player.getIdentifier(src), 'photogram:liveJoin', 10000, 20) then
-        return fail('Slow down a moment')
+        return fail('photogram.slowDownMoment', 'Slow down a moment')
     end
 
     local hostRow = store.getProfile(session.host)
     local visible = hostRow and (not flag(hostRow.is_private) or store.isAcceptedFollower(acc.username, session.host))
-    if not visible then return fail('This live has ended') end
+    if not visible then return fail('photogram.liveEnded', 'This live has ended') end
 
     if not session.viewers[src] and MAX_VIEWERS > 0 and viewerCount(session) >= MAX_VIEWERS then
-        return fail('This live is full')
+        return fail('photogram.liveFull', 'This live is full')
     end
 
     local prior = viewerLive[src]
@@ -479,10 +484,10 @@ end
 function live.comment(src, payload)
     payload = tbl(payload)
     local acc = viewerAccount(src)
-    if not acc then return fail('Not signed in') end
+    if not acc then return fail('photogram.notSigned', 'Not signed in') end
     local session = lives[payload.liveId]
-    if not session then return fail('This live has ended') end
-    if session.hostSrc ~= src and not session.viewers[src] then return fail('Not in this live') end
+    if not session then return fail('photogram.liveEnded', 'This live has ended') end
+    if session.hostSrc ~= src and not session.viewers[src] then return fail('photogram.notLive', 'Not in this live') end
     if not sessionGate(session.commentAt, src, COMMENT_MS) then return ok() end
 
     local text = trim(payload.text):sub(1, 200)
@@ -569,20 +574,20 @@ end
 ---@param src integer requesting player's server id
 ---@param req { streamId: string, role: string }
 ---@return table|nil grant { key, role, gen }
----@return string|nil message refusal shown to the caller
+---@return table|nil refusal keyed refusal envelope shown to the caller
 local function entitle(src, req)
-    if not ENABLED then return nil, 'Live is not available' end
+    if not ENABLED then return nil, fail('photogram.liveNotAvailable', 'Live is not available') end
 
     local liveId = type(req.streamId) == 'string' and req.streamId:match('^photogram:live:(.+)$') or nil
     local session = liveId and lives[liveId]
-    if not session then return nil, 'This live has ended' end
+    if not session then return nil, fail('photogram.liveEnded', 'This live has ended') end
 
     if req.role == 'publish' then
-        if session.hostSrc ~= src then return nil, 'You are not the host' end
+        if session.hostSrc ~= src then return nil, fail('photogram.notHost', 'You are not the host') end
         return { key = req.streamId, role = 'publish', gen = 0 }
     end
 
-    if not session.viewers[src] then return nil, 'You are not watching this live' end
+    if not session.viewers[src] then return nil, fail('photogram.notWatchingLive', 'You are not watching this live') end
     return { key = req.streamId, role = 'watch', gen = 0 }
 end
 

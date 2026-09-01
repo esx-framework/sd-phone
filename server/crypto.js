@@ -85,9 +85,33 @@ function decrypt(blob) {
 // the module's exports object instead. Resolving both keeps the file loadable off-server.
 const registerExport = typeof exports === 'function' ? exports : global.exports;
 
+// lb-phone hashed with bcrypt, which Node has no built-in for. Verifying it is what lets a
+// migrated player sign in with the password they already know instead of being locked out of an
+// account nobody recorded the owner of. Verify only: nothing here ever writes a bcrypt hash, and
+// the accounts engine rewrites the account to scrypt the first time one is accepted.
+let bcrypt = null;
+try {
+    bcrypt = require('./server/vendor/bcryptjs.js');
+} catch (err) {
+    console.log(`^3[sd-phone:crypto]^0 bcrypt helper did not load (${err.message}); lb-phone passwords cannot be verified.`);
+}
+
+const BCRYPT_RE = /^\$2[abxy]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
+function verifyBcrypt(plain, stored) {
+    if (!bcrypt || typeof plain !== 'string' || typeof stored !== 'string') return false;
+    if (!BCRYPT_RE.test(stored)) return false;
+    try {
+        return bcrypt.compareSync(plain, stored) === true;
+    } catch (err) {
+        return false;
+    }
+}
+
 registerExport('sdCryptoReady', () => true);
 registerExport('sdCryptoHashPassword', hashPassword);
 registerExport('sdCryptoVerifyPassword', verifyPassword);
+registerExport('sdCryptoVerifyBcrypt', verifyBcrypt);
 registerExport('sdCryptoEncrypt', encrypt);
 registerExport('sdCryptoDecrypt', decrypt);
 registerExport('sdCryptoSha256', (s) => crypto.createHash('sha256').update(String(s), 'utf8').digest('hex'));

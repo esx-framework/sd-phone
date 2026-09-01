@@ -42,6 +42,12 @@ return {
     -- here adds it to the public directory and enables Job Calls / company
     -- messaging; jobs NOT listed here still get the rest of the Actions tab (duty,
     -- bank, employees, quit) - they just won't appear in the directory.
+    -- `canCall` + `callNumber` give the company a phone line. It is dialable two
+    -- ways: the Call button in the Services app, and typing the number into the
+    -- Phone dialer, so 911 rings every on-duty officer exactly as the button does.
+    -- Either way it rings all on-duty employees who have Job Calls switched on,
+    -- and the first to answer takes it. Give any company a number to make it
+    -- reachable; leave canCall false and it stays directory-only.
     -- `bossGrade` is an ESX-ONLY fallback (overrides DefaultBossGrade for this
     -- company); QBCore/QBox ignore it and use the grade's isboss flag.
     -- `commission` is an OPTIONAL fraction 0.0-1.0 of a paid business invoice

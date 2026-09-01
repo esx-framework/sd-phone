@@ -14,6 +14,28 @@ return {
     -- fd) require the recipient to be online.
     AllowOffline     = true,
 
+    -- Let the sender tick "Send Anonymously". Hides them from the RECIPIENT only: that row,
+    -- statement and banner read "Anonymous" with no counterparty to send back to. Server-side
+    -- logging is never anonymised, so sd-phone:server:banking:transfer still carries the real
+    -- sender, with an `anonymous` flag alongside it.
+    AllowAnonymous   = true,
+
+    -- The card shown at the top of the Wallet, and the default for a character who has never
+    -- customised theirs. Brand ids: fleeca, maze, lombank, pacific, blaine. Colour and Pattern
+    -- are optional overrides; leave them nil to use the bank's authentic pair.
+    --   Colours:  emerald, crimson, cobalt, navy, bronze, graphite, teal, violet, slate,
+    --             amber, rose, midnight, mint, burgundy
+    --   Patterns: wave, meander, pinstripe, guilloche, crosshatch, chevron, dots, grid,
+    --             diamond, scales, topo, circuit, carbon, none
+    -- Locked = true forces this on everyone and hides the customiser. Purely cosmetic: every
+    -- card reads the same framework account.
+    Card = {
+        Brand   = 'fleeca',
+        Color   = nil,
+        Pattern = nil,
+        Locked  = false,
+    },
+
     -- Person-to-person invoicing from the Wallet's Invoices tab (business invoicing is
     -- configured in configs/services.lua and unaffected by this block).
     PersonalInvoices = {

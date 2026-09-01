@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 
 import { device } from '@device';
-import { DENSITIES, DOCK_BOTTOM, DOCK_PAD_Y, gridFor } from '@/device/grid';
+import { DENSITIES, DOCK_BOTTOM, DOCK_PAD_Y, gridFor, gridPreview, ICON_SCALE_MAX, ICON_SCALE_MIN, ICON_SCALE_STEP } from '@/device/grid';
 import type { Density } from '@/device/types';
 import { t } from '@/i18n';
 import { useIosPush } from '@/hooks/useIosPush';
@@ -9,6 +9,7 @@ import { useTheme } from '@/stores/themeStore';
 import { resolveWallpaper } from '@/shell/wallpapers';
 import { DOCK_STYLES, type DockStyle } from '@/shell/shellLook';
 import { NavBar } from '@/ui/NavBar';
+import { Slider } from '@/ui/Slider';
 import { Toggle } from '@/ui/Toggle';
 
 const PREVIEW_MAX_H = 150;
@@ -32,8 +33,8 @@ function describe(d: Density): string {
     return t('settings.homeDensityDefaultHint', '{cols} x {rows}, so {count} apps fit a page. The size the phone ships with.', vars);
 }
 
-function DensityPreview({ density, wallpaper }: { density: Density; wallpaper: string }) {
-    const g = gridFor(density);
+function DensityPreview({ density, wallpaper, scale }: { density: Density; wallpaper: string; scale: number }) {
+    const g = gridPreview(density, scale);
     const tile = g.icon * SCALE;
     const dockH = (g.icon + DOCK_PAD_Y) * SCALE;
 
@@ -87,24 +88,6 @@ function DensityPreview({ density, wallpaper }: { density: Density; wallpaper: s
     );
 }
 
-const DOCK_LABEL: Record<DockStyle, string> = {
-    glass:   t('settings.dockGlass', 'Glass'),
-    tinted:  t('settings.dockTinted', 'Tinted'),
-    solid:   t('settings.dockSolid', 'Solid'),
-    outline: t('settings.dockOutline', 'Outline'),
-    clear:   t('settings.dockClear', 'Clear'),
-    hidden:  t('settings.dockHidden', 'Hidden'),
-};
-
-const DOCK_HINT: Record<DockStyle, string> = {
-    glass:   t('settings.dockGlassHint', 'A frosted tray. The default.'),
-    tinted:  t('settings.dockTintedHint', 'Frosted in your accent colour.'),
-    solid:   t('settings.dockSolidHint', 'A flat dark tray, no frosting.'),
-    outline: t('settings.dockOutlineHint', 'A thin outline, nothing inside.'),
-    clear:   t('settings.dockClearHint', 'Icons only, no tray.'),
-    hidden:  t('settings.dockHiddenHint', 'No dock at all.'),
-};
-
 function DockPreview({ style, wallpaper }: { style: DockStyle; wallpaper: string }) {
     const tray =
         style === 'glass'   ? { background: 'rgba(255,255,255,0.3)',    border: '0.5px solid rgba(255,255,255,0.5)' }
@@ -143,10 +126,28 @@ function DockPreview({ style, wallpaper }: { style: DockStyle; wallpaper: string
 export function HomeDensityPage({ onBack }: { onBack: () => void }) {
     const { goBack, pageStyle } = useIosPush(onBack);
     const {
-        homeDensity, setHomeDensity, wallpaperHome,
+        homeDensity, setHomeDensity, homeIconScale, setHomeIconScale, wallpaperHome,
         dockStyle, setDockStyle,
         wallpaperParallax, setWallpaperParallax,
-    } = useTheme('homeDensity', 'setHomeDensity', 'wallpaperHome', 'dockStyle', 'setDockStyle', 'wallpaperParallax', 'setWallpaperParallax');
+    } = useTheme('homeDensity', 'setHomeDensity', 'homeIconScale', 'setHomeIconScale', 'wallpaperHome', 'dockStyle', 'setDockStyle', 'wallpaperParallax', 'setWallpaperParallax');
+
+    const DOCK_LABEL: Record<DockStyle, string> = {
+        glass:   t('settings.dockGlass', 'Glass'),
+        tinted:  t('settings.dockTinted', 'Tinted'),
+        solid:   t('settings.dockSolid', 'Solid'),
+        outline: t('settings.dockOutline', 'Outline'),
+        clear:   t('settings.dockClear', 'Clear'),
+        hidden:  t('settings.dockHidden', 'Hidden'),
+    };
+
+    const DOCK_HINT: Record<DockStyle, string> = {
+        glass:   t('settings.dockGlassHint', 'A frosted tray. The default.'),
+        tinted:  t('settings.dockTintedHint', 'Frosted in your accent colour.'),
+        solid:   t('settings.dockSolidHint', 'A flat dark tray, no frosting.'),
+        outline: t('settings.dockOutlineHint', 'A thin outline, nothing inside.'),
+        clear:   t('settings.dockClearHint', 'Icons only, no tray.'),
+        hidden:  t('settings.dockHiddenHint', 'No dock at all.'),
+    };
 
     return (
         <div
@@ -173,7 +174,7 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
                                 onClick={() => setHomeDensity(d)}
                                 className={`relative flex items-center gap-4 rounded-[14px] bg-surface px-4 py-4 text-left active:opacity-70 ${selected ? 'ring-2 ring-ios-blue' : ''}`}
                             >
-                                <DensityPreview density={d} wallpaper={wallpaperHome} />
+                                <DensityPreview density={d} wallpaper={wallpaperHome} scale={homeIconScale} />
                                 <span className="flex min-w-0 flex-1 flex-col gap-1.5 pr-7">
                                     <span className="text-[20px] font-semibold leading-tight">{label(d)}</span>
                                     <span className="text-[15px] leading-snug text-ios-gray">{describe(d)}</span>
@@ -189,6 +190,43 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
 
                     <p className="mt-1 px-1 text-[13px] leading-snug text-ios-gray">
                         {t('settings.homeDensityHint', 'Your apps rearrange to suit the new grid. Widgets keep their size and move to the nearest free space, and nothing is removed.')}
+                    </p>
+
+                    <p className="mb-1 mt-5 px-1 text-[12px] uppercase tracking-widest text-ios-gray">
+                        {t('settings.iconSize', 'Icon size')}
+                    </p>
+                    <div className="rounded-[14px] bg-surface px-4 py-4">
+                        <div className="mb-3 flex items-baseline justify-between">
+                            <span className="text-[16px] font-medium">{t('settings.iconSizeLabel', 'Fine tune')}</span>
+                            <span className="text-[15px] tabular-nums text-ios-gray">
+                                {Math.round(homeIconScale * 100)}%
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="shrink-0 text-[13px] font-semibold text-ios-gray">A</span>
+                            <Slider
+                                value={homeIconScale}
+                                min={ICON_SCALE_MIN}
+                                max={ICON_SCALE_MAX}
+                                step={ICON_SCALE_STEP}
+                                onChange={setHomeIconScale}
+                                ariaLabel={t('settings.iconSize', 'Icon size')}
+                                className="flex-1"
+                            />
+                            <span className="shrink-0 text-[19px] font-semibold text-ios-gray">A</span>
+                        </div>
+                        {homeIconScale !== 1 && (
+                            <button
+                                type="button"
+                                onClick={() => setHomeIconScale(1)}
+                                className="mt-3 text-[15px] font-medium text-ios-blue active:opacity-60"
+                            >
+                                {t('settings.iconSizeReset', 'Reset to default')}
+                            </button>
+                        )}
+                    </div>
+                    <p className="mt-1 px-1 text-[13px] leading-snug text-ios-gray">
+                        {t('settings.iconSizeHint', 'Adjusts the icons within the grid you picked above, without changing how many fit on a page.')}
                     </p>
 
                     <p className="mb-1 mt-5 px-1 text-[12px] uppercase tracking-widest text-ios-gray">

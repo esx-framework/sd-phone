@@ -90,6 +90,18 @@ function store.insertPhoto(id, citizenid, url)
     return affected ~= nil
 end
 
+---The hosted URL of a photo the caller owns. Read-only; a foreign or missing id yields nil.
+---@param photoId string photo row id
+---@param citizenid string owner's framework per-character id
+---@return string|nil url
+function store.urlFor(photoId, citizenid)
+    local url = MySQL.scalar.await(
+        'SELECT url FROM phone_photos WHERE id = ? AND citizenid = ?',
+        { photoId, citizenid }
+    )
+    return (type(url) == 'string' and url ~= '') and url or nil
+end
+
 ---Whether the player already has a photo with this exact URL (idempotent saves). Read-only.
 ---@param citizenid string owner's framework per-character id
 ---@param url string hosted media URL

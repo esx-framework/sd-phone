@@ -42,10 +42,14 @@ return {
 
     -- 'cloudflare' provisions TURN relays (needed for players on different networks) from
     -- Cloudflare Realtime; 'none' uses STUN only (works on LAN / permissive NATs only).
+    -- This one setting serves every WebRTC feature: video calls and nearby-voice capture.
+    -- Without it, video calls between players on different home connections show a black
+    -- picture. (MDT bodycams need none of this: the watching terminal renders the officer's
+    -- view in-engine, so no video is streamed.)
     -- TURN secrets are read from server convars (NOT committed to the repo):
     --     set sd_cf_turn_token_id   "your-cloudflare-turn-token-id"
     --     set sd_cf_turn_api_token  "your-cloudflare-turn-api-token"
-    -- Create them at Cloudflare dash → Realtime → TURN. See the Cloudflare TURN docs.
+    -- Create them at Cloudflare dash -> Realtime -> TURN. Free tier covers a normal server.
     Turn = {
         Provider   = 'cloudflare',   -- 'cloudflare' | 'none'
         TtlSeconds = 86400,          -- lifetime of provisioned TURN credentials

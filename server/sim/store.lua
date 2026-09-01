@@ -82,12 +82,16 @@ function store.ensureSchema()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS phone_cloud_accounts (
             citizenid  VARCHAR(64) NOT NULL,
-            password   VARCHAR(64) NULL,
+            password   VARCHAR(255) NULL,
             updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
                 ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (citizenid)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ]])
+    -- The column was sized for the 24-char legacy digest. A scrypt hash is 86 characters, so a
+    -- server created before scrypt rejects the write outright ("Data too long for column
+    -- 'password'") the first time a character turns Cloud Backup on.
+    util.ensureColumnWidth('phone_cloud_accounts', 'password', 'password VARCHAR(255) NULL', 255)
     -- One-shot migration of single-slot rows (a legacy pointer row's device IS its identity).
     -- Only when the profiles table has never been populated, so deleted profiles stay deleted.
     local migrated = MySQL.scalar.await('SELECT 1 FROM phone_cloud_profiles LIMIT 1')

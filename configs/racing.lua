@@ -284,12 +284,26 @@ return {
         DefaultWidth = 12.0,
         WidthStep    = 0.15,
 
-        -- Prop stood at each post while editing. Any small, tall prop works.
+        -- Prop stood at each post while editing. Any small, tall prop works, and it
+        -- is spawned translucent and collisionless so it never blocks the builder.
+        -- Same candidates as Race.GateProp below.
         FlagModel    = 'prop_beachflag_01',
 
         -- Metres beyond which already-placed gates stop being drawn. Lower it if a
         -- long track costs you frames in the editor.
         DrawRadius   = 300.0,
+
+        -- Who may open the track creator (the /createtrack command and the phone's
+        -- "+" button both read this):
+        --   'everyone' - any player may create a track. Admins, and anyone holding
+        --                the Ace above, are trusted: their track publishes the
+        --                moment they save it. Everyone else's is queued as pending
+        --                until an admin approves or rejects it from the phone's
+        --                admin panel.
+        --   'ace'      - only players holding the Ace above may create at all, and
+        --                their tracks publish immediately. Nothing is ever queued,
+        --                which is how the creator behaved before approval existed.
+        Access = 'everyone',
     },
 
     -- The live race: what the client draws, and what counts as passing a gate.
@@ -311,7 +325,12 @@ return {
         GatesAhead         = 3,
 
         -- Prop spawned at both posts of every gate for the duration of a race.
-        -- Frozen and flagged as a mission entity so it cannot be shoved or culled.
+        -- Frozen, collisionless and flagged as a mission entity, so a racer drives
+        -- straight through it and it cannot be shoved or culled. Local to each
+        -- client. Flares read better than flags on a night track:
+        --   prop_beachflag_01  the default, a tall marker visible from distance
+        --   prop_flare_01a     a lit road flare, low and bright
+        --   prop_air_conelight a lit cone, brighter still
         GateProp           = 'prop_beachflag_01',
 
         -- The lineup check a joined racer has to satisfy at the start line.

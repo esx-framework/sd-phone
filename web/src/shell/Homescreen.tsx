@@ -4,6 +4,7 @@ import { LayoutGrid, Minus, Plus } from 'lucide-react';
 
 import { device } from '@device';
 import { DOCK_BOTTOM, DOCK_PAD_Y, DOTS_GAP, getDensity, getGrid, stripReserve, useGrid } from '@/device/grid';
+import { APP_LABEL_CLASS, appLabelStyle } from './appLabel';
 import type { AppDef } from '@/core/types';
 import { useTheme } from '@/stores/themeStore';
 import { resolveWallpaper } from './wallpapers';
@@ -25,7 +26,7 @@ import { launchOriginFrom } from './launchOrigin';
 import { WidgetGallery } from './widgets/WidgetGallery';
 import { WidgetStack } from './widgets/WidgetStack';
 import { addCard, cardsOf, patchCard, removeCard } from './widgets/stack';
-import { t } from '@/i18n';
+import { t, appLabel } from '@/i18n';
 
 
 const { w: SCREEN_W, h: SCREEN_H } = device.screen;
@@ -800,7 +801,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                     if (!fromDock) setSlots(prev => normalize(prev.map((x, i) => (i === from ? null : x))));
                 } else {
                     const key = newFolderKey();
-                    setFolders(prev => ({ ...prev, [key]: { name: 'Folder', appIds: [targetId, dragged] } }));
+                    setFolders(prev => ({ ...prev, [key]: { name: t('shell.folderDefaultName', 'Folder'), appIds: [targetId, dragged] } }));
                     setSlots(prev => normalize(prev.map((x, i) => (i === to ? FOLDER_PREFIX + key : (!fromDock && i === from) ? null : x))));
                     setOpenFolder(key); setRenameFolder(key);
                 }
@@ -1255,7 +1256,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                         {editing && !app.base && (
                                             <button
                                                 type="button"
-                                                aria-label={t('shell.removeApp','Remove {label}', { label: app.label })}
+                                                aria-label={t('shell.removeApp','Remove {label}', { label: appLabel(app) })}
                                                 onPointerDown={e => e.stopPropagation()}
                                                 onClick={() => setConfirmRemove(app)}
                                                 className="absolute z-10 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90"
@@ -1292,7 +1293,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                     editing={editing}
                     autoEdit={renameFolder === openFolder}
                     wallpaper={wallpaper}
-                    onRename={(name) => setFolders(prev => ({ ...prev, [openFolder]: { ...prev[openFolder], name: name.trim() || 'Folder' } }))}
+                    onRename={(name) => setFolders(prev => ({ ...prev, [openFolder]: { ...prev[openFolder], name: name.trim() || t('shell.folderDefaultName', 'Folder') } }))}
                     onSwap={(a, b) => setFolders(prev => {
                         const ids = [...prev[openFolder].appIds];
                         [ids[a], ids[b]] = [ids[b], ids[a]];
@@ -1306,7 +1307,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
             {confirmRemove && (
                 <AlertDialog
-                    title={t('shell.removeAppTitle','Remove “{label}”?', { label: confirmRemove.label })}
+                    title={t('shell.removeAppTitle','Remove “{label}”?', { label: appLabel(confirmRemove) })}
                     message={t('shell.removeAppMessage','It stays available in the App Store and can be added back later.')}
                     confirmLabel={t('shell.remove','Remove')}
                     destructive
@@ -1319,7 +1320,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 }
 
 function EditTile({ app, dragging, swapTarget, plopping, removable, merging, badge, onRemove }: { app: AppDef; dragging: boolean; swapTarget: boolean; plopping: boolean; removable: boolean; merging: boolean; badge?: number; onRemove: () => void }): ReactNode {
-    const TILE = useGrid().icon;
+    const grid = useGrid();
+    const TILE = grid.icon;
     const showNames = useShowAppNames();
     const {
         background, glyph, art, radius, glyphSize, glyphWeight, boxShadow,
@@ -1337,7 +1339,7 @@ function EditTile({ app, dragging, swapTarget, plopping, removable, merging, bad
                         </div>
                     ) : (
                         <div className="flex h-full w-full items-center justify-center" style={{ background }}>
-                            <AppGlyph icon={app.icon} override={glyphOverride} label={app.label} color={glyph} size={glyphSize} strokeWidth={glyphWeight} />
+                            <AppGlyph icon={app.icon} override={glyphOverride} label={appLabel(app)} color={glyph} size={glyphSize} strokeWidth={glyphWeight} />
                         </div>
                     )}
                     {boxShadow !== '' && (
@@ -1346,12 +1348,12 @@ function EditTile({ app, dragging, swapTarget, plopping, removable, merging, bad
                 </div>
                 {!dragging && <AppBadge count={badge} />}
                 {removable && (
-                    <button type="button" aria-label={t('shell.removeApp','Remove {label}', { label: app.label })} onPointerDown={e => e.stopPropagation()} onClick={onRemove} className="absolute -left-[7px] -top-[7px] flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90">
+                    <button type="button" aria-label={t('shell.removeApp','Remove {label}', { label: appLabel(app) })} onPointerDown={e => e.stopPropagation()} onClick={onRemove} className="absolute -left-[7px] -top-[7px] flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90">
                         <Minus className="h-[16px] w-[16px] text-black/75" strokeWidth={3} />
                     </button>
                 )}
             </div>
-            {showLabel && <span className="mt-[7px] block w-full truncate text-center font-sf text-[13px] font-semibold tracking-[0.01em] text-white" style={{ textShadow: '0 0 2px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.5)', color: labelColor, fontWeight: labelWeight }}>{app.label}</span>}
+            {showLabel && <span className={`mt-[7px] block ${APP_LABEL_CLASS}`} style={{ ...appLabelStyle(grid), color: labelColor, fontWeight: labelWeight }}>{appLabel(app)}</span>}
         </div>
     );
 }
@@ -1380,7 +1382,7 @@ function FolderMini({ app }: { app: AppDef }): ReactNode {
                     <AppGlyph
                         icon={app.icon}
                         override={glyphOverride}
-                        label={app.label}
+                        label={appLabel(app)}
                         color={glyph}
                         size={Math.round(glyphSize * (MINI_GLYPH / TILE_GLYPH))}
                         strokeWidth={glyphWeight}
@@ -1392,7 +1394,8 @@ function FolderMini({ app }: { app: AppDef }): ReactNode {
 }
 
 function FolderTile({ label, apps, onOpen, merging = false, badge }: { label: string; apps: AppDef[]; onOpen: () => void; merging?: boolean; badge?: number }): ReactNode {
-    const TILE = useGrid().icon;
+    const grid = useGrid();
+    const TILE = grid.icon;
     const showNames = useShowAppNames();
     return (
         <button type="button" onClick={onOpen} className="group block" style={{ width: TILE }}>
@@ -1414,7 +1417,7 @@ function FolderTile({ label, apps, onOpen, merging = false, badge }: { label: st
                 </div>
                 <AppBadge count={badge} />
             </div>
-            {showNames && <span className="mt-[7px] block w-full truncate text-center font-sf text-[13px] font-semibold tracking-[0.01em] text-white" style={{ textShadow: '0 0 2px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.5)' }}>{label}</span>}
+            {showNames && <span className={`mt-[7px] block ${APP_LABEL_CLASS}`} style={appLabelStyle(grid)}>{label}</span>}
         </button>
     );
 }
@@ -1441,7 +1444,7 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
 
     const [editName, setEditName] = useState(autoEdit);
     const [draft, setDraft] = useState(name);
-    function commitName() { setEditName(false); const n = draft.trim() || 'Folder'; if (n !== name) onRename(n); }
+    function commitName() { setEditName(false); const n = draft.trim() || t('shell.folderDefaultName', 'Folder'); if (n !== name) onRename(n); }
 
     const [dragIdx, setDragIdx] = useState<number | null>(null);
     const [dragDelta, setDragDelta] = useState({ x: 0, y: 0 });

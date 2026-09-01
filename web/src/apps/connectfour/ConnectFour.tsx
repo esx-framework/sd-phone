@@ -5,8 +5,8 @@ import { AlertDialog } from '@/ui/AlertDialog';
 import { ConnectFourIcon } from '@/shell/AppIconSVG';
 import { Board, discColor } from './Board';
 import {
-    DEPTH, chooseMove, dropRow, emptyBoard, findWin, idx, isFull,
-    type Board as BoardT, type Difficulty, type Player,
+    AI, chooseMove, dropRow, emptyBoard, findWin, idx, isFull,
+    type AiOptions, type Board as BoardT, type Difficulty, type Player,
 } from './logic';
 import { StartScreen, type GameStartConfig } from '@/apps/_games/StartScreen';
 import { OnlineHub } from '@/apps/_games/OnlineHub';
@@ -30,14 +30,14 @@ const GAME   = 'connectfour';
 const ACCENT = '#2E76E0';
 registerGameSides(GAME, ['1', '2']);
 
-const C4_CONFIG: GameStartConfig = {
+const c4Config = (): GameStartConfig => ({
     icon: ConnectFourIcon,
     title: t('connectfour.connectFour', 'Connect Four'),
     accent: ACCENT,
     sideOptions: [{ id: '1', label: t('connectfour.red', 'Red') }, { id: '2', label: t('connectfour.yellow', 'Yellow') }, { id: 'random', label: t('connectfour.random', 'Random') }],
     difficultyOptions: [{ id: 'easy', label: t('connectfour.easy', 'Easy') }, { id: 'medium', label: t('connectfour.medium', 'Medium') }, { id: 'hard', label: t('connectfour.hard', 'Hard') }],
     onlineBlurb: t('connectfour.onlineBlurb', 'Create public or private lobbies, invite players by server ID, and accept invites.'),
-};
+});
 const sideLabel = (s: Side) => (s === 'random' ? t('connectfour.random', 'Random') : s === '1' ? t('connectfour.red', 'Red') : t('connectfour.yellow', 'Yellow'));
 const other = (p: Player): Player => (p === 1 ? 2 : 1);
 
@@ -65,7 +65,7 @@ export function ConnectFour({ onClose: _onClose }: Props) {
     const [mode,       setMode]       = useState<Mode>('cpu');
     const [moves,      setMoves]      = useState<number[]>([]);
     const [humanColor, setHumanColor] = useState<Player>(1);
-    const [depth,      setDepth]      = useState<number>(DEPTH.medium);
+    const [ai,         setAi]         = useState<AiOptions>(AI.medium);
     const [thinking,   setThinking]   = useState(false);
     const [stats,      setStats]      = useState<GameStats>(() => ({ cpu: { wins: 0, losses: 0, draws: 0 }, online: { wins: 0, losses: 0, draws: 0 }, won: 0, lost: 0 }));
 
@@ -130,12 +130,12 @@ export function ConnectFour({ onClose: _onClose }: Props) {
         if (mode !== 'cpu' || screen !== 'game' || cpuOver || turn === humanColor) return;
         setThinking(true);
         aiTimer.current = setTimeout(() => {
-            const col = chooseMove(board.slice(), turn, depth);
+            const col = chooseMove(board.slice(), turn, ai);
             setThinking(false);
             if (col >= 0) applyCol(col);
         }, 460 + Math.random() * 320);
         return () => clearTimeout(aiTimer.current);
-    }, [mode, screen, cpuOver, turn, humanColor, board, depth, applyCol]);
+    }, [mode, screen, cpuOver, turn, humanColor, board, ai, applyCol]);
 
     useEffect(() => {
         if (screen !== 'game' || !over || recorded.current) return;
@@ -158,7 +158,7 @@ export function ConnectFour({ onClose: _onClose }: Props) {
     function startCpu(side: Side, difficulty: string) {
         clearTimeout(aiTimer.current); recorded.current = false;
         const color: Player = side === 'random' ? (Math.random() < 0.5 ? 1 : 2) : (Number(side) as Player);
-        setMode('cpu'); setHumanColor(color); setDepth(DEPTH[difficulty as Difficulty] ?? DEPTH.medium);
+        setMode('cpu'); setHumanColor(color); setAi(AI[difficulty as Difficulty] ?? AI.medium);
         setMoves([]); setThinking(false); setEnded(null);
         setScreen('game');
     }
@@ -188,6 +188,7 @@ export function ConnectFour({ onClose: _onClose }: Props) {
         return { text: yourTurn ? t('connectfour.yourMove', 'Your move') : t('connectfour.oppMove', '{opp}’s move', { opp }), color: discColor(turn).hi };
     })();
 
+    const startConfig = c4Config();
     const screenKey = screen === 'lobby' ? (lobby ? 'lobby-room' : 'lobby-hub') : screen;
 
     return (
@@ -210,13 +211,13 @@ export function ConnectFour({ onClose: _onClose }: Props) {
 
             <div key={screenKey} className="flex min-h-0 flex-1 flex-col animate-swipe-in-left">
             {screen === 'home' && (
-                <StartScreen config={C4_CONFIG} stats={stats} hasInvite={!!incoming} onPlayCpu={startCpu} onPlayOnline={() => setScreen('lobby')} onLeaderboard={openLeaderboard} />
+                <StartScreen config={startConfig} stats={stats} hasInvite={!!incoming} onPlayCpu={startCpu} onPlayOnline={() => setScreen('lobby')} onLeaderboard={openLeaderboard} />
             )}
 
             {screen === 'lobby' && (lobby ? (
                 <LobbyRoom lobby={lobby} inviteError={inviteError} accent={ACCENT} sideLabel={sideLabel} onInvite={online.invite} onStart={online.start} onLeave={online.leave} onKick={online.kick} onSetWager={online.setWager} onSetReady={online.ready} />
             ) : (
-                <OnlineHub lobbies={lobbies} incoming={incoming} error={hubError} accent={ACCENT} sideOptions={C4_CONFIG.sideOptions} onCreate={online.create} onJoin={online.join} onAccept={online.accept} onDecline={online.decline} onRefresh={online.refresh} />
+                <OnlineHub lobbies={lobbies} incoming={incoming} error={hubError} accent={ACCENT} sideOptions={startConfig.sideOptions} onCreate={online.create} onJoin={online.join} onAccept={online.accept} onDecline={online.decline} onRefresh={online.refresh} />
             ))}
 
             {screen === 'leaderboard' && (

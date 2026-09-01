@@ -6,6 +6,10 @@ local util   = require 'server.util'
 local store  = require 'server.racing.store'
 ---@type table Racing config (configs/racing.lua): classes, vehicles, limits, aces.
 local config = require 'configs.racing'
+---@type table Toast bridge (bridge.server.notify): a live nudge for a creator who is online now.
+local notify = require 'bridge.server.notify'
+---@type table Notifications module (server.notifications.init): identity-addressed banner routing.
+local notifications = require 'server.notifications.init'
 
 ---@type table Actions module; the table returned at end of file.
 local actions = {}
@@ -191,12 +195,12 @@ local HUD_DEFAULT = {
 ---@type number, number HUD scale bounds, mirroring HUD_SCALE_MIN/MAX on the frontend.
 local HUD_SCALE_MIN, HUD_SCALE_MAX = 0.7, 1.8
 
----@type string Refusal for a caller whose character has not finished loading.
-local LOADING = 'Your character is still loading'
----@type string Refusal for a track that is gone, unpublished, or was never a real id.
-local NO_TRACK = 'That track is no longer available'
----@type string Refusal for a caller who is not an Racing admin.
-local NOT_ADMIN = 'You are not allowed to manage tracks'
+---@type table Refusal for a caller whose character has not finished loading.
+local LOADING = fail('racing.characterStillLoading', 'Your character is still loading')
+---@type table Refusal for a track that is gone, unpublished, or was never a real id.
+local NO_TRACK = fail('racing.trackNoLongerAvailable', 'That track is no longer available')
+---@type table Refusal for a caller who is not an Racing admin.
+local NOT_ADMIN = fail('racing.notAllowedManageTracks', 'You are not allowed to manage tracks')
 
 ---Whether a value is a usable CSS hex colour (3 or 6 digits).
 ---@param v any
@@ -313,11 +317,12 @@ function actions.isAdmin(src)
     return false
 end
 
----Whether a player may save tracks built with the in-game creator.
+---Whether a player holds the creator Ace. Separate from canCreate below because the two questions
+---diverge once Access is 'everyone': holding the ace no longer decides whether someone may create
+---a track, only whether the one they create publishes immediately or lands in the pending queue.
 ---@param src integer player server id
 ---@return boolean
-local function canCreate(src)
-    if CREATOR.Enabled == false then return false end
+local function hasCreatorAce(src)
     if type(src) ~= 'number' or src <= 0 then return false end
     -- Truthy, NOT `== true`. This native answers with the NUMBER 1, and `1 == true` is false in
     -- Lua, so the strict comparison refused every player who genuinely held the ace: the command
@@ -326,19 +331,75 @@ local function canCreate(src)
     return IsPlayerAceAllowed(src, CREATOR_ACE) and true or false
 end
 
+---Whether a player may open the creator and save tracks with it at all. 'everyone' access still
+---respects the master Enabled switch and still needs a real player id; it just drops the ace check
+---that 'ace' access (the default) requires.
+---@param src integer player server id
+---@return boolean
+local function canCreate(src)
+    if CREATOR.Enabled == false then return false end
+    if type(src) ~= 'number' or src <= 0 then return false end
+    if CREATOR.Access == 'everyone' then return true end
+    return hasCreatorAce(src)
+end
+
+---Public alias of the check above: the phone's "Start creating" button opens the same recorder the
+---/createtrack command does, so init.lua re-checks the same rule here before it fires the client
+---event, rather than trusting the button having been hidden from an unprivileged caller.
+---@param src integer player server id
+---@return boolean
+actions.canCreate = canCreate
+
+---Whether a creator's tracks skip the queue and publish the moment they are saved. Admins are
+---trusted because they are the same people the queue would send the track to, so making them wait
+---on their own review buys nothing. The creator Ace stays a second trusted path, for a server that
+---wants named track makers publishing straight away without handing them the admin panel too.
+---@param src integer player server id
+---@return boolean
+local function isTrustedCreator(src)
+    if actions.isAdmin(src) then return true end
+    return hasCreatorAce(src)
+end
+
+---Whether a track src is about to create needs admin approval before it goes live: true only when
+---Access is 'everyone' and this particular caller is not a trusted creator. An 'ace' server gates
+---creation on the Ace up front, so nobody who reaches the creator there is ever untrusted.
+---@param src integer player server id
+---@return boolean
+local function needsApproval(src)
+    return CREATOR.Access == 'everyone' and not isTrustedCreator(src)
+end
+
 ---Everything the tablet needs to render its shell: the caller's driver card, their HUD, the two
 ---gates the UI hides tabs behind, and the catalogs its forms are built from.
 ---@param src integer player server id
 ---@return table envelope
 function actions.bootstrap(src)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
 
     local row  = store.profileRow(cid)
     local name = player.getName(src)
     if type(name) == 'string' and name ~= '' and row.name ~= name then
         store.saveProfileName(cid, name)
         row.name = name
+    end
+
+    local pending = store.pendingNotifications(cid)
+    for i = 1, #pending do
+        local notif    = pending[i]
+        local approved = notif.notification_type == 'approved'
+        local title    = approved and ('Track approved: ' .. notif.track_name)
+            or ('Track rejected: ' .. notif.track_name)
+        local body = approved and 'Your track passed review and is now live.'
+            or ('Rejected: ' .. (notif.rejection_reason or 'See details in app'))
+        notifications.notifyCid(cid, {
+            app   = 'Racing',
+            appId = 'racing',
+            title = title,
+            body  = body,
+        })
+        store.markNotificationDelivered(notif.id)
     end
 
     return ok({
@@ -353,6 +414,9 @@ function actions.bootstrap(src)
         hud     = hudOf(row),
         admin   = actions.isAdmin(src),
         creator = canCreate(src),
+        -- Whether a track this player creates right now would need admin approval, so the
+        -- create-track sheet can tell them upfront instead of surprising them after they save.
+        creatorNeedsApproval = needsApproval(src),
         classes = CLASS_CATALOG,
         limits  = LIMIT_CATALOG,
     })
@@ -363,7 +427,7 @@ end
 ---@return table envelope
 function actions.races(src)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
     return ok({ races = lobbies().payload(cid) })
 end
 
@@ -373,7 +437,7 @@ end
 ---@return table envelope
 function actions.tracks(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
 
     local rows, total = store.tracksPage({
         query              = util.limitedString(payload.query, 64),
@@ -396,13 +460,13 @@ end
 ---@return table envelope
 function actions.track(_, payload)
     local trackId = idOf(payload.trackId)
-    if not trackId then return fail(NO_TRACK) end
+    if not trackId then return NO_TRACK end
 
     local row = store.trackRow(trackId)
-    if not row or util.truthy(row.deleted) then return fail(NO_TRACK) end
+    if not row or util.truthy(row.deleted) then return NO_TRACK end
 
     local detail = store.trackDetail(trackId)
-    if not detail then return fail(NO_TRACK) end
+    if not detail then return NO_TRACK end
 
     local _, byId = store.trackCache()
     row.plays = store.playCounts()[tostring(trackId)] or detail.timesPlayed or 0
@@ -464,7 +528,7 @@ end
 ---@return table envelope
 function actions.rankings(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
 
     local perPage     = int(LIMITS.RanksPerPage, 25)
     local page        = pageOf(payload.page)
@@ -512,7 +576,7 @@ end
 ---@return table envelope
 function actions.racer(_, payload)
     local cid = util.limitedString(payload.citizenid, 64)
-    if not cid or not cid:match('^[%w%-_:%.]+$') then return fail('That racer could not be found') end
+    if not cid or not cid:match('^[%w%-_:%.]+$') then return fail('racing.racerCouldNotFound', 'That racer could not be found') end
 
     local row  = store.profileRow(cid)
     local mmr  = int(row.mmr, BASE_MMR)
@@ -542,10 +606,10 @@ end
 ---@return table envelope
 function actions.spectate(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
 
     local race = type(payload.raceId) == 'string' and lobbies().get(payload.raceId) or nil
-    if not race then return fail('That race has already finished') end
+    if not race then return fail('racing.raceHasAlreadyFinished', 'That race has already finished') end
 
     local standings = running().standingsFor(race.id)
     return ok({ start = race.start, standings = type(standings) == 'table' and standings or {} })
@@ -557,9 +621,9 @@ end
 ---@return table envelope
 function actions.setAlias(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
     if not budget(cid, 'racing:identity', RATES.Identity) then
-        return fail('Too many profile changes, wait a moment')
+        return fail('racing.tooManyProfileChangesWait', 'Too many profile changes, wait a moment')
     end
 
     local alias = util.limitedString(payload.alias, int(LIMITS.AliasMax, 24))
@@ -575,14 +639,14 @@ end
 ---@return table envelope
 function actions.setAvatar(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
     if not budget(cid, 'racing:identity', RATES.Identity) then
-        return fail('Too many profile changes, wait a moment')
+        return fail('racing.tooManyProfileChangesWait', 'Too many profile changes, wait a moment')
     end
 
     local avatar = util.limitedString(payload.avatar, int(LIMITS.AvatarUrlMax, 500))
     if avatar and not avatar:match('^https://') then
-        return fail('Avatar links have to start with https://')
+        return fail('racing.avatarLinksHaveStartWith', 'Avatar links have to start with https://')
     end
 
     local row = store.profileRow(cid)
@@ -597,13 +661,13 @@ end
 ---@return table envelope
 function actions.setHud(src, payload)
     local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
+    if not cid then return LOADING end
     if not budget(cid, 'racing:identity', RATES.Identity) then
-        return fail('Too many profile changes, wait a moment')
+        return fail('racing.tooManyProfileChangesWait', 'Too many profile changes, wait a moment')
     end
 
     local raw = util.smallTable(payload.hud, 16, 2048)
-    if not raw then return fail('Those HUD settings could not be saved') end
+    if not raw then return fail('racing.thoseHudSettingsCouldNot', 'Those HUD settings could not be saved') end
 
     local hud = hudFrom(raw)
     store.saveHud(cid, json.encode(hud))
@@ -613,50 +677,210 @@ end
 ---Saves a track recorded with the in-game creator. The ace is re-checked here because the callback
 ---is reachable by any client regardless of who was allowed to run the command.
 ---@param src integer player server id
+---Checks one track payload against the creator's own rules: a usable name, a gate count inside
+---CREATOR.MinGates/MaxGates, and two finite 3D points per gate. Shared by the in-world creator and
+---the JSON importer so an imported track can never bypass a limit the creator enforces.
 ---@param payload table { name, mode, gates }
----@return table envelope
-function actions.createTrack(src, payload)
-    if CREATOR.Enabled == false then return fail('The track creator is switched off') end
-    if not canCreate(src) then return fail('You are not allowed to create tracks') end
-
-    local cid = cidOf(src)
-    if not cid then return fail(LOADING) end
-    if not budget(cid, 'racing:create', RATES.Create) then
-        return fail('Too many tracks saved, wait a moment')
+---@return string|nil name nil when the payload is unusable
+---@return table|nil gates normalised gate list, nil when the payload is unusable
+---@return table|nil refusal keyed refusal envelope, set only when name is nil
+local function validateTrack(payload)
+    if type(payload) ~= 'table' then
+        return nil, nil, fail('racing.trackNotReadable', 'That track is not readable')
     end
 
     local name = util.limitedString(payload.name, int(LIMITS.TrackNameMax, 60))
-    if not name then return fail('Give the track a name') end
+    if not name then return nil, nil, fail('racing.giveTrackName', 'Give the track a name') end
 
     local recorded = type(payload.gates) == 'table' and payload.gates or nil
-    if not recorded then return fail('That track has no gates') end
+    if not recorded then return nil, nil, fail('racing.trackHasNoGates', 'That track has no gates') end
 
     local minGates, maxGates = int(CREATOR.MinGates, 2), int(CREATOR.MaxGates, 512)
     local count = #recorded
-    if count < minGates then return fail(('A track needs at least %d gates'):format(minGates)) end
-    if count > maxGates then return fail(('A track can hold at most %d gates'):format(maxGates)) end
+    if count < minGates then
+        return nil, nil, fail('racing.trackNeedsLeastGates', 'A track needs at least {n} gates', { n = minGates })
+    end
+    if count > maxGates then
+        return nil, nil, fail('racing.trackHoldAtMostGates', 'A track can hold at most {n} gates', { n = maxGates })
+    end
 
     local gates = {}
     for i = 1, count do
         local gate = recorded[i]
         local a    = type(gate) == 'table' and gate[1] or nil
         local b    = type(gate) == 'table' and gate[2] or nil
-        if type(a) ~= 'table' or type(b) ~= 'table' then return fail('That track has a damaged gate') end
+        if type(a) ~= 'table' or type(b) ~= 'table' then
+            return nil, nil, fail('racing.trackHasDamagedGate', 'That track has a damaged gate')
+        end
 
         local ax, ay, az = tonumber(a[1]), tonumber(a[2]), tonumber(a[3])
         local bx, by, bz = tonumber(b[1]), tonumber(b[2]), tonumber(b[3])
         if not (util.finite(ax) and util.finite(ay) and util.finite(az)
             and util.finite(bx) and util.finite(by) and util.finite(bz)) then
-            return fail('That track has a damaged gate')
+            return nil, nil, fail('racing.trackHasDamagedGate', 'That track has a damaged gate')
         end
         gates[i] = { { ax, ay, az }, { bx, by, bz } }
     end
+    return name, gates, nil
+end
 
-    local id = store.createTrack(name, payload.mode == 'sprint', gates, cid, player.getName(src) or '')
-    if not id then return fail('That track could not be saved') end
+---@param payload table { name, mode, gates }
+---@return table envelope
+function actions.createTrack(src, payload)
+    if CREATOR.Enabled == false then return fail('racing.trackCreatorSwitchedOff', 'The track creator is switched off') end
+    if not canCreate(src) then return fail('racing.notAllowedCreateTracks', 'You are not allowed to create tracks') end
+
+    local cid = cidOf(src)
+    if not cid then return LOADING end
+    if not budget(cid, 'racing:create', RATES.Create) then
+        return fail('racing.tooManyTracksSavedWait', 'Too many tracks saved, wait a moment')
+    end
+
+    local name, gates, refusal = validateTrack(payload)
+    if not name then return refusal end
+
+    local publishStatus = needsApproval(src) and 'pending' or 'published'
+
+    local id = store.createTrack(name, payload.mode == 'sprint', gates, cid, player.getName(src) or '', publishStatus)
+    if not id then return fail('racing.trackCouldNotSaved', 'That track could not be saved') end
 
     store.invalidateTrackCache()
-    return ok({ id = id })
+    local message = publishStatus == 'pending' and 'Track saved! Waiting for admin approval.' or 'Track saved!'
+    return ok({ id = id, message = message })
+end
+
+---@type integer Tracks accepted in one import. A paste is a single deliberate act, so this is a
+---guard against one call inserting thousands of rows, not a quota.
+local IMPORT_MAX <const> = 50
+
+---Normalises what an importer was handed into a list of track payloads. A single track object and
+---an array of them are both accepted, so one file serves a player sharing one track and an owner
+---seeding a pack.
+---@param data any decoded JSON
+---@return table[] list empty when nothing usable was passed
+local function importList(data)
+    if type(data) ~= 'table' then return {} end
+    if data.gates ~= nil or data.name ~= nil then return { data } end
+
+    local list = {}
+    for i = 1, #data do
+        if type(data[i]) == 'table' then list[#list + 1] = data[i] end
+    end
+    return list
+end
+
+---Fills the {placeholder} spans of a keyed refusal. The importer lists one plain reason per track
+---rather than handing the NUI a key it could translate, so it resolves the English here.
+---@param refusal table|nil refusal envelope from validateTrack
+---@return string|nil reason
+local function filled(refusal)
+    local message = refusal and refusal.message
+    if not message then return nil end
+    local vars = refusal.messageVars
+    if not vars then return message end
+    return (message:gsub('{(%w+)}', function(name)
+        local v = vars[name]
+        return v ~= nil and tostring(v) or ('{' .. name .. '}')
+    end))
+end
+
+---Imports one or more tracks from decoded JSON, credited to the given citizenid and author name.
+---Every entry goes through the creator's own validation, so an import cannot save a track the
+---creator would refuse. A bad entry is reported and skipped rather than failing the whole batch:
+---a pack with one damaged track still lands the other forty-nine.
+---@param data any decoded JSON: one track object or an array of them
+---@param cid string|nil owning citizenid, nil for a server-side import with no owner
+---@param authorName string credited author
+---@return table result { imported = integer, failed = { index, name, reason }[] }
+function actions.importTracks(data, cid, authorName)
+    local list = importList(data)
+    local result = { imported = 0, failed = {} }
+    if #list == 0 then
+        result.failed[1] = { index = 0, name = '', reason = 'No tracks found in that JSON' }
+        return result
+    end
+
+    for i = 1, math.min(#list, IMPORT_MAX) do
+        local entry = list[i]
+        local name, gates, refusal = validateTrack(entry)
+        if not name then
+            result.failed[#result.failed + 1] = {
+                index  = i,
+                name   = type(entry) == 'table' and tostring(entry.name or '') or '',
+                reason = filled(refusal) or 'That track is not readable',
+            }
+        else
+            local id = store.createTrack(name, entry.mode == 'sprint', gates, cid, authorName)
+            if id then
+                result.imported = result.imported + 1
+            else
+                result.failed[#result.failed + 1] = { index = i, name = name, reason = 'That track could not be saved' }
+            end
+        end
+    end
+
+    if #list > IMPORT_MAX then
+        result.failed[#result.failed + 1] = {
+            index  = IMPORT_MAX + 1,
+            name   = '',
+            reason = ('Only the first %d tracks were imported'):format(IMPORT_MAX),
+        }
+    end
+
+    if result.imported > 0 then store.invalidateTrackCache() end
+    return result
+end
+
+---Player-facing import: the JSON arrives as text from the app's paste box. Held to the same gate
+---as the in-world creator, since importing a track and recording one both add a row.
+---@param src integer
+---@param payload table { json: string }
+---@return table
+function actions.importTracksFor(src, payload)
+    if CREATOR.Enabled == false then return fail('racing.trackCreatorSwitchedOff', 'The track creator is switched off') end
+    if not canCreate(src) then return fail('racing.notAllowedCreateTracks', 'You are not allowed to create tracks') end
+
+    local cid = cidOf(src)
+    if not cid then return LOADING end
+    if not budget(cid, 'racing:create', RATES.Create) then
+        return fail('racing.tooManyTracksSavedWait', 'Too many tracks saved, wait a moment')
+    end
+
+    local text = type(payload) == 'table' and payload.json or nil
+    if type(text) ~= 'string' or text == '' then return fail('racing.pasteTrackFirst', 'Paste a track first') end
+
+    local okJson, decoded = pcall(json.decode, text)
+    if not okJson or type(decoded) ~= 'table' then return fail('racing.notValidJson', 'That is not valid JSON') end
+
+    local result = actions.importTracks(decoded, cid, player.getName(src) or '')
+    if result.imported == 0 then
+        local firstFailure = result.failed[1]
+        if firstFailure then return fail(firstFailure.reason) end
+        return fail('racing.nothingCouldImported', 'Nothing could be imported')
+    end
+    return ok(result)
+end
+
+---Exports a track as the JSON the importer accepts. Any track the caller can already see may be
+---exported: a published track's gates are coordinates the player can drive past anyway.
+---@param _ integer
+---@param payload table { trackId }
+---@return table
+function actions.exportTrack(_, payload)
+    local trackId = idOf(payload and payload.trackId)
+    if not trackId then return NO_TRACK end
+
+    local row = store.trackRow(trackId)
+    if not row or util.truthy(row.deleted) then return NO_TRACK end
+
+    local gates = store.gatesFor(trackId)
+    if #gates == 0 then return fail('racing.trackHasNoGatesExport', 'That track has no gates to export') end
+
+    return ok({ track = {
+        name  = row.name or '',
+        mode  = util.truthy(row.is_sprint) and 'sprint' or 'circuit',
+        gates = gates,
+    } })
 end
 
 ---One page of the admin track list, unpublished tracks included.
@@ -664,7 +888,7 @@ end
 ---@param payload table { query, page }
 ---@return table envelope
 function actions.adminTracks(src, payload)
-    if not actions.isAdmin(src) then return fail(NOT_ADMIN) end
+    if not actions.isAdmin(src) then return NOT_ADMIN end
 
     local rows, total = store.tracksPage({
         query              = util.limitedString(payload.query, 64),
@@ -693,17 +917,17 @@ end
 ---@param payload table { trackId, flag, value }
 ---@return table envelope
 function actions.adminSetFlag(src, payload)
-    if not actions.isAdmin(src) then return fail(NOT_ADMIN) end
+    if not actions.isAdmin(src) then return NOT_ADMIN end
 
     local cid = cidOf(src)
     if not budget(cid, 'racing:admin', RATES.Admin) then
-        return fail('Too many changes, wait a moment')
+        return fail('racing.tooManyChangesWaitMoment', 'Too many changes, wait a moment')
     end
 
     local trackId = idOf(payload.trackId)
-    if not trackId or not TRACK_FLAGS[payload.flag] then return fail(NO_TRACK) end
+    if not trackId or not TRACK_FLAGS[payload.flag] then return NO_TRACK end
     if not store.setTrackFlag(trackId, payload.flag, payload.value == true) then
-        return fail('That track could not be updated')
+        return fail('racing.trackCouldNotUpdated', 'That track could not be updated')
     end
 
     store.invalidateTrackCache()
@@ -716,18 +940,155 @@ end
 ---@param payload table { trackId }
 ---@return table envelope
 function actions.adminDelete(src, payload)
-    if not actions.isAdmin(src) then return fail(NOT_ADMIN) end
+    if not actions.isAdmin(src) then return NOT_ADMIN end
 
     local cid = cidOf(src)
     if not budget(cid, 'racing:admin', RATES.Admin) then
-        return fail('Too many changes, wait a moment')
+        return fail('racing.tooManyChangesWaitMoment', 'Too many changes, wait a moment')
     end
 
     local trackId = idOf(payload.trackId)
-    if not trackId then return fail(NO_TRACK) end
-    if not store.softDeleteTrack(trackId) then return fail('That track could not be removed') end
+    if not trackId then return NO_TRACK end
+    if not store.softDeleteTrack(trackId) then return fail('racing.trackCouldNotRemoved', 'That track could not be removed') end
 
     store.invalidateTrackCache()
+    return ok()
+end
+
+---Tells a track's creator what an admin decided. Notifications are saved to a persistent queue
+---so they reach offline players when they log in. Mail is attempted as a secondary channel for
+---players who have set up mail accounts. Toast is a best-effort nudge for online players.
+---@param citizenid string|nil the track's creator; a nil or blank id (a server-generated track) is a no-op
+---@param trackId integer track id for the notification
+---@param trackName string track name for the notification
+---@param notificationType 'approved'|'rejected'
+---@param rejectionReason string|nil reason if rejected
+---@param toast string toast shown if the creator happens to be online right now
+---@param toastType 'success'|'error'
+local function notifyCreator(citizenid, trackId, trackName, notificationType, rejectionReason, toast, toastType)
+    if type(citizenid) ~= 'string' or citizenid == '' then return end
+
+    store.saveNotification(citizenid, trackId, trackName, notificationType, rejectionReason)
+
+    local subject, body
+    if notificationType == 'approved' then
+        subject = 'Track approved: ' .. trackName
+        body = ('Your track "%s" passed review and is now live on the board.'):format(trackName)
+    else
+        subject = 'Track rejected: ' .. trackName
+        body = ('Your track "%s" was not approved.\n\nReason: %s\n\nYou can make another one with the track creator.'):format(trackName, rejectionReason or 'No reason provided')
+    end
+
+    local addresses = exports[GetCurrentResourceName()]:getMailAddresses(citizenid)
+    if type(addresses) == 'table' and #addresses > 0 then
+        local to = {}
+        for i = 1, #addresses do to[i] = addresses[i].email end
+        exports[GetCurrentResourceName()]:sendMail({
+            to      = to,
+            from    = { name = 'Racing Board' },
+            subject = subject,
+            body    = body,
+        })
+    end
+
+    local src = player.getSourceByIdentifier(citizenid)
+    if src then notify.to(src, toast, toastType) end
+end
+
+---One page of the approval queue. Kept apart from adminTracks because a pending track is held
+---out of every track list by design, the admin one included, so this is the only way to reach it.
+---@param src integer player server id
+---@param payload table { page }
+---@return table envelope
+function actions.adminPendingTracks(src, payload)
+    if not actions.isAdmin(src) then return NOT_ADMIN end
+
+    local rows, total = store.pendingTracksPage({
+        page = pageOf(payload.page),
+        perPage = int(LIMITS.TracksPerPage, 20),
+    })
+
+    local out = {}
+    for i = 1, #rows do
+        local raw = rows[i]
+        out[i] = {
+            id           = raw.id,
+            name         = raw.name or '',
+            author       = (raw.author_name and raw.author_name ~= '') and raw.author_name or 'Unknown',
+            mode         = util.truthy(raw.is_sprint) and 'sprint' or 'circuit',
+            gates        = math.floor(tonumber(raw.gate_count) or 0),
+            citizenid    = raw.citizenid or '',
+            createdAt    = seconds(raw.created_at),
+            rejectionReason = raw.rejection_reason or nil,
+        }
+    end
+    return ok({ rows = out, total = int(total, #out) })
+end
+
+---Publishes a track out of the approval queue and tells its creator. The store guards on the row
+---still being pending, so two admins tapping at once refuses the second rather than notifying twice.
+---@param src integer player server id
+---@param payload table { trackId }
+---@return table envelope
+function actions.adminApproveTrack(src, payload)
+    if not actions.isAdmin(src) then return NOT_ADMIN end
+
+    local cid = cidOf(src)
+    if not budget(cid, 'racing:admin', RATES.Admin) then
+        return fail('racing.tooManyChangesWaitMoment', 'Too many changes, wait a moment')
+    end
+
+    local trackId = idOf(payload.trackId)
+    if not trackId then return NO_TRACK end
+
+    local row = store.trackRow(trackId)
+    if not store.approveTrack(trackId) then
+        return fail('racing.trackCouldNotApprovedNot', 'That track could not be approved (not pending)')
+    end
+
+    store.invalidateTrackCache()
+
+    if row then
+        local name = row.name or 'Your track'
+        notifyCreator(row.citizenid, trackId, name, 'approved', nil,
+            ('%s was approved and published.'):format(name), 'success')
+    end
+
+    return ok()
+end
+
+---Refuses a track out of the approval queue, with a reason the creator is told. The reason is
+---required: a refusal the creator cannot act on is worse than no answer at all.
+---@param src integer player server id
+---@param payload table { trackId, reason }
+---@return table envelope
+function actions.adminRejectTrack(src, payload)
+    if not actions.isAdmin(src) then return NOT_ADMIN end
+
+    local cid = cidOf(src)
+    if not budget(cid, 'racing:admin', RATES.Admin) then
+        return fail('racing.tooManyChangesWaitMoment', 'Too many changes, wait a moment')
+    end
+
+    local trackId = idOf(payload.trackId)
+    if not trackId then return NO_TRACK end
+
+    local reason = util.limitedString(payload.reason, 500)
+    if not reason then return fail('racing.rejectionReasonRequired', 'A rejection reason is required') end
+
+    local row = store.trackRow(trackId)
+    if not store.rejectTrack(trackId, reason) then
+        return fail('racing.trackCouldNotRejectedNot', 'That track could not be rejected (not pending)')
+    end
+
+    store.invalidateTrackCache()
+
+    if row then
+        local name = row.name or 'Your track'
+        notifyCreator(row.citizenid, trackId, name, 'rejected', reason,
+            ('%s was rejected: %s'):format(name, reason), 'error')
+    end
+
     return ok()
 end
 

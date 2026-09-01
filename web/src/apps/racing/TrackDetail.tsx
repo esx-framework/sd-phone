@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Flag, Map as MapIcon, MapPin, Timer, Trophy } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Braces, Check, Copy, Flag, Map as MapIcon, MapPin, Timer, Trophy } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import { getLocaleTag, t } from '@/i18n';
@@ -9,15 +9,17 @@ import { useSessionState } from '@/hooks/useSessionState';
 import { EmptyState } from '@/ui/EmptyState';
 import { Pill, type PillTone } from '@/ui/Pill';
 import { Scroller } from '@/ui/Scroller';
+import { Sheet } from '@/ui/Sheet';
 import { cardSurface, panePad, rowMeta, ruleX, sectionHeader } from '@/ui/surfaces';
 
 import { RaceSetup } from './RaceSetup';
 import { TrackMap } from './TrackMap';
-import { racingTrack, racingWaypoint } from './racingApi';
+import { copyToClipboard } from '@/lib/clipboard';
+import { racingExportTrack, racingTrack, racingWaypoint } from './racingApi';
 import { useRacingSession } from './useRacingSession';
 import {
     CLASS_TONE, RACING_ACCENT, racingAccentBar, racingAccentText, racingDetailEnter,
-    racingStat, racingStatLabel,
+    racingJsonField, racingSheetHint, racingStat, racingStatLabel,
 } from './racingTheme';
 import { formatLapTime, type RaceMode, type TrackDetail as TrackDetailData, type TrackRecord } from './data';
 
@@ -264,6 +266,25 @@ export function TrackDetail({ trackId }: { trackId: number }) {
     const session = useRacingSession();
 
     const [view, setView]  = useSessionState<TrackView>('racing:tracks:view', 'detail');
+    const [json, setJson]     = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+
+    async function exportJson() {
+        const track = await racingExportTrack(trackId);
+        if (!track) return;
+        setCopied(false);
+        setJson(JSON.stringify(track, null, 2));
+    }
+
+    function copyJson() {
+        if (!json || !copyToClipboard(json)) return;
+        setCopied(true);
+        if (copyTimer.current) clearTimeout(copyTimer.current);
+        copyTimer.current = setTimeout(() => { setCopied(false); copyTimer.current = null; }, 1800);
+    }
     const [, setOpenRacer] = useSessionState<string | null>('racing:rankings:open', null);
 
     const { data, loading } = useAsyncData(() => racingTrack(trackId), [trackId]);
@@ -328,11 +349,49 @@ export function TrackDetail({ trackId }: { trackId: number }) {
                                 disabled={!track.coords}
                                 onPress={() => { if (track.coords) void racingWaypoint(track.coords.x, track.coords.y); }}
                             />
+                            <DetailAction
+                                icon={Braces}
+                                label={t('racing.viewJson', 'JSON')}
+                                onPress={() => { void exportJson(); }}
+                            />
                         </div>
                     </div>
 
                     <DetailBody detail={data} onRacer={openRacer} />
                 </>
+            )}
+
+            {json !== null && (
+                <Sheet
+                    onClose={() => setJson(null)}
+                    fit="content"
+                    title={t('racing.trackJson', 'Track JSON')}
+                    className="font-sf bg-base text-black dark:text-white"
+                >
+                    {() => (
+                        <div className="flex flex-col gap-3 px-4 pb-5">
+                            <p className={racingSheetHint}>
+                                {t('racing.trackJsonHint', 'Copy this, then paste it into Import tracks on any server running sd-phone.')}
+                            </p>
+                            <textarea
+                                readOnly
+                                value={json}
+                                spellCheck={false}
+                                onFocus={e => e.currentTarget.select()}
+                                className={racingJsonField}
+                            />
+                            <button
+                                type="button"
+                                onClick={copyJson}
+                                className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] text-[15px] font-semibold text-white transition-opacity active:opacity-70"
+                                style={{ backgroundColor: RACING_ACCENT }}
+                            >
+                                {copied ? <Check className="h-[17px] w-[17px]" strokeWidth={2.4} /> : <Copy className="h-[17px] w-[17px]" strokeWidth={2.2} />}
+                                {copied ? t('racing.copied', 'Copied') : t('racing.copyJson', 'Copy JSON')}
+                            </button>
+                        </div>
+                    )}
+                </Sheet>
             )}
         </div>
     );

@@ -5,6 +5,7 @@ import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useSessionState } from '@/hooks/useSessionState';
 import { useDeckActive } from '@/shell/deckActive';
 import { t } from '@/i18n';
+import { AlertDialog } from '@/ui/AlertDialog';
 import { PromptDialog } from '@/ui/PromptDialog';
 import {
     apiAddPhotosToAlbum, apiCreateAlbum, apiDeleteAlbum, apiDeletePhoto,
@@ -20,6 +21,7 @@ import { GalleryTab } from './GalleryTab';
 import { PhotoPicker } from './PhotoPicker';
 import { PhotoTabBar, type PhotosTab } from './PhotoTabBar';
 import { PhotoViewer } from './PhotoViewer';
+import { failText } from '@/core/api';
 
 interface ViewerState { source: 'gallery' | 'album'; index: number }
 interface CreateState { addIds: string[] }
@@ -54,6 +56,8 @@ export function Photos({ onClose }: { onClose: () => void }) {
 
     const [viewer, setViewer] = useState<ViewerState | null>(null);
     const [albumPicker, setAlbumPicker] = useState<{ photoIds: string[] } | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; fromSelect: boolean } | null>(null);
+    const [confirmFavorite, setConfirmFavorite] = useState<{ ids: string[] } | null>(null);
     const [photoPicker, setPhotoPicker] = useState(false);
     const [createState, setCreateState] = useState<CreateState | null>(null);
 
@@ -223,11 +227,15 @@ export function Photos({ onClose }: { onClose: () => void }) {
         if (!album) return;
         setAlbums(prev => [album, ...prev]);
         if (addIds.length) await addToAlbum(album.id, addIds);
-        exitGallerySelect();
+        clearGallerySelection();
     }
 
     function exitGallerySelect() {
         setGallerySelect(false);
+        setGallerySelected(new Set());
+    }
+
+    function clearGallerySelection() {
         setGallerySelected(new Set());
     }
 
@@ -255,6 +263,15 @@ export function Photos({ onClose }: { onClose: () => void }) {
         : [];
 
     const isEmpty = !loading && photos.length === 0;
+    const selectBarUp = tab === 'gallery' && gallerySelect;
+
+    const favoriteSummary = (() => {
+        if (!confirmFavorite) return null;
+        const set = new Set(confirmFavorite.ids);
+        const chosen = photos.filter(p => set.has(p.id));
+        const already = chosen.filter(p => p.favorite).length;
+        return { count: chosen.length, already, removing: chosen.length > 0 && already === chosen.length };
+    })();
 
     return (
         <div className="absolute inset-0 z-10 flex flex-col bg-base text-black dark:text-white">
@@ -316,10 +333,21 @@ export function Photos({ onClose }: { onClose: () => void }) {
                 )}
             </div>
 
-            {tab === 'gallery' && gallerySelect ? (
-                <div className="flex shrink-0 items-stretch justify-around border-t border-black/10 bg-elevated/95 px-1 pb-9 pt-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-base/80">
+            <div className="relative shrink-0 overflow-hidden">
+                <PhotoTabBar tab={tab} onChange={(t) => { setTab(t); exitGallerySelect(); setAlbumsEdit(false); }} />
+                <div
+                    aria-hidden={!selectBarUp}
+                    className="absolute inset-x-0 bottom-0 flex items-stretch justify-around border-t border-black/10 bg-elevated px-1 pb-9 pt-2.5 dark:border-white/10 dark:bg-base"
+                    style={{
+                        transform:     selectBarUp ? 'translateY(0)' : 'translateY(100%)',
+                        transition:    'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+                        pointerEvents: selectBarUp ? undefined : 'none',
+                        willChange:    'transform',
+                    }}
+                >
                     <button
                         type="button"
+                        tabIndex={selectBarUp ? undefined : -1}
                         disabled={gallerySelected.size === 0}
                         onClick={() => setAlbumPicker({ photoIds: Array.from(gallerySelected) })}
                         className="flex flex-1 flex-col items-center gap-1.5 py-1 text-ios-blue disabled:opacity-40"
@@ -329,8 +357,9 @@ export function Photos({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                         type="button"
+                        tabIndex={selectBarUp ? undefined : -1}
                         disabled={gallerySelected.size === 0}
-                        onClick={() => favoritePhotos(Array.from(gallerySelected)).then(exitGallerySelect)}
+                        onClick={() => setConfirmFavorite({ ids: Array.from(gallerySelected) })}
                         className="flex flex-1 flex-col items-center gap-1.5 py-1 text-ios-blue disabled:opacity-40"
                     >
                         <Heart className="h-[31px] w-[31px]" strokeWidth={1.9} />
@@ -338,17 +367,16 @@ export function Photos({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                         type="button"
+                        tabIndex={selectBarUp ? undefined : -1}
                         disabled={gallerySelected.size === 0}
-                        onClick={() => deletePhotos(Array.from(gallerySelected)).then(exitGallerySelect)}
+                        onClick={() => setConfirmDelete({ ids: Array.from(gallerySelected), fromSelect: true })}
                         className="flex flex-1 flex-col items-center gap-1.5 py-1 text-[#ff3b30] disabled:opacity-40"
                     >
                         <Trash2 className="h-[33px] w-[33px]" strokeWidth={1.9} />
                         <span className="text-[15px] font-bold tracking-tight">{t('photos.delete','Delete')}</span>
                     </button>
                 </div>
-            ) : (
-                <PhotoTabBar tab={tab} onChange={(t) => { setTab(t); exitGallerySelect(); setAlbumsEdit(false); }} />
-            )}
+            </div>
 
             {openAlbum && (
                 <AlbumDetail
@@ -372,7 +400,7 @@ export function Photos({ onClose }: { onClose: () => void }) {
                     onIndexChange={(i) => setViewer(v => (v ? { ...v, index: i } : v))}
                     onToggleFavorite={toggleFavorite}
                     onAddToAlbum={(p) => setAlbumPicker({ photoIds: [p.id] })}
-                    onDelete={(p) => void deletePhotos([p.id])}
+                    onDelete={(p) => setConfirmDelete({ ids: [p.id], fromSelect: false })}
                 />
             )}
 
@@ -398,7 +426,7 @@ export function Photos({ onClose }: { onClose: () => void }) {
                         const trimmed = url.trim();
                         if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return t('photos.importInvalidUrl', 'Enter a full image URL');
                         const r = await apiSavePhotoFromUrl(trimmed);
-                        if (!r.ok) return r.message ?? t('photos.importFailed', 'Could not import that image');
+                        if (!r.ok) return failText(r, t('photos.importFailed', 'Could not import that image'));
                         setImportOpen(false);
                         return null;
                     }}
@@ -410,7 +438,7 @@ export function Photos({ onClose }: { onClose: () => void }) {
                     albums={albums}
                     count={albumPicker.photoIds.length}
                     onClose={() => setAlbumPicker(null)}
-                    onPick={(albumId) => { void addToAlbum(albumId, albumPicker.photoIds); setAlbumPicker(null); exitGallerySelect(); }}
+                    onPick={(albumId) => { void addToAlbum(albumId, albumPicker.photoIds); setAlbumPicker(null); clearGallerySelection(); }}
                     onNewAlbum={() => { setCreateState({ addIds: albumPicker.photoIds }); setAlbumPicker(null); }}
                 />
             )}
@@ -424,6 +452,52 @@ export function Photos({ onClose }: { onClose: () => void }) {
                     maxLength={40}
                     onCancel={() => setCreateState(null)}
                     onConfirm={(name) => void submitCreate(name)}
+                />
+            )}
+
+            {confirmFavorite && favoriteSummary && (
+                <AlertDialog
+                    title={favoriteSummary.removing
+                        ? t('photos.unfavouriteTitle', 'Remove from Favourites?')
+                        : t('photos.favouriteTitle', 'Add to Favourites?')}
+                    message={[
+                        favoriteSummary.removing
+                            ? (favoriteSummary.count === 1
+                                ? t('photos.unfavouriteOne', 'This photo will be removed from your Favourites.')
+                                : t('photos.unfavouriteMany', 'These {count} photos will be removed from your Favourites.', { count: favoriteSummary.count }))
+                            : (favoriteSummary.count === 1
+                                ? t('photos.favouriteOne', 'This photo will be added to your Favourites.')
+                                : t('photos.favouriteMany', 'These {count} photos will be added to your Favourites.', { count: favoriteSummary.count })),
+                        !favoriteSummary.removing && favoriteSummary.already > 0
+                            ? t('photos.alreadyFavourited', '{count} of these are already favourited.', { count: favoriteSummary.already })
+                            : '',
+                    ].filter(Boolean).join(' ')}
+                    confirmLabel={favoriteSummary.removing ? t('photos.remove', 'Remove') : t('photos.favourite', 'Favourite')}
+                    onCancel={() => setConfirmFavorite(null)}
+                    onConfirm={() => {
+                        const ids = confirmFavorite.ids;
+                        setConfirmFavorite(null);
+                        void favoritePhotos(ids).then(clearGallerySelection);
+                    }}
+                />
+            )}
+
+            {confirmDelete && (
+                <AlertDialog
+                    destructive
+                    title={confirmDelete.ids.length > 1
+                        ? t('photos.deletePhotosTitle', 'Delete {count} Photos?', { count: confirmDelete.ids.length })
+                        : t('photos.deletePhotoTitle', 'Delete Photo?')}
+                    message={confirmDelete.ids.length > 1
+                        ? t('photos.deletePhotosMessage', 'These photos will be deleted. This cannot be undone.')
+                        : t('photos.deletePhotoMessage', 'This photo will be deleted. This cannot be undone.')}
+                    confirmLabel={t('photos.delete', 'Delete')}
+                    onCancel={() => setConfirmDelete(null)}
+                    onConfirm={() => {
+                        const { ids, fromSelect } = confirmDelete;
+                        setConfirmDelete(null);
+                        void deletePhotos(ids).then(() => { if (fromSelect) clearGallerySelection(); });
+                    }}
                 />
             )}
 

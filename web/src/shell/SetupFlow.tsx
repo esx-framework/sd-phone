@@ -13,6 +13,7 @@ import { resolveWallpaper } from './wallpapers';
 import { AlertDialog } from '@/ui/AlertDialog';
 import logoUrl from '@/assets/logo.png';
 import { t } from '@/i18n';
+import { formatLongDate } from '@/lib/time';
 import { SUPPORTED_LOCALES, useLocaleStore } from '@/stores/localeStore';
 import type { LocaleOption } from '@/stores/localeStore';
 
@@ -170,7 +171,7 @@ export function SetupFlow({ onDone, onHelloChange }: Props) {
             {showHello && (
                 <div
                     className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${helloLifting ? 'animate-hello-lift' : ''}`}
-                    style={{ background: theme === 'dark' ? HELLO_BG_DARK : HELLO_BG_LIGHT, willChange: 'transform, opacity' }}
+                    style={{ background: HELLO_BG_LIGHT, willChange: 'transform, opacity' }}
                 >
                     <HelloAurora />
                     <div className="h-[54px] shrink-0" aria-hidden />
@@ -211,9 +212,6 @@ const HELLO_FONT = '"Great Vibes", "Snell Roundhand", "Segoe Script", cursive';
 const HELLO_BG_LIGHT =
     'radial-gradient(70% 45% at 50% 38%, rgba(150,170,255,0.07), transparent 70%),' +
     'radial-gradient(140% 100% at 50% 40%, #ffffff 0%, #eef0f6 50%, #e3e6ef 100%)';
-const HELLO_BG_DARK =
-    'radial-gradient(70% 45% at 50% 38%, rgba(150,170,255,0.13), transparent 70%),' +
-    'radial-gradient(140% 100% at 50% 40%, #242429 0%, #141417 52%, #000000 100%)';
 
 function HelloStage({ onContinue, frozen = false }: { onContinue: () => void; frozen?: boolean }) {
     const [idx, setIdx] = useState(0);
@@ -710,6 +708,8 @@ function ThemeCard({
     );
 }
 
+const PREVIEW_DATE = new Date(2025, 5, 21);
+
 function PhonePreview({ dark }: { dark: boolean }) {
     const screenBg = dark
         ? 'linear-gradient(175deg, #1a0f40 0%, #241657 32%, #2E1C72 62%, #160b38 100%)'
@@ -729,7 +729,7 @@ function PhonePreview({ dark }: { dark: boolean }) {
 
                 <div className="mt-[38px] text-center leading-none" style={{ color: ink }}>
                     <div className="text-[27px] font-semibold tracking-tight">11:42</div>
-                    <div className="mt-1 text-[9px] font-medium opacity-70">Saturday, June 21</div>
+                    <div className="mt-1 text-[9px] font-medium opacity-70">{formatLongDate(PREVIEW_DATE)}</div>
                 </div>
 
                 <div className="absolute inset-x-[10px] bottom-[12px] flex flex-col gap-2">

@@ -2,11 +2,17 @@ import { apiCall, type Envelope } from '@/core/api';
 import { isFiveM } from '@/core/nui';
 import type {
     AdminAuditEntry, AdminBirdyPost, AdminCall, AdminContentItem,
+    AdminLivePlayer, AdminMediaItem,
+    AdminBinEntry,
+    AdminFlag,
     AdminMessage, AdminMute, AdminNumberRow, AdminOverview, AdminPlayerHit, AdminSimLookup, AdminStats,
+    AdminThreadItem,
+    MigrationScan, MigrationSnapshot,
 } from './types';
 import {
-    DEV_AUDIT, DEV_MUTES, DEV_PLAYERS, DEV_STATS, devBirdyPosts, devCalls, devContent,
-    devMessages, devNumbers, devOverview, devSearch, devSimLookup,
+    DEV_BIN, DEV_LIVE, DEV_MEDIA, DEV_MIGRATION_SCAN, DEV_MIGRATION_SNAPSHOT, DEV_MUTES, DEV_PLAYERS, DEV_STATS,
+    devAudit, devBirdyPosts, devCalls, devContent, devFlags,
+    devMessages, devNumbers, devOverview, devSearch, devSimLookup, devThread,
 } from './devData';
 
 function call<T>(event: string, payload?: unknown): Promise<Envelope<T>> {
@@ -23,6 +29,12 @@ function seed<T>(data: T): Promise<Envelope<T>> {
 }
 
 const ok = () => Promise.resolve({ success: true } as Envelope<void>);
+
+export const adminMedia = () =>
+    isFiveM ? call<{ media: AdminMediaItem[] }>('sd-phone:admin:media') : seed({ media: DEV_MEDIA });
+
+export const adminLivePositions = () =>
+    isFiveM ? call<{ players: AdminLivePlayer[] }>('sd-phone:admin:livePositions') : seed({ players: DEV_LIVE });
 
 export const adminStats = () =>
     isFiveM ? call<AdminStats>('sd-phone:admin:stats') : seed(DEV_STATS);
@@ -78,11 +90,19 @@ export const adminBirdySetVerified = (handle: string, type: string | null) =>
 
 export const adminContent = (app: string, cursor?: string | null, q?: string) =>
     isFiveM
-        ? call<{ items: AdminContentItem[]; nextCursor?: string | null; deletable: boolean }>('sd-phone:admin:content', { app, cursor, q })
+        ? call<{ items: AdminContentItem[]; nextCursor?: string | null; deletable: boolean; threaded: boolean }>('sd-phone:admin:content', { app, cursor, q })
         : seed({ ...devContent(app, q), nextCursor: null });
 
 export const adminContentDelete = (app: string, id: string) =>
     isFiveM ? call<void>('sd-phone:admin:contentDelete', { app, id }) : ok();
+
+export const adminContentThread = (app: string, id: string) =>
+    isFiveM
+        ? call<{ items: AdminThreadItem[]; deletable: boolean }>('sd-phone:admin:contentThread', { app, id })
+        : seed(devThread(app, id));
+
+export const adminContentThreadDelete = (app: string, id: string) =>
+    isFiveM ? call<void>('sd-phone:admin:contentThreadDelete', { app, id }) : ok();
 
 export const adminMessages = (cid: string, cursor?: string | null) =>
     isFiveM
@@ -122,7 +142,43 @@ export const adminMutes = (cursor?: number | null) =>
 export const adminWipePhone = (cid: string, confirm: string) =>
     isFiveM ? call<{ rows: number }>('sd-phone:admin:wipePhone', { cid, confirm }) : seed({ rows: 1284 });
 
-export const adminAudit = (cursor?: number | null) =>
+export const adminFlags = (status: string, cursor?: number | null) =>
     isFiveM
-        ? call<{ entries: AdminAuditEntry[]; nextCursor?: number | null }>('sd-phone:admin:audit', { cursor })
-        : seed({ entries: DEV_AUDIT, nextCursor: null });
+        ? call<{ flags: AdminFlag[]; nextCursor?: number | null; openCount: number }>('sd-phone:admin:flags', { status, cursor })
+        : seed(devFlags(status));
+
+export const adminFlagsScan = () =>
+    isFiveM
+        ? call<{ filed: number; scanned: number; openCount: number }>('sd-phone:admin:flagsScan')
+        : seed({ filed: 0, scanned: 1240, openCount: devFlags('open').openCount });
+
+export const adminFlagResolve = (id: number, status: string) =>
+    isFiveM ? call<{ openCount: number }>('sd-phone:admin:flagResolve', { id, status }) : seed({ openCount: 0 });
+
+export const adminAudit = (cursor?: number | null, q?: string, action?: string) =>
+    isFiveM
+        ? call<{ entries: AdminAuditEntry[]; nextCursor?: number | null }>('sd-phone:admin:audit', { cursor, q, action })
+        : seed({ entries: devAudit(q, action), nextCursor: null });
+
+export const adminBin = (cursor?: number | null) =>
+    isFiveM
+        ? call<{ entries: AdminBinEntry[]; nextCursor?: number | null }>('sd-phone:admin:bin', { cursor })
+        : seed({ entries: DEV_BIN, nextCursor: null });
+
+export const adminBinRestore = (id: number) =>
+    isFiveM ? call<void>('sd-phone:admin:binRestore', { id }) : ok();
+
+export const adminMigrateScan = (source?: string) =>
+    isFiveM ? call<MigrationScan>('sd-phone:admin:migrateScan', { source }) : seed(DEV_MIGRATION_SCAN);
+
+export const adminMigrateState = () =>
+    isFiveM ? call<MigrationSnapshot>('sd-phone:admin:migrateState') : seed(DEV_MIGRATION_SNAPSHOT);
+
+export const adminMigrateStart = (domains: string[], dryRun: boolean, source?: string) =>
+    isFiveM ? call<void>('sd-phone:admin:migrateStart', { domains, dryRun, source }) : ok();
+
+export const adminMigrateStop = () =>
+    isFiveM ? call<void>('sd-phone:admin:migrateStop') : ok();
+
+export const adminMigrateWatch = (on: boolean) =>
+    isFiveM ? call<void>('sd-phone:admin:migrateWatch', { on }) : ok();

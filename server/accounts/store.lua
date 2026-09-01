@@ -46,6 +46,13 @@ function store.verifyPassword(plain, stored)
     if stored:sub(1, #SCRYPT_TAG) == SCRYPT_TAG then
         return crypto.verifyPassword(plain, stored)
     end
+    -- An account carried over from lb-phone still holds its bcrypt hash. Accepting it is what lets
+    -- its owner in with the password they already use, rather than being locked out of a mailbox
+    -- lb never recorded an owner for. needsRehash reports true for this shape, so the first
+    -- successful sign-in rewrites the account to scrypt and it never takes this path again.
+    if stored:sub(1, 4) == '$2a$' or stored:sub(1, 4) == '$2b$' or stored:sub(1, 4) == '$2y$' then
+        return crypto.verifyBcrypt(plain, stored)
+    end
     return legacyHash(plain) == stored
 end
 

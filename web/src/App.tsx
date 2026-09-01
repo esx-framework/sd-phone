@@ -8,9 +8,12 @@ import { isCustomPaletteId, rampFor, rampVars } from '@/apps/settings/appearance
 import { accentVars } from '@/apps/settings/appearance/accentRamp';
 import { AdminPanel } from '@/admin/AdminPanel';
 import { demoAdminOnly } from '@/core/demo';
+import { registerRuntimeLocales, setAppLabelSource, t } from '@/i18n';
 import { PayphoneUI } from '@/payphone/PayphoneUI';
 import { RaceOverlay } from '@/apps/racing/hud/RaceOverlay';
 import { CallLayer } from '@/apps/phone/CallLayer';
+import { CallPeekBanner } from '@/apps/phone/CallPeekBanner';
+import { useCallRing } from '@/apps/phone/calls/useCallRing';
 import { NotificationHost, type NotificationItem } from '@/shell/Notifications';
 import { AirShareCard, type AirShareRequest } from '@/shared/AirShare';
 import { SignRequestLayer, type SignRequestData } from '@/apps/documents/SignRequestLayer';
@@ -19,7 +22,7 @@ import { NotificationCenter, NotificationCenterHotzone } from '@/shell/Notificat
 import { MusicProvider, useMusic } from '@/apps/music/MusicContext';
 import { LockscreenWidgetsProvider } from '@/shell/LockscreenWidgetsContext';
 import { CctvOverlay, useCctvActive } from '@/apps/mdt/CctvOverlay';
-import '@/apps/mdt/cameraPublisher';
+import { BodycamOverlay, useBodycamActive } from '@/apps/mdt/BodycamOverlay';
 import { ryDevDataHidden, ryDevToggleData } from '@/apps/ryde/data';
 import { asAppId, isPreviewApp, preloadAllApps, preloadApp, setPreloadPaused, type AppId } from '@/shell/appRegistry';
 import { AppSwitcher } from '@/shell/AppSwitcher';
@@ -52,6 +55,7 @@ import { fetchNui, isFiveM } from '@/core/nui';
 import { usePhoneReset, type PhoneResetScope } from '@/core/phoneReset';
 import { resetAuth } from '@/stores/authStore';
 import { setMailDomain } from '@/core/accountsApi';
+import { setCasinoGames } from '@/apps/casino/casinoApi';
 import { setMusicSources } from '@/apps/music/data';
 import { setNumberFormat } from '@/lib/phone';
 import { cancelSmoothScroll, shiftWheelDelta, smoothScrollBy, verticalScrollerFor, wheelDelta } from '@/lib/wheel';
@@ -77,6 +81,10 @@ import { alarmsSnapshot, disableAlarm, hydrateAlarms, onTestAlarm } from '@/stor
 import { tmFinish, useTimer } from '@/stores/timerStore';
 import { isRepeating } from '@/apps/clock/data';
 import type { AlarmDef } from '@/apps/clock/data';
+
+setAppLabelSource(() => useThemeStore.getState().appLabels);
+
+const PEEK_FALLBACK_WALL = 'lockscreen.jpg';
 
 
 const RESET_KEEPS_LOCAL = ['sd-phone:setup:', 'sd-phone:auth:', 'sd-phone:music:lib', 'sd-phone:cookie:'];
@@ -201,6 +209,7 @@ export function App() {
 
 function AppContent() {
     const cctvActive = useCctvActive();
+    const bodycamActive = useBodycamActive();
     // Tone/volume fields are deliberately NOT subscribed here — they're only
     // read inside event callbacks (via useThemeStore.getState()), so slider
     // drags in Control Center don't re-render the whole tree from the root.
@@ -441,10 +450,12 @@ function AppContent() {
 
     useNuiEvent('sd-phone:open', useCallback((data) => {
         if (!data) return;
+        registerRuntimeLocales(data.locales);
         if (data.locale) useLocaleStore.getState().applyServerDefault(data.locale);   // server default, unless the player already picked their own
         if (data.mailDomain) setMailDomain(data.mailDomain);
         if (data.number) setNumberFormat(data.number.formats, data.number.length);
         setMusicSources(data.music);
+        setCasinoGames(data.casino?.games);
         setBootScreenEnabled(data.bootScreen !== false);
         useWifiStore.getState().setConfigured(data.wifiConfigured === true);
         useBluetoothStore.getState().setConfigured(data.bluetoothConfigured === true);
@@ -538,7 +549,7 @@ function AppContent() {
         const lib = useMusicLibrary.getState();
         if (data.kind === 'track' && data.track) lib.addReceivedTracks([data.track]);
         else if (data.kind === 'playlist' && Array.isArray(data.tracks)) {
-            lib.addReceivedPlaylist(data.name ?? 'Shared Playlist', data.tracks);
+            lib.addReceivedPlaylist(data.name ?? t('music.sharedPlaylist', 'Shared Playlist'), data.tracks);
         }
     }, []));
 
@@ -928,6 +939,11 @@ function AppContent() {
     const peekTimer = useRef<number | undefined>(undefined);
     // An ongoing call keeps the closed shell peeked (green island + timer) until it ends.
     const callOngoing = useCallStore(s => s.phase !== null);
+    const callIncoming = useCallStore(s => s.phase === 'incoming');
+    const callerName = useCallStore(s => s.name);
+    const callerNumber = useCallStore(s => s.number);
+
+    useCallRing(device.calls);
     const callOngoingRef = useRef(callOngoing);
     callOngoingRef.current = callOngoing;
     const callPeekRef = useRef(false);
@@ -1145,7 +1161,7 @@ function AppContent() {
             const tones = useThemeStore.getState();
             playOnce(resolveTone('notification', tones.notificationTone, tones.customNotificationTones).url, tones.ringtoneVol / 100);
         } else {
-            window.postMessage({ action: 'sd-phone:notification', data: { app: 'clock', appId: 'clock', title: 'Timer', body: 'Your timer has been completed' } }, '*');
+            window.postMessage({ action: 'sd-phone:notification', data: { app: 'clock', appId: 'clock', title: t('clock.timer', 'Timer'), body: t('clock.timerDoneBody', 'Your timer has been completed') } }, '*');
         }
     }, []);
     useEffect(() => {
@@ -1180,7 +1196,7 @@ function AppContent() {
     }, []);
 
     useEffect(() => {
-        if (wallpaperLock) warmImage(resolveWallpaper(wallpaperLock));
+        warmImage(resolveWallpaper(wallpaperLock || PEEK_FALLBACK_WALL));
         if (wallpaperHome) warmImage(resolveWallpaper(wallpaperHome));
     }, [wallpaperLock, wallpaperHome, warmImage]);
 
@@ -1433,7 +1449,7 @@ function AppContent() {
 
     if (!view) {
         const lv = lastViewRef.current;
-        const peekWall = resolveWallpaper(wallpaperLock || lv?.wallpaperLock || 'lockscreen.jpg');
+        const peekWall = resolveWallpaper(wallpaperLock || lv?.wallpaperLock || PEEK_FALLBACK_WALL);
         return (
             <>
                 {deckLayer}
@@ -1453,7 +1469,9 @@ function AppContent() {
                             noService={noService || noServiceArea}
                             light
                         />
-                        {ringingAlarm ? (
+                        {callIncoming ? (
+                            <CallPeekBanner name={callerName} number={callerNumber} />
+                        ) : ringingAlarm ? (
                             <AlarmPeekBanner name={ringingAlarm.label} since={ringingSince} />
                         ) : (
                             <NotificationHost
@@ -1494,7 +1512,7 @@ function AppContent() {
         && (!isFiveM || serverSetupDone !== null);
 
     const cameraMode = currentApp === 'camera' && !isClosing && !locked;
-    const onCamera = cctvActive !== null;
+    const onCamera = cctvActive !== null || bodycamActive !== null;
 
     const onHomescreen = !showSetup && !locked && !currentApp;
 
@@ -1724,6 +1742,7 @@ function AppContent() {
             </PhoneShell>
         </div>
         {cctvActive && <CctvOverlay active={cctvActive} />}
+        {bodycamActive && <BodycamOverlay active={bodycamActive} />}
         </>
     );
 }

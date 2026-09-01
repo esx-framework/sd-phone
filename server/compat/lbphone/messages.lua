@@ -75,8 +75,8 @@ registerLbExport('SendMessage', function(from, to, message, attachments, cb, cha
     return result
 end)
 
----SendCoords(from, to, coords): delivers the coordinates as a plain readable text. Accepts a
----vector or an {x, y} / array-style table.
+---SendCoords(from, to, coords): delivers a tappable location card, the same kind the composer's
+---Share Location produces. Accepts a vector or an {x, y} / array-style table.
 registerLbExport('SendCoords', function(from, to, coords)
     local ctype = type(coords)
     local x, y
@@ -85,8 +85,15 @@ registerLbExport('SendCoords', function(from, to, coords)
     elseif ctype == 'table' then
         x, y = tonumber(coords.x or coords[1]), tonumber(coords.y or coords[2])
     end
-    if not util.finite(x) or not util.finite(y) then return false end
-    return deliver(from, to, ('Location: %.1f, %.1f'):format(x, y))
+
+    local code = util.waypointCode(x, y)
+    if not code then return false end
+
+    return deliver(from, to, 'Shared location', {
+        kind   = 'location',
+        wpCode = code,
+        wpSub  = ('%d, %d'):format(math.floor(x + 0.5), math.floor(y + 0.5)),
+    })
 end)
 
 ---SentMoney(from, to, amount): delivered as a plain 'Sent $X' text; the downgrade is warned once.

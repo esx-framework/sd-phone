@@ -4,7 +4,7 @@ import type { BirdyMessage } from '@/apps/birdy/data';
 import type { CrashBust, CrashSettled, CrashSnapshot, CrashTick } from '@/apps/casino/crash/data';
 import type { HoldemHandEnd, HoldemStatePush } from '@/apps/casino/holdem/data';
 import type { DocFile } from '@/apps/documents/data';
-import type { Bulletin, Call, ChatMsg, Unit } from '@/apps/mdt/data';
+import type { BodycamRecording, Bulletin, Call, ChatMsg, Unit } from '@/apps/mdt/data';
 import type { DMsg as PhotogramDM, User as PhotogramUser } from '@/apps/photogram/data';
 import type {
     HudMarker, HudPosition, HudState, HudStyle, LineupState, RaceResult, StartBoard, Standing,
@@ -14,6 +14,7 @@ import type { Reaction } from '@/shared/chat/data';
 
 export interface OpenPayload {
     locale?: string;
+    locales?: string[];
     locked: boolean;
     battery: number;
     frameColor?: string;
@@ -36,6 +37,9 @@ export interface OpenPayload {
         length?: number;
     };
     bootScreen?: boolean;
+    casino?: {
+        games?: string[];
+    };
     music?: {
         youtube?: boolean;
         anyAudio?: boolean;
@@ -156,6 +160,7 @@ export interface HealthPayload {
     distanceM: number;
     heartRate: number;
     state:     'idle' | 'walking' | 'running' | 'sprinting' | 'vehicle' | 'dead';
+    pending?:  { steps: number; distanceM: number; activeMs: number };
 }
 
 interface GroupInvitePush {
@@ -332,6 +337,7 @@ export type NuiMessage =
     | { action: 'sd-phone:camera:lock';           data: { on: boolean } }
     | { action: 'sd-phone:camera:faceCam';        data: { on: boolean } }
     | { action: 'sd-phone:photos:added';          data: { id: string; url: string; createdAt: string } }
+    | { action: 'sd-phone:photos:uploadFailed';   data: { code?: string } }
     | { action: 'sd-phone:groups:inviteReceived'; data: GroupInvitePush }
     | { action: 'sd-phone:groups:memberJoined';   data: GroupRosterPush }
     | { action: 'sd-phone:groups:memberLeft';     data: GroupRosterPush }
@@ -383,12 +389,16 @@ export type NuiMessage =
     | { action: 'sd-phone:video:request' }
     | { action: 'sd-phone:video:accept' }
     | { action: 'sd-phone:video:stop' }
-    | { action: 'sd-phone:video:signal';   data: { kind: 'offer' | 'answer' | 'ice'; sdp?: string; candidate?: unknown } }
+    | { action: 'sd-phone:video:signal';   data: { kind: 'offer' | 'answer' | 'ice'; slot?: 'video' | 'record'; sdp?: string; candidate?: unknown } }
     | { action: 'sd-phone:video:key';      data: { key: string } }
     | { action: 'sd-phone:video:lock';     data: { on: boolean } }
     | { action: 'sd-phone:video:faceCam';  data: { on: boolean } }
     | { action: 'sd-phone:video:cursorState'; data: { on: boolean } }
     | { action: 'sd-phone:video:begin';    data: { initiator?: boolean } }
+    | { action: 'sd-phone:record:peerStart';  data: undefined }
+    | { action: 'sd-phone:record:peerStop';   data: undefined }
+    | { action: 'sd-phone:callrec:added';     data: { id: string; peerNumber: string; peerName?: string | null; direction: 'incoming' | 'outgoing'; oneSided: boolean; url: string; duration: number; date: string } }
+    | { action: 'sd-phone:callrec:failed';    data: { message: string } }
     | { action: 'sd-phone:voice:added';        data: { id: string; name: string; url: string; duration: number; date: string } }
     | { action: 'sd-phone:notes:added';        data: { id: string; body: string; sketches: string[]; images: string[]; createdAt: string; updatedAt: string } }
     | { action: 'sd-phone:documents:added';    data: { doc: DocFile } }
@@ -444,7 +454,12 @@ export type NuiMessage =
     | { action: 'sd-phone:mdt:chat';     data: { message: ChatMsg } }
     | { action: 'sd-phone:mdt:bulletin'; data: { bulletins: Bulletin[] } }
     | { action: 'sd-phone:mdt:warrant';  data: { citizenid: string; wanted: boolean } }
-    | { action: 'sd-phone:mdt:cameraTransport'; data: { citizenid: string; transport: 'relay' | 'event' } }
+    | { action: 'sd-phone:mdt:bodycam:enter'; data: { cameraId: string; kind: string; officer: string; callsign: string | null; plate: string | null; model: string | null; unit: string | null; rank: string | null; canRecord: boolean; auto: boolean; profile: { fps: number; width: number; bitrate: number; maxSeconds: number; minSeconds: number } } }
+    | { action: 'sd-phone:mdt:bodycam:exit';   data: Record<string, never> }
+    | { action: 'sd-phone:mdt:bodycam:record'; data: Record<string, never> }
+    | { action: 'sd-phone:mdt:recSaved';       data: BodycamRecording }
+    | { action: 'sd-phone:mdt:recFailed';      data: { message?: string } }
+    | { action: 'sd-phone:mdt:recShared';      data: { by?: string } }
     | { action: 'sd-phone:racing:racesChanged' }
     | { action: 'sd-phone:racing:standings';  data: { raceId: string; entries: Standing[] } }
     | { action: 'sd-phone:racing:raceResult'; data: RaceResult }
@@ -461,6 +476,7 @@ export type NuiMessage =
     | { action: 'sd-phone:racing:board:lineup'; data: { state: LineupState | null } }
     | { action: 'sd-phone:wipe' }
     | { action: 'sd-phone:admin:open'; data: { adminName?: string; sim?: boolean; racing?: boolean } }
+    | { action: 'sd-phone:admin:migrate'; data: import('@/admin/types').MigrationPush }
     | { action: 'chess:invited';  data: { fromSrc: string; fromName: string; lobbyId: string } }
     | { action: 'chess:lobby';    data: { id: string; host: string; public: boolean; wager: number; isHost: boolean; canStart: boolean; members: { name: string; you: boolean; host: boolean; color: 'w' | 'b' | 'random'; canAfford: boolean; ready: boolean; returned: boolean }[] } }
     | { action: 'chess:lobbyClosed'; data: Record<string, never> }
@@ -485,7 +501,7 @@ export type NuiMessage =
     | { action: 'wordle:start';        data: { gameId: string; color: string; opponent: string; pot: number } }
     | { action: 'wordle:move';         data: { gameId: string; move: { rows: string[][]; solved: boolean; failed: boolean; tries: number; finishMs: number } } }
     | { action: 'wordle:ended';        data: { reason: string } }
-    | { action: 'sd-phone:notification';       data: { id?: string; app?: string; image?: string; title: string; body?: string; time?: string; appId?: string; quietInApp?: boolean; otherPhone?: boolean; phoneColor?: string; profileKey?: string; link?: Record<string, unknown> } }
+    | { action: 'sd-phone:notification';       data: { id?: string; app?: string; image?: string; title: string; body?: string; time?: string; appId?: string; quietInApp?: boolean; emergency?: boolean; otherPhone?: boolean; phoneColor?: string; profileKey?: string; link?: Record<string, unknown> } }
     | { action: 'sd-phone:badges';             data: Record<string, number> }
     | { action: 'sd-phone:badges:patch';       data: Record<string, number> }
     | { action: 'sd-phone:airshare';           data: { id: string; kind: string; fromName: string } }

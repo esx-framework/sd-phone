@@ -43,7 +43,22 @@ function M.run(ctx)
     local posts, comments, likes, commentLikes = {}, {}, {}, {}
     local follows, stories, views, dms, notifs = {}, {}, {}, {}, {}
 
+    ---@type integer Passes started. Photogram is by far the longest domain, so it reports between
+    ---its ten passes instead of leaving the panel's progress bar still for the whole run.
+    local stage = 0
+
+    ---Marks the start of one pass and answers whether its source table is present.
+    ---@param name string lb-phone source table
+    ---@return boolean
+    local function section(name)
+        stage = stage + 1
+        if ctx.report then ctx.report(stage, 10) end
+        return store.lbSource(name) and true or false
+    end
+
     local taken = store.existingPhotogramUsernames()
+    ---@type table<string, boolean> Accounts a previous run left without a usable password.
+    local passwordless = store.accountsMissingLogin('photogram')
     local known = {}
     -- Parents that actually made it across. A child pointing at a row that was never migrated is
     -- an orphan: sd-phone's own foreign keys either delete it on boot or refuse to install, so it
@@ -60,7 +75,7 @@ function M.run(ctx)
         else out.orphan = out.orphan + 1 end
     end
 
-    if store.lbSource('instagram_accounts') then
+    if section('instagram_accounts') then
         for _, a in ipairs(store.lbIgAccounts()) do
             local user = str(a.username, 64)
             if user and not taken[user] then
@@ -85,11 +100,18 @@ function M.run(ctx)
                 if cid then grants[#grants + 1] = { app = 'photogram', username = user, cid = cid } end
             else
                 out.skipped = out.skipped + 1
+                -- Already here, but possibly from a run that created the account without handing
+                -- its owner a password. Re-granting only those recovers them; anyone who already
+                -- has one keeps it rather than having it rotated underneath them.
+                local cid = ctx.numberToCid[digits(a.phone_number)]
+                if cid and user and passwordless[user] then
+                    grants[#grants + 1] = { app = 'photogram', username = user, cid = cid }
+                end
             end
         end
     end
 
-    if store.lbSource('instagram_posts') then
+    if section('instagram_posts') then
         for _, p in ipairs(store.lbIgPosts()) do
             if known[p.username] then
                 postIds[id(p.id)] = true
@@ -102,7 +124,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_comments') then
+    if section('instagram_comments') then
         for _, c in ipairs(store.lbIgComments()) do
             if known[c.username] and postIds[id(c.post_id)] then
                 commentIds[id(c.id)] = true
@@ -116,7 +138,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_likes') then
+    if section('instagram_likes') then
         for _, l in ipairs(store.lbIgLikes()) do
             if known[l.username] and util.truthy(l.is_comment) and commentIds[id(l.id)] then
                 commentLikes[#commentLikes + 1] = { id(l.id), l.username, 0 }
@@ -130,7 +152,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_follows') then
+    if section('instagram_follows') then
         for _, f in ipairs(store.lbIgFollows()) do
             if known[f.follower] and known[f.followed] then
                 follows[#follows + 1] = { f.follower, f.followed, 'accepted', 0 }
@@ -139,7 +161,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_follow_requests') then
+    if section('instagram_follow_requests') then
         for _, r in ipairs(store.lbIgRequests()) do
             if known[r.requester] and known[r.requestee] then
                 follows[#follows + 1] = { r.requester, r.requestee, 'pending', ts(r.ts) }
@@ -148,7 +170,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_stories') then
+    if section('instagram_stories') then
         for _, s in ipairs(store.lbIgStories()) do
             if known[s.username] and s.image then
                 storyIds[id(s.id)] = true
@@ -158,7 +180,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_stories_views') then
+    if section('instagram_stories_views') then
         for _, v in ipairs(store.lbIgStoryViews()) do
             if known[v.username] and storyIds[id(v.story_id)] then
                 views[#views + 1] = { id(v.story_id), v.username, ts(v.ts) }
@@ -169,7 +191,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_messages') then
+    if section('instagram_messages') then
         for _, d in ipairs(store.lbIgMessages()) do
             if known[d.sender] and known[d.recipient] then
                 dms[#dms + 1] = {
@@ -180,7 +202,7 @@ function M.run(ctx)
         end
     end
 
-    if store.lbSource('instagram_notifications') then
+    if section('instagram_notifications') then
         for _, n in ipairs(store.lbIgNotifications()) do
             -- post_id is nullable (a follow notification has none); when set it must point at a
             -- post that migrated, or the notifications foreign key rejects the row.

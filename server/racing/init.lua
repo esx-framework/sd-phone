@@ -27,13 +27,13 @@ local CREATOR = type(RACING.Creator) == 'table' and RACING.Creator or {}
 ---catalog here would turn the whole feature off on every server, exactly as it would for the MDT.
 local ENABLED = RACING.Enabled == true
 
----@type string Refusal every callback answers with while Racing is switched off. Registering a
+---@type table Refusal every callback answers with while Racing is switched off. Registering a
 ---refusal rather than nothing is the point: an unregistered callback never answers, so the tablet
 ---would sit on its loading screen instead of reaching a readable error.
-local DISABLED = 'Racing is not available on this server'
+local DISABLED = util.fail('racing.racingNotAvailableServer', 'Racing is not available on this server')
 
----@type string Refusal for a caller whose character has not finished loading.
-local LOADING = 'Your character is still loading'
+---@type table Refusal for a caller whose character has not finished loading.
+local LOADING = util.fail('racing.characterStillLoading', 'Your character is still loading')
 
 ---Registers one Racing callback under the app's prefix, normalising a non-table payload at the
 ---boundary and refusing outright while the app is off.
@@ -41,7 +41,7 @@ local LOADING = 'Your character is still loading'
 ---@param fn fun(src: integer, payload: table): table
 local function register(action, fn)
     lib.callback.register('sd-phone:server:racing:' .. action, function(src, payload)
-        if not ENABLED then return util.fail(DISABLED) end
+        if not ENABLED then return DISABLED end
         if type(payload) ~= 'table' then payload = {} end
         return fn(src, payload)
     end)
@@ -62,25 +62,83 @@ register('setAlias',     function(src, payload) return actions.setAlias(src, pay
 register('setAvatar',    function(src, payload) return actions.setAvatar(src, payload) end)
 register('setHud',       function(src, payload) return actions.setHud(src, payload) end)
 register('createTrack',  function(src, payload) return actions.createTrack(src, payload) end)
-register('adminTracks',  function(src, payload) return actions.adminTracks(src, payload) end)
-register('adminSetFlag', function(src, payload) return actions.adminSetFlag(src, payload) end)
-register('adminDelete',  function(src, payload) return actions.adminDelete(src, payload) end)
+
+---Opens the in-game gate creator on the player's client. Re-checks the same ace the /createtrack
+---command is restricted on: that command's gate is enforced by ox_lib before the command body ever
+---runs, but this callback has no such wrapper, so without this check any caller of the phone's NUI
+---action -- ace or not -- could pop the recorder and stream its flag prop for free.
+register('startCreator', function(src)
+    if not actions.canCreate(src) then return util.fail('racing.notAllowedCreateTracks', 'You are not allowed to create tracks') end
+    TriggerClientEvent('sd-phone:client:racing:creator', src)
+    return util.ok({})
+end)
+
+---Bulk import for server owners: reads a JSON file from the resource folder and saves every track
+---in it. Console only, because it writes rows and needs no in-game context; the file lives beside
+---the resource so an owner can drop a track pack in without touching the database.
+---@param src integer 0 for the server console
+---@param args string[] { relative file path }
+RegisterCommand('importtracks', function(src, args)
+    if src ~= 0 then return end
+
+    local path = args[1]
+    if not path or path == '' then
+        print('^3usage:^0 importtracks <file.json>   (path is relative to the sd-phone folder)')
+        return
+    end
+
+    local raw = LoadResourceFile(GetCurrentResourceName(), path)
+    if not raw then
+        print(('^1[sd-phone:racing]^0 could not read %s'):format(path))
+        return
+    end
+
+    local okJson, decoded = pcall(json.decode, raw)
+    if not okJson or type(decoded) ~= 'table' then
+        print(('^1[sd-phone:racing]^0 %s is not valid JSON'):format(path))
+        return
+    end
+
+    local result = actions.importTracks(decoded, nil, 'Imported')
+    print(('^2[sd-phone:racing]^0 imported %d track(s) from %s'):format(result.imported, path))
+    for _, entry in ipairs(result.failed) do
+        print(('^3[sd-phone:racing]^0 skipped #%d %s: %s'):format(entry.index, entry.name, entry.reason))
+    end
+end, true)
+
+---Bulk import for other resources: exports['sd-phone']:importRaceTrack(data) takes one track table
+---or an array of them, the same shape the app and the console command accept.
+---@param data table one track or an array of them
+---@param authorName string|nil credited author, defaults to 'Imported'
+---@return table result { imported = integer, failed = { index, name, reason }[] }
+exports('importRaceTrack', function(data, authorName)
+    return actions.importTracks(data, nil, type(authorName) == 'string' and authorName or 'Imported')
+end)
+
+register('importTracks',        function(src, payload) return actions.importTracksFor(src, payload) end)
+register('exportTrack',         function(src, payload) return actions.exportTrack(src, payload) end)
+register('adminTracks',         function(src, payload) return actions.adminTracks(src, payload) end)
+register('adminSetFlag',        function(src, payload) return actions.adminSetFlag(src, payload) end)
+register('adminDelete',         function(src, payload) return actions.adminDelete(src, payload) end)
+register('adminPendingTracks',  function(src, payload) return actions.adminPendingTracks(src, payload) end)
+register('adminApproveTrack',   function(src, payload) return actions.adminApproveTrack(src, payload) end)
+register('adminRejectTrack',    function(src, payload) return actions.adminRejectTrack(src, payload) end)
 
 register('boards', function(src)
     local cid = player.getIdentifier(src)
-    if not cid then return util.fail(LOADING) end
+    if not cid then return LOADING end
     return util.ok({ boards = racegen.boards(cid) })
 end)
 
 register('join', function(src, payload)
     local cid = player.getIdentifier(src)
-    if not cid then return util.fail(LOADING) end
+    if not cid then return LOADING end
     return racegen.join(src, cid, payload.raceId, payload.modelHash)
 end)
 
 register('leave', function(src, payload)
     local cid = player.getIdentifier(src)
-    if not cid then return util.fail(LOADING) end
+    if not cid then return LOADING end
     return racegen.leave(src, cid, payload.raceId)
 end)
 
@@ -90,15 +148,15 @@ end)
 ---can already do by driving away.
 register('notStarted', function(src, payload)
     local cid = player.getIdentifier(src)
-    if not cid then return util.fail(LOADING) end
-    if type(payload.raceId) ~= 'string' then return util.fail('Unknown race') end
+    if not cid then return LOADING end
+    if type(payload.raceId) ~= 'string' then return util.fail('racing.unknownRace', 'Unknown race') end
     races.withdraw(cid, payload.raceId)
     return util.ok({})
 end)
 
 register('host', function(src, payload)
     local cid = player.getIdentifier(src)
-    if not cid then return util.fail(LOADING) end
+    if not cid then return LOADING end
     return racegen.host(src, cid, payload)
 end)
 
@@ -137,13 +195,16 @@ if ENABLED then
     end)
 
     if CREATOR.Enabled ~= false and type(CREATOR.Command) == 'string' then
-        ---Toggles the in-game gate creator. Registered restricted, which is what makes ox_lib gate
-        ---it on the `command.<name>` ace that Config.Creator.Ace names.
+        ---Toggles the in-game gate creator. `restricted` mirrors Config.Creator.Access: true gates
+        ---the command itself on the `command.<name>` ace (Config.Creator.Ace names it), false opens
+        ---it to everyone. Either way the handler re-checks actions.canCreate, the same rule the
+        ---phone's "+" button goes through, so the two entry points can never disagree.
         ---@param source integer player server id
         lib.addCommand(CREATOR.Command, {
             help = 'Toggle the in-game track creator',
-            restricted = true,
+            restricted = CREATOR.Access ~= 'everyone',
         }, function(source)
+            if not actions.canCreate(source) then return end
             TriggerClientEvent('sd-phone:client:racing:creator', source)
         end)
     end

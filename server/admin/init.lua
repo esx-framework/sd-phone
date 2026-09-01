@@ -7,6 +7,12 @@ local permissions = require 'server.admin.permissions'
 local store       = require 'server.admin.store'
 ---@type table Mute registry (server.admin.moderation): schema bootstrap.
 local moderation  = require 'server.admin.moderation'
+---@type table Watchlist queue (server.admin.flags): schema bootstrap + the sweep.
+local flags       = require 'server.admin.flags'
+---@type table Recycle bin (server.admin.bin): schema bootstrap + the keep-window prune.
+local bin         = require 'server.admin.bin'
+---@type table Watchlist config (configs/moderation.lua): sweep cadence.
+local modConfig   = require 'configs.moderation'
 ---@type table Authoritative admin handlers (server.admin.actions): validation + all mutation.
 local actions     = require 'server.admin.actions'
 local util        = require 'server.util'
@@ -18,6 +24,8 @@ CreateThread(function()
     local okSchema, err = pcall(function()
         store.ensureSchema()
         moderation.ensureSchema()
+        flags.ensureSchema()
+        bin.ensureSchema()
     end)
     if not okSchema then
         boot.schemaFailed('admin', err)
@@ -26,13 +34,42 @@ CreateThread(function()
     boot.schemaReady()
 end)
 
+---The keyword sweep on its timer. It is deliberately started after a delay and run inside a pcall:
+---it is a background convenience, so a bad pattern in an operator's config costs the sweep and
+---nothing else. Setting SweepMinutes to 0 leaves scanning to the panel's button.
+CreateThread(function()
+    local minutes = tonumber(modConfig.SweepMinutes) or 0
+    if modConfig.Enabled ~= true or minutes <= 0 then return end
+
+    Wait(60000)
+    while true do
+        pcall(flags.sweep)
+        Wait(minutes * 60000)
+    end
+end)
+
+---Drops bin entries past their keep window, on its own thread rather than the sweep's: an
+---operator who turns the watchlist off is not asking to keep every deleted row forever.
+CreateThread(function()
+    Wait(120000)
+    while true do
+        pcall(bin.prune)
+        Wait(6 * 3600 * 1000)
+    end
+end)
+
 ---Registers one admin callback behind the server-side permission gate. The gate runs on every
 ---call; the hidden client entry point is never the security boundary.
+---
+---`tier` is what the action costs to run: 'view' reads, 'moderate' changes a player's phone,
+---'destroy' cannot be undone. A server that has only ever granted group.admin passes every tier,
+---so this splits nothing until an operator opts in by granting a narrower ace.
 ---@param name string action suffix, e.g. 'search'
 ---@param fn fun(src: number, payload: table|nil): table
-local function reg(name, fn)
+---@param tier string 'view' | 'moderate' | 'destroy'
+local function reg(name, fn, tier)
     lib.callback.register('sd-phone:server:admin:' .. name, function(src, payload)
-        if not permissions.isAllowed(src) then return util.fail('Not authorized') end
+        if not permissions.allows(src, tier) then return util.fail('admin.notAuthorized', 'Not authorized') end
         return fn(src, payload)
     end)
 end
@@ -96,26 +133,35 @@ lib.addCommand('birdyverify', {
     })
 end)
 
-reg('search',               actions.search)
-reg('overview',             actions.overview)
-reg('setNumber',            actions.setNumber)
-reg('simLookup',            actions.simLookup)
-reg('giveSim',              actions.giveSim)
-reg('numbers',              actions.numbers)
-reg('resetPasscode',        actions.resetPasscode)
-reg('setApp',               actions.setApp)
-reg('resetAccountPassword', actions.resetAccountPassword)
-reg('forceLogout',          actions.forceLogout)
-reg('birdyPosts',           actions.birdyPosts)
-reg('birdyDeletePost',      actions.birdyDeletePost)
-reg('birdySetVerified',     actions.birdySetVerified)
-reg('content',              actions.content)
-reg('contentDelete',        actions.contentDelete)
-reg('messages',             actions.messages)
-reg('calls',                actions.calls)
-reg('mute',                 actions.mute)
-reg('unmute',               actions.unmute)
-reg('mutes',                actions.mutes)
-reg('wipePhone',            actions.wipePhone)
-reg('audit',                actions.audit)
-reg('stats',                actions.stats)
+reg('search',               actions.search, 'view')
+reg('overview',             actions.overview, 'view')
+reg('setNumber',            actions.setNumber, 'moderate')
+reg('simLookup',            actions.simLookup, 'view')
+reg('giveSim',              actions.giveSim, 'moderate')
+reg('numbers',              actions.numbers, 'view')
+reg('resetPasscode',        actions.resetPasscode, 'moderate')
+reg('setApp',               actions.setApp, 'moderate')
+reg('resetAccountPassword', actions.resetAccountPassword, 'moderate')
+reg('forceLogout',          actions.forceLogout, 'moderate')
+reg('birdyPosts',           actions.birdyPosts, 'view')
+reg('birdyDeletePost',      actions.birdyDeletePost, 'moderate')
+reg('birdySetVerified',     actions.birdySetVerified, 'moderate')
+reg('content',              actions.content, 'view')
+reg('contentThread',        actions.contentThread, 'view')
+reg('contentDelete',        actions.contentDelete, 'moderate')
+reg('contentThreadDelete',  actions.contentThreadDelete, 'moderate')
+reg('messages',             actions.messages, 'view')
+reg('calls',                actions.calls, 'view')
+reg('mute',                 actions.mute, 'moderate')
+reg('unmute',               actions.unmute, 'moderate')
+reg('mutes',                actions.mutes, 'view')
+reg('wipePhone',            actions.wipePhone, 'destroy')
+reg('audit',                actions.audit, 'view')
+reg('bin',                  actions.bin, 'view')
+reg('binRestore',           actions.binRestore, 'moderate')
+reg('flags',                actions.flags, 'view')
+reg('flagsScan',            actions.flagsScan, 'view')
+reg('flagResolve',          actions.flagResolve, 'moderate')
+reg('stats',                actions.stats, 'view')
+reg('media',                actions.media, 'view')
+reg('livePositions',        actions.livePositions, 'view')

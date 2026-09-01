@@ -1,3 +1,4 @@
+import { getLocaleTag } from '@/i18n';
 import { isFiveM } from './nui';
 import { apiCall, apiData } from './api';
 
@@ -172,6 +173,12 @@ export async function apiDeletePhoto(photoId: string): Promise<boolean> {
     return r.success;
 }
 
+export async function apiSharePhoto(photoId: string, target: number): Promise<boolean> {
+    if (!isFiveM) return true;
+    const r = await apiCall<unknown>('sd-phone:photos:share', { id: photoId, target });
+    return r.success;
+}
+
 interface ServerAlbum { id: string; name: string; count: number; cover: string | null }
 
 export async function apiListAlbums(): Promise<Album[]> {
@@ -226,8 +233,5 @@ export function groupByDay(photos: Photo[]): { key: string; label: string; photo
 function formatDayLabel(isoDay: string): string {
     const d = new Date(isoDay + 'T00:00:00Z');
     if (Number.isNaN(d.getTime())) return isoDay;
-    const day   = d.getUTCDate();
-    const month = d.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
-    const year  = d.getUTCFullYear();
-    return `${day} ${month}, ${year}`;
+    return d.toLocaleDateString(getLocaleTag(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }

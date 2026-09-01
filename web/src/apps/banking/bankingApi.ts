@@ -4,6 +4,7 @@ import { ACCOUNTS, TRANSACTIONS } from './data';
 import { apiData, type Envelope } from '@/core/api';
 import { formatClockTime } from '@/lib/time';
 import type { SentInvoice, SentInvoicesResult } from '@/apps/services/servicesApi';
+import { presetFor, type CardStyle } from './bankBrands';
 
 export interface BankTx {
     id:        string;
@@ -19,11 +20,14 @@ export interface BankTx {
 }
 
 export interface BankOverview {
-    balance:      number;
-    cash:         number;
-    name:         string;
-    number:       string;
-    transactions: BankTx[];
+    balance:        number;
+    cash:           number;
+    name:           string;
+    number:         string;
+    allowAnonymous: boolean;
+    cardStyle:      CardStyle;
+    cardLocked:     boolean;
+    transactions:   BankTx[];
 }
 
 const DEV_OVERVIEW: BankOverview = {
@@ -31,6 +35,9 @@ const DEV_OVERVIEW: BankOverview = {
     cash:    1_240,
     name:    'Sam Nicol',
     number:  '2135550100',
+    allowAnonymous: true,
+    cardStyle: presetFor('fleeca'),
+    cardLocked: false,
     transactions: TRANSACTIONS
         .filter(t => t.accountId === ACCOUNTS[0].id)
         .map(t => ({ id: t.id, merchant: t.merchant, amount: t.amount, category: t.category, date: t.date, pending: t.pending, peerNumber: t.peerNumber, peerInitials: t.peerInitials, peerColor: t.peerColor })),
@@ -39,20 +46,38 @@ const DEV_OVERVIEW: BankOverview = {
 export async function fetchOverview(): Promise<BankOverview> {
     if (!isFiveM) return DEV_OVERVIEW;
     return (await apiData<BankOverview>('sd-phone:banking:overview'))
-        ?? { balance: 0, cash: 0, name: '', number: '', transactions: [] };
+        ?? { balance: 0, cash: 0, name: '', number: '', allowAnonymous: false, cardStyle: presetFor('fleeca'), cardLocked: true, transactions: [] };
 }
 
-export async function sendMoney(number: string, amount: number, note?: string): Promise<Envelope<{ balance: number; transaction: BankTx }>> {
+export async function setCardStyle(style: CardStyle): Promise<Envelope<{ cardStyle: CardStyle }>> {
     if (!isFiveM) {
+        DEV_OVERVIEW.cardStyle = style;
+        return { success: true, data: { cardStyle: style } };
+    }
+    return (await fetchNui<Envelope<{ cardStyle: CardStyle }>>('sd-phone:banking:setCardStyle', style))
+        ?? { success: false, message: t('banking.noServerResponse', 'No response from server') };
+}
+
+export type SendMode = 'number' | 'playerId';
+
+export interface SendTarget { number?: string; serverId?: number }
+
+export function sendTarget(mode: SendMode, value: string): SendTarget {
+    return mode === 'playerId' ? { serverId: parseInt(value, 10) } : { number: value };
+}
+
+export async function sendMoney(target: SendTarget, amount: number, anonymous = false, note?: string): Promise<Envelope<{ balance: number; transaction: BankTx }>> {
+    if (!isFiveM) {
+        const to = target.number ?? `ID ${target.serverId ?? 0}`;
         return {
             success: true,
             data: {
                 balance: DEV_OVERVIEW.balance - amount,
-                transaction: { id: 'dev-' + Date.now(), merchant: 'Sent to ' + number, amount: -amount, category: 'transfer', date: new Date().toISOString() },
+                transaction: { id: 'dev-' + Date.now(), merchant: 'Sent to ' + to, amount: -amount, category: 'transfer', date: new Date().toISOString() },
             },
         };
     }
-    return (await fetchNui<Envelope<{ balance: number; transaction: BankTx }>>('sd-phone:banking:send', { number, amount, note }))
+    return (await fetchNui<Envelope<{ balance: number; transaction: BankTx }>>('sd-phone:banking:send', { number: target.number, serverId: target.serverId, amount, anonymous, note }))
         ?? { success: false, message: t('banking.noServerResponse', 'No response from server') };
 }
 

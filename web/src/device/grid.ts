@@ -65,12 +65,63 @@ export function gridForDock(d: Density, dockHidden: boolean): DeviceGrid {
     return out;
 }
 
+export const ICON_SCALE_MIN = 0.85;
+export const ICON_SCALE_MAX = 1.15;
+export const ICON_SCALE_STEP = 0.05;
+
+const MIN_COL_GAP = 9;
+
+export function clampIconScale(v: number): number {
+    if (!Number.isFinite(v)) return 1;
+    const stepped = Math.round(v / ICON_SCALE_STEP) * ICON_SCALE_STEP;
+    return Math.min(ICON_SCALE_MAX, Math.max(ICON_SCALE_MIN, Number(stepped.toFixed(2))));
+}
+
+const scaleCache = new Map<string, DeviceGrid>();
+
+function scaleGrid(g: DeviceGrid, scale: number): DeviceGrid {
+    if (scale === 1) return g;
+
+    const key = `${g.cols}x${g.rows}:${g.icon}:${g.padX}:${g.rowStride}:${scale}`;
+    const hit = scaleCache.get(key);
+    if (hit) return hit;
+
+    const span = device.screen.w - 2 * g.padX;
+    const ceiling = (span - MIN_COL_GAP * (g.cols - 1)) / g.cols;
+    const icon = Math.round(Math.min(g.icon * scale, ceiling));
+    if (icon === g.icon) {
+        scaleCache.set(key, g);
+        return g;
+    }
+
+    const out: DeviceGrid = {
+        ...g,
+        icon,
+        colStride: (device.screen.w - 2 * g.padX - icon) / (g.cols - 1),
+        rowStride: icon + (g.rowStride - g.icon),
+    };
+    scaleCache.set(key, out);
+    return out;
+}
+
 let active: Density = 'default';
+let iconScale = 1;
 let extraRow = false;
 const listeners = new Set<() => void>();
 
 export function getGrid(): DeviceGrid {
-    return gridForDock(active, extraRow);
+    return scaleGrid(gridForDock(active, extraRow), iconScale);
+}
+
+export function gridPreview(d: Density, scale: number): DeviceGrid {
+    return scaleGrid(gridFor(d), clampIconScale(scale));
+}
+
+export function setIconScale(v: number): void {
+    const next = clampIconScale(v);
+    if (next === iconScale) return;
+    iconScale = next;
+    for (const fn of listeners) fn();
 }
 
 export function setExtraRow(v: boolean): void {

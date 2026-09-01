@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronRight, Coins, Info, Trophy, Wallet } from 'lucide-react';
 
@@ -10,10 +10,8 @@ import { loadStats, type GameStats } from '@/apps/_games/statsApi';
 import { BaccaratThumb } from './baccarat/Thumb';
 import { CrashThumb } from './crash/Thumb';
 import { HoldemThumb } from './holdem/Thumb';
-import { type CasinoGame, GAME_ACCENT } from './casinoApi';
+import { casinoGames, type CasinoGame, GAME_ACCENT } from './casinoApi';
 import { CARD_SHADOW, FELT, GOLD, GOLD_FRAME, SURFACE, TABLE, WELL_SHADOW, fmtChips } from './theme';
-
-const GAMES: CasinoGame[] = ['blackjack', 'holdem', 'crash', 'baccarat', 'roulette', 'slots'];
 
 const emptyStats = (): GameStats => ({ cpu: { wins: 0, losses: 0, draws: 0 }, online: { wins: 0, losses: 0, draws: 0 }, won: 0, lost: 0 });
 const blankRecord = (): Record<CasinoGame, GameStats> => ({
@@ -55,6 +53,7 @@ export function Lobby({ chips, onPlay, onCashier, onLeaderboards, onRules }: {
     onLeaderboards: () => void;
     onRules:        (game: CasinoGame) => void;
 }) {
+    const GAMES = useMemo(() => casinoGames(), []);
     const [stats, setStats] = useState<Record<CasinoGame, GameStats>>(blankRecord);
     const [failed, setFailed] = useState(false);
 
@@ -69,7 +68,7 @@ export function Lobby({ chips, onPlay, onCashier, onLeaderboards, onRules }: {
             })
             .catch(() => { if (live) setFailed(true); });
         return () => { live = false; };
-    }, []);
+    }, [GAMES]);
 
     const won    = GAMES.reduce((n, g) => n + stats[g].won, 0);
     const lost   = GAMES.reduce((n, g) => n + stats[g].lost, 0);
@@ -124,9 +123,9 @@ export function Lobby({ chips, onPlay, onCashier, onLeaderboards, onRules }: {
                         <div key={game} className="flex items-center justify-between py-[3px]">
                             <span className="text-[15px] font-bold text-white/85">{GAME_LABEL[game]()}</span>
                             <span className="flex items-center gap-3.5 text-[14px] font-semibold tabular-nums text-white/80">
-                                <span><span className="font-extrabold text-[#9CCC65]">{stats[game].cpu.wins}</span> W</span>
-                                <span><span className="font-extrabold text-[#FF8A80]">{stats[game].cpu.losses}</span> L</span>
-                                <span><span className="font-extrabold text-white">{stats[game].cpu.draws}</span> D</span>
+                                <span><span className="font-extrabold text-[#9CCC65]">{stats[game].cpu.wins}</span> {t('casino.winsShort', 'W')}</span>
+                                <span><span className="font-extrabold text-[#FF8A80]">{stats[game].cpu.losses}</span> {t('casino.lossesShort', 'L')}</span>
+                                <span><span className="font-extrabold text-white">{stats[game].cpu.draws}</span> {t('casino.drawsShort', 'D')}</span>
                             </span>
                         </div>
                     ))}

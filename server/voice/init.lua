@@ -4,6 +4,9 @@ local config = require 'configs.config'
 local player = require 'bridge.server.player'
 ---@type table Shared server helpers (server.util): rate limiting + client-payload validation.
 local util   = require 'server.util'
+---@type table Shared ICE provisioning (server.voice.ice): STUN + Cloudflare TURN for every
+---WebRTC feature, video calls included.
+local ice    = require 'server.voice.ice'
 
 ---@type table Voice config (configs/voice.lua): nearby-capture switches + TURN provisioning.
 local CFG   = config.Voice or {}
@@ -11,87 +14,9 @@ local CFG   = config.Voice or {}
 local RANGE = tonumber(CFG.NearbyRange) or 12.0
 ---@type integer Cap on simultaneous nearby voices mixed into one recording (bandwidth/CPU guard).
 local MAXN  = tonumber(CFG.MaxNearbyVoices) or 6
----@type table Public STUN server URLs, always offered to every peer connection.
-local STUN  = CFG.StunServers or { 'stun:stun.l.google.com:19302' }
----@type table TURN provisioning config (CFG.Turn): Provider + TtlSeconds.
-local TURN  = CFG.Turn or {}
 
 ---@return boolean true when nearby-voice capture is switched on (config.Voice.RecordNearbyVoices)
 local function enabled() return CFG.RecordNearbyVoices == true end
-
--- ICE provisioning for the client-to-client WebRTC mesh that captures nearby players' voices.
--- The Cloudflare credentials are issued per TTL, not per player, so one entry serves the whole
--- server; a per-src cache let every concurrent caller miss during the first request's yield and
--- issue its own, so one client could fan a burst of outbound HTTPS calls at Cloudflare.
----@type { servers: table, expires: number }|nil Shared ICE server list.
-local iceCache = nil
----@type table|nil In-flight provisioning promise; concurrent callers await it instead of refetching.
-local icePending = nil
-
----The always-available STUN portion of an iceServers list, built fresh so callers can append.
----@return table servers array of { urls = string }
-local function baseStun()
-    local servers = {}
-    for _, url in ipairs(STUN) do servers[#servers + 1] = { urls = url } end
-    return servers
-end
-
----Provisions a Cloudflare Realtime TURN credential set from the sd_cf_turn_* convars. Returns
----nil when unconfigured or on any transport/decode failure.
----@return table|nil iceServers Cloudflare's iceServers object, nil on failure
-local function fetchCloudflareTurn()
-    local tokenId  = GetConvar('sd_cf_turn_token_id', '')
-    local apiToken = GetConvar('sd_cf_turn_api_token', '')
-    if tokenId == '' or apiToken == '' then return nil end
-
-    local ttl = tonumber(TURN.TtlSeconds) or 86400
-    local p = promise.new()
-    PerformHttpRequest(
-        ('https://rtc.live.cloudflare.com/v1/turn/keys/%s/credentials/generate-ice-servers'):format(tokenId),
-        function(status, body)
-            if status ~= 201 or not body then return p:resolve(nil) end
-            local ok, decoded = pcall(json.decode, body)
-            p:resolve(ok and decoded and decoded.iceServers or nil)
-        end,
-        'POST',
-        json.encode({ ttl = ttl }),
-        {
-            ['Authorization'] = 'Bearer ' .. apiToken,
-            ['Content-Type']  = 'application/json',
-            ['Accept']        = 'application/json',
-        }
-    )
-    return Citizen.Await(p)
-end
-
----@type integer Seconds a failed TURN provisioning is cached for. Short enough that a transient
----Cloudflare outage heals on its own, long enough that it can never become a request loop.
-local ICE_FAILURE_TTL = 60
-
----ICE servers: STUN always, TURN appended when the Cloudflare provider is configured. Cached
----server-wide until a minute before the provisioned credential lapses, with one shared flight.
----@return table servers iceServers array for RTCPeerConnection
-local function iceServers()
-    if iceCache and iceCache.expires > os.time() then return iceCache.servers end
-    if icePending then return Citizen.Await(icePending) end
-
-    local p = promise.new()
-    icePending = p
-
-    local servers = baseStun()
-    local provisioned = true
-    if TURN.Provider == 'cloudflare' then
-        local ok, turn = pcall(fetchCloudflareTurn)
-        if ok and turn then servers[#servers + 1] = turn else provisioned = false end
-    end
-
-    local ttl = provisioned and ((tonumber(TURN.TtlSeconds) or 86400) - 60) or ICE_FAILURE_TTL
-    iceCache = { servers = servers, expires = os.time() + ttl }
-    -- Cleared before the resolve so anyone woken by it reads the fresh cache, never a stale flight.
-    icePending = nil
-    p:resolve(servers)
-    return servers
-end
 
 ---Live ped coords for a player, nil when they have no ped (disconnecting / not spawned).
 ---@param src number player server id
@@ -146,7 +71,7 @@ end
 
 ---ICE servers for this client's peer connections. Read-only; served from the shared cache.
 lib.callback.register('sd-phone:server:voice:ice', function()
-    return { success = true, data = { iceServers = iceServers() } }
+    return { success = true, data = { iceServers = ice.servers() } }
 end)
 
 ---@type integer Nearby-lookup budget window in ms.
@@ -159,9 +84,9 @@ local NEARBY_PER_WINDOW = 30
 ---empty when the feature is disabled or the caller is over budget.
 lib.callback.register('sd-phone:server:voice:nearby', function(src)
     if not enabled() or not util.rateLimit(player.getIdentifier(src), 'voice:nearby', NEARBY_WINDOW, NEARBY_PER_WINDOW) then
-        return { success = true, data = { targets = {}, iceServers = iceServers() } }
+        return { success = true, data = { targets = {}, iceServers = ice.servers() } }
     end
-    return { success = true, data = { targets = nearbyTargets(src), iceServers = iceServers() } }
+    return { success = true, data = { targets = nearbyTargets(src), iceServers = ice.servers() } }
 end)
 
 ---@type table<string, boolean> Signal kinds the mesh actually sends (web/src/media/nearbyVoice.ts).

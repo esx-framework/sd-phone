@@ -18,7 +18,15 @@
 --   3. Pick token type "Media", then paste it below
 -- Left blank here, the uploader falls back to the legacy `sd_fivemanage_key` server convar
 -- (set in server.cfg) so existing setups keep working; new servers can just paste it below.
+--
+-- Qbox CDN (the alternative to Fivemanage). Only read when Provider = 'qbox' in configs/photos.lua.
+-- Get a token:
+--   1. https://dashboard.qbox.re -> sign in with Discord
+--   2. Open CDN -> API -> generate an API token
+--   3. Paste it below (it looks like qbox_live_...)
+-- Left blank here, the uploader falls back to the `sd_qbox_cdn_key` server convar.
 return {
     Giphy           = '',
     FivemanageMedia = '',
+    QboxCdn         = '',
 }

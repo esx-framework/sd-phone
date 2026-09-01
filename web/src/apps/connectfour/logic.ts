@@ -9,7 +9,12 @@ export type Board = Disc[];
 export const idx = (r: number, c: number): number => r * COLS + c;
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export const DEPTH: Record<Difficulty, number> = { easy: 2, medium: 4, hard: 6 };
+export interface AiOptions { depth: number; blunder: number }
+export const AI: Record<Difficulty, AiOptions> = {
+    easy:   { depth: 2, blunder: 0.4 },
+    medium: { depth: 4, blunder: 0.1 },
+    hard:   { depth: 6, blunder: 0 },
+};
 
 export function emptyBoard(): Board {
     return Array<Disc>(ROWS * COLS).fill(0);
@@ -175,12 +180,16 @@ function search(
     return best;
 }
 
-export function chooseMove(board: Board, me: Player, depth = 4): number {
+export function chooseMove(board: Board, me: Player, opts: AiOptions = AI.hard): number {
     const moves = SEARCH_ORDER.filter((c: number) => !columnFull(board, c));
     if (moves.length === 0) return -1;
     if (moves.length === 1) return moves[0];
 
     const foe = other(me);
+
+    if (opts.blunder > 0 && Math.random() < opts.blunder) {
+        return moves[Math.floor(Math.random() * moves.length)];
+    }
 
     for (const col of moves) {
         const r = dropRow(board, col);
@@ -203,7 +212,7 @@ export function chooseMove(board: Board, me: Player, depth = 4): number {
     for (const col of moves) {
         const r = dropRow(board, col);
         board[idx(r, col)] = me;
-        const val = search(board, depth - 1, -Infinity, Infinity, foe, me);
+        const val = search(board, opts.depth - 1, -Infinity, Infinity, foe, me);
         board[idx(r, col)] = 0;
         if (val > bestVal) {
             bestVal = val;

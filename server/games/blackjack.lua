@@ -2,6 +2,8 @@
 local player = require 'bridge.server.player'
 ---@type table Chip wallet (server.games.chips): the shared casino balance debited/credited here.
 local chips  = require 'server.games.chips'
+---@type table Casino helpers (server.games.casino.shared): the per-game on/off switch.
+local shared = require 'server.games.casino.shared'
 ---@type table Stats board (server.games.stats): win/loss/draw + chip-swing record per character.
 local stats  = require 'server.games.stats'
 
@@ -202,6 +204,7 @@ end)
 
 local function wrap(fn)
     return function(src)
+        if not shared.enabled('blackjack') then return shared.shut() end
         local r = fn(src)
         if not r then return { success = false } end
         return { success = true, data = r }
@@ -209,6 +212,7 @@ local function wrap(fn)
 end
 
 lib.callback.register('sd-phone:server:games:bjDeal', function(src, payload)
+    if not shared.enabled('blackjack') then return shared.shut() end
     payload = type(payload) == 'table' and payload or {}
     local r = bj.deal(src, payload.bet)
     if not r then return { success = false } end

@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, FolderPlus, Heart, MoreHorizontal, Trash2, Wallpaper } from 'lucide-react';
+import { ChevronLeft, Copy, Heart, MoreHorizontal, Wallpaper } from 'lucide-react';
 
-import { t } from '@/i18n';
-import type { Photo } from '@/core/photosApi';
+import { getLocaleTag, t } from '@/i18n';
+import { apiSharePhoto, type Photo } from '@/core/photosApi';
 import { useThemeStore } from '@/stores/themeStore';
+import { ActionSheet } from '@/ui/ActionSheet';
+import { ShareAction, ShareSheet } from '@/shared/ShareSheet';
+import { useCopied } from '@/hooks/useCopied';
 import { VideoView } from './VideoView';
 
 function fmtDate(iso: string): string {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    return d.toLocaleDateString(getLocaleTag(), { day: 'numeric', month: 'long' });
 }
 
 function fmtTime(iso: string): string {
@@ -46,6 +49,8 @@ export function PhotoViewer({
     const [drag, setDrag] = useState(0);
     const [dragging, setDragging] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [sharing, setSharing] = useState(false);
+    const [copied, copyLink] = useCopied();
     const [leaving, setLeaving] = useState(false);
     const [wallpaperHud, setWallpaperHud] = useState(0);
     const startX = useRef(0);
@@ -163,7 +168,7 @@ export function PhotoViewer({
             </div>
 
             <div className="flex shrink-0 items-center justify-between px-8 pb-16 pt-3">
-                <button type="button" onClick={() => onAddToAlbum(current)} aria-label={t('photos.share', 'Share')} className="text-ios-blue">
+                <button type="button" onClick={() => setSharing(true)} aria-label={t('photos.share', 'Share')} className="text-ios-blue">
                     <IosShareIcon className="h-[32px] w-[32px]" />
                 </button>
                 <button type="button" onClick={() => onToggleFavorite(current)} aria-label={t('photos.favourite', 'Favourite')} className="text-ios-blue">
@@ -172,45 +177,33 @@ export function PhotoViewer({
             </div>
 
             {menuOpen && (
-                <>
-                    <div className="absolute inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-3 top-[108px] z-20 w-56 overflow-hidden rounded-[14px] bg-elevated/95 shadow-xl backdrop-blur-xl dark:bg-elevated/95">
-                        <button
-                            type="button"
-                            onClick={() => { setMenuOpen(false); onAddToAlbum(current); }}
-                            className="flex w-full items-center justify-between px-4 py-3 text-[16px] active:bg-black/5 dark:active:bg-white/10"
-                        >
-                            {t('photos.addToAlbum', 'Add to Album')}
-                            <FolderPlus className="h-5 w-5" strokeWidth={2} />
-                        </button>
-                        {!current.video && (
-                            <>
-                                <div className="h-px bg-black/10 dark:bg-white/10" />
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setMenuOpen(false);
-                                        useThemeStore.getState().setWallpaper(current.url, 'both');
-                                        setWallpaperHud(v => v + 1);
-                                    }}
-                                    className="flex w-full items-center justify-between px-4 py-3 text-[16px] active:bg-black/5 dark:active:bg-white/10"
-                                >
-                                    {t('photos.useAsWallpaper', 'Use as Wallpaper')}
-                                    <Wallpaper className="h-5 w-5" strokeWidth={2} />
-                                </button>
-                            </>
-                        )}
-                        <div className="h-px bg-black/10 dark:bg-white/10" />
-                        <button
-                            type="button"
-                            onClick={() => { setMenuOpen(false); onDelete(current); }}
-                            className="flex w-full items-center justify-between px-4 py-3 text-[16px] text-[#ff3b30] active:bg-black/5 dark:active:bg-white/10"
-                        >
-                            {t('photos.delete', 'Delete')}
-                            <Trash2 className="h-5 w-5" strokeWidth={2} />
-                        </button>
-                    </div>
-                </>
+                <ActionSheet
+                    actions={[
+                        { label: t('photos.addToAlbum', 'Add to Album'), onClick: () => onAddToAlbum(current) },
+                        ...(current.video ? [] : [{
+                            label: t('photos.useAsWallpaper', 'Use as Wallpaper'),
+                            onClick: () => {
+                                useThemeStore.getState().setWallpaper(current.url, 'both');
+                                setWallpaperHud(v => v + 1);
+                            },
+                        }]),
+                        { label: t('photos.delete', 'Delete'), destructive: true, onClick: () => onDelete(current) },
+                    ]}
+                    onClose={() => setMenuOpen(false)}
+                />
+            )}
+
+            {sharing && (
+                <ShareSheet
+                    onClose={() => setSharing(false)}
+                    onShare={target => apiSharePhoto(current.id, target.id)}
+                >
+                    <ShareAction
+                        icon={<Copy className="h-[23px] w-[23px]" strokeWidth={2} />}
+                        label={copied ? t('photos.copied', 'Copied!') : t('photos.copyLink', 'Copy Link')}
+                        onClick={() => copyLink(current.url)}
+                    />
+                </ShareSheet>
             )}
 
             {wallpaperHud > 0 && (

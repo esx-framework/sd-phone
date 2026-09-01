@@ -13,6 +13,7 @@ import {
     type HudSettings,
     type Page,
     type PastRace,
+    type PendingTrackRow,
     type Race,
     type RaceClass,
     type RaceMode,
@@ -203,6 +204,23 @@ let DEV_TRACKS: DevTrack[] = DEV_TRACK_SEEDS.map(seed => {
 function devTrackById(id: number): DevTrack | undefined {
     return DEV_TRACKS.find(track => track.id === id);
 }
+
+interface DevPendingTrack {
+    id:               number;
+    name:             string;
+    author:           string;
+    mode:             RaceMode;
+    gates:            number;
+    citizenid:        string;
+    createdAt:        number;
+    route:            RoutePoint[];
+    rejectionReason?: string | null;
+}
+
+let DEV_PENDING_TRACKS: DevPendingTrack[] = [
+    { id: 9001, name: 'Backstreet Blitz',   author: 'RaceBuilder99', mode: 'sprint',  gates: 7,  citizenid: 'RB1701', createdAt: nowSec - 3600 * 2,  route: devRoute(devRun({ x: 190, y: -960, z: 30 }, 7, 170, 27)) },
+    { id: 9002, name: 'Canal District Loop', author: 'TurboMax',     mode: 'circuit', gates: 9,  citizenid: 'TM4402', createdAt: nowSec - 3600 * 26, route: devRoute(devRun({ x: -320, y: -1420, z: 26 }, 9, 195, 41)) },
+];
 
 function devTrackRow(track: DevTrack): TrackRow {
     return {
@@ -473,6 +491,7 @@ export async function racingBootstrap(): Promise<RacingBootstrap | null> {
             hud: { ...DEV_HUD },
             admin: true,
             creator: true,
+            creatorNeedsApproval: false,
             classes: DEV_CLASSES,
             limits: { ...DEFAULT_LIMITS },
         };
@@ -504,7 +523,11 @@ export async function racingTrack(trackId: number): Promise<TrackDetail | null> 
 }
 
 export async function racingTrackRoute(trackId: number): Promise<RoutePoint[]> {
-    if (!isFiveM) return devTrackById(trackId)?.route.map(point => ({ ...point })) ?? [];
+    if (!isFiveM) {
+        const route = devTrackById(trackId)?.route
+            ?? DEV_PENDING_TRACKS.find(track => track.id === trackId)?.route;
+        return route?.map(point => ({ ...point })) ?? [];
+    }
     return (await apiData<{ points: RoutePoint[] }>('sd-phone:racing:trackRoute', { trackId }))?.points ?? [];
 }
 
@@ -625,6 +648,36 @@ export async function racingVehicle(): Promise<{ model: string; class: RaceClass
     return apiData<{ model: string; class: RaceClass; onFoot: boolean }>('sd-phone:racing:vehicle');
 }
 
+export interface TrackJson {
+    name:  string;
+    mode:  'sprint' | 'circuit';
+    gates: number[][][];
+}
+
+export interface ImportResult {
+    imported: number;
+    failed:   { index: number; name: string; reason: string }[];
+}
+
+export async function racingExportTrack(trackId: number): Promise<TrackJson | null> {
+    if (!isFiveM) {
+        const track = DEV_TRACKS.find(row => row.id === trackId);
+        if (!track) return null;
+        return {
+            name:  track.name,
+            mode:  track.mode === 'sprint' ? 'sprint' : 'circuit',
+            gates: [[[0, 0, 0], [1, 0, 0]], [[10, 10, 0], [11, 10, 0]]],
+        };
+    }
+    const res = await apiData<{ track: TrackJson }>('sd-phone:racing:exportTrack', { trackId });
+    return res?.track ?? null;
+}
+
+export async function racingImportTracks(text: string): Promise<Envelope<ImportResult>> {
+    if (!isFiveM) return { success: true, data: { imported: 1, failed: [] } };
+    return apiCall<ImportResult>('sd-phone:racing:importTracks', { json: text });
+}
+
 export async function racingAdminTracks(params: { query: string; page: number }): Promise<Page<AdminTrackRow>> {
     if (!isFiveM) {
         const hits = DEV_TRACKS.filter(track => devMatches(params.query, track.name, track.author));
@@ -652,4 +705,36 @@ export async function racingAdminDelete(trackId: number): Promise<Envelope<null>
         return { success: true, data: null };
     }
     return apiCall<null>('sd-phone:racing:adminDelete', { trackId });
+}
+
+export async function racingAdminPendingTracks(params: { page: number }): Promise<Page<PendingTrackRow>> {
+    if (!isFiveM) {
+        return devPaginate([...DEV_PENDING_TRACKS], params.page, TRACKS_PER_PAGE);
+    }
+    return (await apiData<Page<PendingTrackRow>>('sd-phone:racing:adminPendingTracks', params)) ?? emptyPage<PendingTrackRow>();
+}
+
+export async function racingAdminApproveTrack(trackId: number): Promise<Envelope<null>> {
+    if (!isFiveM) {
+        const pending = DEV_PENDING_TRACKS.find(track => track.id === trackId);
+        if (!pending) return { success: false, message: 'That track is no longer pending.' };
+        DEV_PENDING_TRACKS = DEV_PENDING_TRACKS.filter(track => track.id !== trackId);
+        return { success: true, data: null };
+    }
+    return apiCall<null>('sd-phone:racing:adminApproveTrack', { trackId });
+}
+
+export async function racingAdminRejectTrack(trackId: number, reason: string): Promise<Envelope<null>> {
+    if (!isFiveM) {
+        const pending = DEV_PENDING_TRACKS.find(track => track.id === trackId);
+        if (!pending) return { success: false, message: 'That track is no longer pending.' };
+        DEV_PENDING_TRACKS = DEV_PENDING_TRACKS.filter(track => track.id !== trackId);
+        return { success: true, data: null };
+    }
+    return apiCall<null>('sd-phone:racing:adminRejectTrack', { trackId, reason });
+}
+
+export async function racingStartCreator(): Promise<Envelope<null>> {
+    if (!isFiveM) return { success: true, data: null };
+    return apiCall<null>('sd-phone:racing:startCreator', {});
 }

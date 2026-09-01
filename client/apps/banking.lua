@@ -4,6 +4,7 @@ local proxy = require 'client.nui'
 -- Thin delegates into server/banking: the account overview and phone transfers.
 proxy('sd-phone:banking:overview', 'sd-phone:server:banking:overview')
 proxy('sd-phone:banking:send',     'sd-phone:server:banking:send')
+proxy('sd-phone:banking:setCardStyle', 'sd-phone:server:banking:setCardStyle')
 
 -- Person-to-person invoicing (server/services/invoices.lua personal handlers).
 proxy('sd-phone:banking:invoices:create', 'sd-phone:server:banking:invoices:create')

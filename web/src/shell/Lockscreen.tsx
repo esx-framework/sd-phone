@@ -497,10 +497,18 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
             onPointerUp={onUp}
             onPointerCancel={onUp}
             style={{ touchAction: 'pan-y', ...dragStyle }}
-            className="flex w-full animate-notif-drop touch-pan-y select-none items-start gap-3 rounded-[27px] bg-white/55 px-[18px] py-4 text-left shadow-[0_6px_24px_rgba(0,0,0,0.16)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150"
+            className={[
+                'flex w-full animate-notif-drop touch-pan-y select-none items-start gap-3 rounded-[27px] bg-white/55 px-[18px] py-4 text-left shadow-[0_6px_24px_rgba(0,0,0,0.16)] backdrop-blur-2xl backdrop-saturate-150',
+                item.emergency ? 'ring-[1.5px] ring-inset ring-[#FF3B30]/75' : 'ring-1 ring-black/[0.04]',
+            ].join(' ')}
         >
             <NotifIcon item={item} size={47} />
             <div className="min-w-0 flex-1 pt-0.5">
+                {item.emergency && (
+                    <span className="mb-[2px] block text-[13.5px] font-bold uppercase leading-[1.15] tracking-[0.09em] text-[#FF3B30]">
+                        {t('shell.emergencyAlert', 'Emergency Alert')}
+                    </span>
+                )}
                 <div className="flex items-baseline justify-between gap-2">
                     <span className="truncate text-[17px] font-semibold text-black/90">{item.title}</span>
                     <span className="shrink-0 text-[13.5px] text-black/45">{item.time ?? t('shell.now','now')}</span>

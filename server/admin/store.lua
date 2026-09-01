@@ -94,6 +94,14 @@ function store.namesFor(cids)
             for _, r in ipairs(rows) do
                 out[r.identifier] = ('%s %s'):format(r.firstname or '', r.lastname or '')
             end
+        elseif framework.name == 'nd' then
+            local ids = {}
+            for i = 1, #list do ids[i] = tonumber(list[i]) end
+            local rows = MySQL.query.await(
+                ('SELECT charid, firstname, lastname FROM nd_characters WHERE charid IN (%s)'):format(placeholders), ids) or {}
+            for _, r in ipairs(rows) do
+                out[tostring(r.charid)] = ('%s %s'):format(r.firstname or '', r.lastname or '')
+            end
         end
     end)
     return out
@@ -123,6 +131,13 @@ function store.searchByName(like, limit)
                 LIMIT ?
             ]], { like, limit }) or {}
             for _, r in ipairs(rows) do out[#out + 1] = r.identifier end
+        elseif framework.name == 'nd' then
+            local rows = MySQL.query.await([[
+                SELECT charid FROM nd_characters
+                WHERE CONCAT(firstname, ' ', lastname) LIKE ?
+                LIMIT ?
+            ]], { like, limit }) or {}
+            for _, r in ipairs(rows) do out[#out + 1] = tostring(r.charid) end
         end
     end)
     return out
@@ -588,15 +603,39 @@ end
 -- newest-first on (ts, id) with an opaque "ts:id" cursor.
 -- ---------------------------------------------------------------------------
 
--- Adapter shape: { deletable: boolean, list: fun(ts, id, like, limit): rows, delete?: fun(id): removed }.
+-- Adapter shape: { deletable: boolean, list: fun(ts, id, like, limit): rows, delete?: fun(id): removed,
+-- thread?: { list: fun(id, limit): rows, delete?: fun(id): removed }, shape?: fun(item, row) }.
+-- `thread` is what one row expands into: the replies under a post, or the surrounding room and
+-- conversation lines around a message, which is the context a single line can never be judged
+-- without. `shape` corrects the normalized row afterwards, for an app whose `url` column holds
+-- audio rather than a picture, or a count only that app knows how to derive.
+--
+-- `source = { table, idColumn?, lost? }` is what makes a delete reversible: the row is copied out
+-- of that table before it goes and written back from the copy on a restore. `lost` names what a
+-- restore cannot bring with it, because a satellite table's rows are gone for good once their
+-- parent row is deleted. An adapter with no `source` deletes with no way back.
 ---@type table<string, table>
 local CONTENT = {}
+
+---@type integer Thread rows returned before the anchor row.
+local THREAD_BEFORE = 40
+---@type integer Thread rows returned after it, so the anchor stays near the end of a long log.
+local THREAD_AFTER = 15
+
+---Deletes one Dark Chat message and its reactions. Shared by the adapter's row delete and its
+---thread delete: both remove a row of the same table, so they stay one implementation.
+---@param id string|number message row id
+---@return integer removed
+local function deleteDarkchatMessage(id)
+    MySQL.update.await('DELETE FROM darkchat_reactions WHERE message_id = ?', { id })
+    return tonumber(MySQL.update.await('DELETE FROM darkchat_messages WHERE id = ?', { id })) or 0
+end
 
 CONTENT.messages = {
     deletable = false,
     list = function(ts, id, like, limit)
         return MySQL.query.await([[
-            SELECT id, created_at AS ts, citizenid AS author_cid, conversation, direction, kind, body
+            SELECT id, created_at AS ts, citizenid AS author_cid, conversation, direction, kind, body, meta
             FROM phone_messages
             WHERE direction = 'outgoing'
               AND (? IS NULL OR body LIKE ? OR conversation LIKE ?)
@@ -605,13 +644,47 @@ CONTENT.messages = {
             LIMIT ?
         ]], { like, like, like, ts, ts, ts, id, limit }) or {}
     end,
+    thread = {
+        -- Both sides of the conversation this text belongs to, incoming included: the list itself
+        -- only ever shows outgoing lines, which read as half a conversation.
+        list = function(id)
+            local anchor = MySQL.single.await(
+                'SELECT citizenid, conversation, created_at FROM phone_messages WHERE id = ?', { id })
+            if not anchor then return {} end
+
+            local before = MySQL.query.await([[
+                SELECT id, created_at AS ts, citizenid AS author_cid, conversation, direction, kind, body, meta
+                FROM phone_messages
+                WHERE citizenid = ? AND conversation = ?
+                  AND (created_at < ? OR (created_at = ? AND id <= ?))
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            ]], { anchor.citizenid, anchor.conversation, anchor.created_at, anchor.created_at, id, THREAD_BEFORE }) or {}
+
+            local after = MySQL.query.await([[
+                SELECT id, created_at AS ts, citizenid AS author_cid, conversation, direction, kind, body, meta
+                FROM phone_messages
+                WHERE citizenid = ? AND conversation = ?
+                  AND (created_at > ? OR (created_at = ? AND id > ?))
+                ORDER BY created_at ASC, id ASC
+                LIMIT ?
+            ]], { anchor.citizenid, anchor.conversation, anchor.created_at, anchor.created_at, id, THREAD_AFTER }) or {}
+
+            local out = {}
+            for i = #before, 1, -1 do out[#out + 1] = before[i] end
+            for _, r in ipairs(after) do out[#out + 1] = r end
+            return out
+        end,
+    },
 }
 
 CONTENT.darkchat = {
     deletable = true,
+    source = { table = 'darkchat_messages', lost = 'its reactions' },
     list = function(ts, id, like, limit)
         return MySQL.query.await([[
-            SELECT id, created_at AS ts, citizenid AS author_cid, room_id, author, kind, body
+            SELECT id, created_at AS ts, citizenid AS author_cid, room_id, author, kind, body, meta,
+                   (SELECT COUNT(*) FROM darkchat_reactions r WHERE r.message_id = darkchat_messages.id) AS likes
             FROM darkchat_messages
             WHERE (? IS NULL OR body LIKE ? OR author LIKE ? OR room_id LIKE ?)
               AND (? IS NULL OR created_at < ? OR (created_at = ? AND id < ?))
@@ -619,17 +692,46 @@ CONTENT.darkchat = {
             LIMIT ?
         ]], { like, like, like, like, ts, ts, ts, id, limit }) or {}
     end,
-    delete = function(id)
-        MySQL.update.await('DELETE FROM darkchat_reactions WHERE message_id = ?', { id })
-        return tonumber(MySQL.update.await('DELETE FROM darkchat_messages WHERE id = ?', { id })) or 0
-    end,
+    delete = deleteDarkchatMessage,
+    thread = {
+        list = function(id)
+            local anchor = MySQL.single.await(
+                'SELECT room_id, created_at FROM darkchat_messages WHERE id = ?', { id })
+            if not anchor then return {} end
+
+            local before = MySQL.query.await([[
+                SELECT id, created_at AS ts, citizenid AS author_cid, room_id, author, kind, body, meta
+                FROM darkchat_messages
+                WHERE room_id = ? AND (created_at < ? OR (created_at = ? AND id <= ?))
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            ]], { anchor.room_id, anchor.created_at, anchor.created_at, id, THREAD_BEFORE }) or {}
+
+            local after = MySQL.query.await([[
+                SELECT id, created_at AS ts, citizenid AS author_cid, room_id, author, kind, body, meta
+                FROM darkchat_messages
+                WHERE room_id = ? AND (created_at > ? OR (created_at = ? AND id > ?))
+                ORDER BY created_at ASC, id ASC
+                LIMIT ?
+            ]], { anchor.room_id, anchor.created_at, anchor.created_at, id, THREAD_AFTER }) or {}
+
+            local out = {}
+            for i = #before, 1, -1 do out[#out + 1] = before[i] end
+            for _, r in ipairs(after) do out[#out + 1] = r end
+            return out
+        end,
+        delete = deleteDarkchatMessage,
+    },
 }
 
 CONTENT.photogram = {
     deletable = true,
+    source = { table = 'phone_photogram_posts', lost = 'its comments, likes and saves' },
     list = function(ts, id, like, limit)
         return MySQL.query.await(([[
-            SELECT p.id, p.created_at AS ts, %s AS author_cid, p.author, p.caption AS body, p.images
+            SELECT p.id, p.created_at AS ts, %s AS author_cid, p.author, p.caption AS body, p.images,
+                   (SELECT COUNT(*) FROM phone_photogram_likes l WHERE l.post_id = p.id) AS likes,
+                   (SELECT COUNT(*) FROM phone_photogram_comments c WHERE c.post_id = p.id) AS comments
             FROM phone_photogram_posts p
             WHERE (? IS NULL OR p.caption LIKE ? OR p.author LIKE ?)
               AND (? IS NULL OR p.created_at < ? OR (p.created_at = ? AND p.id < ?))
@@ -638,6 +740,22 @@ CONTENT.photogram = {
         ]]):format(SESSION_CID:format('photogram', 'p.author')),
             { like, like, like, ts, ts, ts, id, limit }) or {}
     end,
+    thread = {
+        list = function(id, limit)
+            return MySQL.query.await(([[
+                SELECT c.id, c.created_at AS ts, %s AS author_cid, c.author, c.body, c.gif_url,
+                       (SELECT COUNT(*) FROM phone_photogram_comment_likes l WHERE l.comment_id = c.id) AS likes
+                FROM phone_photogram_comments c
+                WHERE c.post_id = ?
+                ORDER BY c.created_at ASC, c.id ASC
+                LIMIT ?
+            ]]):format(SESSION_CID:format('photogram', 'c.author')), { id, limit }) or {}
+        end,
+        delete = function(id)
+            MySQL.update.await('DELETE FROM phone_photogram_comment_likes WHERE comment_id = ?', { id })
+            return tonumber(MySQL.update.await('DELETE FROM phone_photogram_comments WHERE id = ?', { id })) or 0
+        end,
+    },
     delete = function(id)
         MySQL.update.await('DELETE FROM phone_photogram_comment_likes WHERE comment_id IN (SELECT id FROM phone_photogram_comments WHERE post_id = ?)', { id })
         MySQL.update.await('DELETE FROM phone_photogram_comments WHERE post_id = ?', { id })
@@ -649,10 +767,13 @@ CONTENT.photogram = {
 
 CONTENT.vibez = {
     deletable = true,
+    source = { table = 'phone_vibez_posts', lost = 'its comments, likes and saves' },
     list = function(ts, id, like, limit)
         return MySQL.query.await(([[
             SELECT p.id, p.created_at AS ts, %s AS author_cid, p.author, p.caption AS body,
-                   p.sound AS title, 'video' AS kind
+                   p.sound AS title, 'video' AS kind, p.video, p.thumb, p.views,
+                   (SELECT COUNT(*) FROM phone_vibez_likes l WHERE l.post_id = p.id) AS likes,
+                   (SELECT COUNT(*) FROM phone_vibez_comments c WHERE c.post_id = p.id) AS comments
             FROM phone_vibez_posts p
             WHERE (? IS NULL OR p.caption LIKE ? OR p.author LIKE ?)
               AND (? IS NULL OR p.created_at < ? OR (p.created_at = ? AND p.id < ?))
@@ -661,6 +782,22 @@ CONTENT.vibez = {
         ]]):format(SESSION_CID:format('vibez', 'p.author')),
             { like, like, like, ts, ts, ts, id, limit }) or {}
     end,
+    thread = {
+        list = function(id, limit)
+            return MySQL.query.await(([[
+                SELECT c.id, c.created_at AS ts, %s AS author_cid, c.author, c.body, c.gif_url,
+                       (SELECT COUNT(*) FROM phone_vibez_comment_likes l WHERE l.comment_id = c.id) AS likes
+                FROM phone_vibez_comments c
+                WHERE c.post_id = ?
+                ORDER BY c.created_at ASC, c.id ASC
+                LIMIT ?
+            ]]):format(SESSION_CID:format('vibez', 'c.author')), { id, limit }) or {}
+        end,
+        delete = function(id)
+            MySQL.update.await('DELETE FROM phone_vibez_comment_likes WHERE comment_id = ?', { id })
+            return tonumber(MySQL.update.await('DELETE FROM phone_vibez_comments WHERE id = ?', { id })) or 0
+        end,
+    },
     delete = function(id)
         MySQL.update.await('DELETE FROM phone_vibez_comment_likes WHERE comment_id IN (SELECT id FROM phone_vibez_comments WHERE post_id = ?)', { id })
         MySQL.update.await('DELETE FROM phone_vibez_comments WHERE post_id = ?', { id })
@@ -675,7 +812,7 @@ CONTENT.cherry = {
     list = function(ts, id, like, limit)
         return MySQL.query.await(([[
             SELECT p.username AS id, p.updated_at AS ts, %s AS author_cid, p.username,
-                   p.name, p.age, p.gender, p.about AS body
+                   p.name, p.age, p.gender, p.about AS body, p.photos
             FROM phone_cherry_profiles p
             WHERE (? IS NULL OR p.username LIKE ? OR p.name LIKE ? OR p.about LIKE ?)
               AND (? IS NULL OR p.updated_at < ? OR (p.updated_at = ? AND p.username < ?))
@@ -688,6 +825,7 @@ CONTENT.cherry = {
 
 CONTENT.gallery = {
     deletable = true,
+    source = { table = 'phone_photos', lost = 'the albums it was in' },
     list = function(ts, id, like, limit)
         -- Under unique phones, also match photos taken on SIM profiles the searched character activated.
         local simActive = require('server.sim.state').active
@@ -718,6 +856,7 @@ CONTENT.gallery = {
 local function classifieds(tbl)
     return {
         deletable = true,
+        source = { table = tbl },
         list = function(ts, id, like, limit)
             return MySQL.query.await(([[
                 SELECT id, created_at AS ts, citizenid AS author_cid, title, body, price, images, image
@@ -736,13 +875,319 @@ end
 CONTENT.marketplace = classifieds('marketplace_listings')
 CONTENT.pages       = classifieds('pages_posts')
 
----Whether an app id has a content adapter, and whether its rows can be deleted.
+---@type integer Seconds this server's local time runs ahead of UTC, measured once at load.
+local UTC_DRIFT = (function()
+    local now = os.time()
+    local utc = os.date('!*t', now)
+    return type(utc) == 'table' and (now - os.time(utc)) or 0
+end)()
+
+---Parses the ISO-8601 UTC stamp that Mail and Notes store (`2026-08-24T12:00:00`, optionally with
+---a fractional part) into epoch seconds. They are the only apps keeping a string timestamp, and
+---every other reader here works in epochs.
+---@param iso any raw column or JSON value
+---@return integer|nil epoch seconds, nil when the value is not a stamp
+local function isoToEpoch(iso)
+    if type(iso) ~= 'string' then return nil end
+    local y, mo, d, h, mi, s = iso:match('^(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
+    if not y then return nil end
+    return os.time({
+        year = tonumber(y) or 0, month = tonumber(mo) or 0, day = tonumber(d) or 0,
+        hour = tonumber(h) or 0, min  = tonumber(mi) or 0, sec = tonumber(s) or 0, isdst = false,
+    }) + UTC_DRIFT
+end
+
+---The inverse, to the second: turns a cursor's epoch back into the stamp shape the column holds,
+---so a keyset cursor can be compared against the raw string instead of against SQL arithmetic.
+---Seconds precision only, which is why callers compare the first 19 characters rather than the
+---whole column: the stored value may carry a fractional part this cannot reproduce.
+---@param ts integer epoch seconds
+---@return string iso `YYYY-MM-DDTHH:MM:SS`
+local function epochToIso(ts)
+    return os.date('!%Y-%m-%dT%H:%M:%S', ts - UTC_DRIFT) --[[@as string]]
+end
+
+CONTENT.mail = {
+    deletable = false,
+    -- One row per mailbox, not per email: Mail keeps every message in a JSON column on the
+    -- account, so the messages are what the row expands into. The search still reaches them,
+    -- because LIKE over that column matches the JSON text a body sits in.
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT email AS id, UNIX_TIMESTAMP(created_at) AS ts, created_by_cid AS author_cid,
+                   email AS title, display_name AS body
+            FROM phone_mail_accounts
+            WHERE (? IS NULL OR email LIKE ? OR display_name LIKE ? OR messages LIKE ?)
+              AND (? IS NULL OR created_at < FROM_UNIXTIME(?)
+                   OR (created_at = FROM_UNIXTIME(?) AND email < ?))
+            ORDER BY created_at DESC, email DESC
+            LIMIT ?
+        ]], { like, like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    thread = {
+        list = function(id, limit)
+            local row = MySQL.single.await('SELECT messages FROM phone_mail_accounts WHERE email = ?', { id })
+            if not row then return {} end
+
+            local messages = row.messages
+            if type(messages) == 'string' then
+                local okJson, decoded = pcall(json.decode, messages)
+                messages = okJson and decoded or nil
+            end
+            if type(messages) ~= 'table' then return {} end
+
+            local out = {}
+            for i = #messages, 1, -1 do
+                if #out >= limit then break end
+                local m = messages[i]
+                if type(m) == 'table' then
+                    local from    = type(m.from) == 'table' and m.from or {}
+                    local subject = type(m.subject) == 'string' and m.subject or ''
+                    out[#out + 1] = {
+                        id     = tostring(m.id or i),
+                        ts     = isoToEpoch(m.sentAt),
+                        author = from.email or from.name,
+                        kind   = m.folder,
+                        body   = subject ~= '' and (subject .. '\n' .. (m.body or '')) or (m.body or ''),
+                    }
+                end
+            end
+            return out
+        end,
+    },
+}
+
+CONTENT.documents = {
+    deletable = true,
+    source = { table = 'phone_documents', lost = 'the signatures on it' },
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT id, updated_at AS ts, citizenid AS author_cid, name AS title, content AS body,
+                   kind, url, locked, source,
+                   (SELECT COUNT(*) FROM phone_document_signatures s WHERE s.doc_id = phone_documents.id) AS comments
+            FROM phone_documents
+            WHERE (? IS NULL OR name LIKE ? OR content LIKE ? OR citizenid LIKE ?)
+              AND (? IS NULL OR updated_at < ? OR (updated_at = ? AND id < ?))
+            ORDER BY updated_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    thread = {
+        -- Who signed it. A forged document is only ever an argument about its signatures.
+        list = function(id, limit)
+            return MySQL.query.await([[
+                SELECT id, created_at AS ts, citizenid AS author_cid, signer AS author, image
+                FROM phone_document_signatures
+                WHERE doc_id = ?
+                ORDER BY created_at ASC, id ASC
+                LIMIT ?
+            ]], { id, limit }) or {}
+        end,
+        delete = function(id)
+            return tonumber(MySQL.update.await('DELETE FROM phone_document_signatures WHERE id = ?', { id })) or 0
+        end,
+    },
+    delete = function(id)
+        MySQL.update.await('DELETE FROM phone_document_signatures WHERE doc_id = ?', { id })
+        return tonumber(MySQL.update.await('DELETE FROM phone_documents WHERE id = ?', { id })) or 0
+    end,
+    -- Only an image document has a picture behind `url`; a PDF or a text file would render as a
+    -- broken thumbnail. The lock is worth surfacing because a locked document cannot be edited
+    -- by its owner, which is what makes a forged one worth arguing about.
+    shape = function(item, row)
+        if row.kind ~= 'image' then item.media = {} end
+        item.label = util.truthy(row.locked) and 'locked' or row.source or nil
+    end,
+}
+
+CONTENT.weazelnews = {
+    deletable = true,
+    source = { table = 'phone_weazel_articles' },
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT id, created_at AS ts, author_cid, author, headline AS title, category,
+                   CONCAT_WS('\n\n', NULLIF(dek, ''), body) AS body, image, views, featured
+            FROM phone_weazel_articles
+            WHERE (? IS NULL OR headline LIKE ? OR dek LIKE ? OR body LIKE ? OR author LIKE ?)
+              AND (? IS NULL OR created_at < ? OR (created_at = ? AND id < ?))
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    delete = function(id)
+        return tonumber(MySQL.update.await('DELETE FROM phone_weazel_articles WHERE id = ?', { id })) or 0
+    end,
+    shape = function(item, row)
+        item.label = util.truthy(row.featured) and 'featured' or row.category or nil
+    end,
+}
+
+CONTENT.notes = {
+    deletable = false,
+    -- Notes stamp themselves with an ISO string, so the epoch every other reader here works in has
+    -- to come from somewhere. It is derived in Lua rather than in SQL, because STR_TO_DATE would
+    -- need a time format, a time format contains colons, and the driver reads `:x` as a named
+    -- placeholder even inside a quoted literal - so a query carrying one and positional params
+    -- together fails outright. This tab came back empty for exactly that reason. Mail already
+    -- converts the same stamps in Lua. The cursor compares against the first 19 characters of the
+    -- raw column, which orders identically (ISO stamps sort lexicographically) and tolerates the
+    -- fractional part the stored values carry but a second-precision cursor cannot reproduce.
+    list = function(ts, id, like, limit)
+        local cursor = ts and epochToIso(ts) or nil
+        local rows = MySQL.query.await([[
+            SELECT id, updated_at, citizenid AS author_cid, body, images
+            FROM phone_notes
+            WHERE (? IS NULL OR body LIKE ? OR citizenid LIKE ?)
+              AND (? IS NULL OR LEFT(updated_at, 19) < ?
+                   OR (LEFT(updated_at, 19) = ? AND id < ?))
+            ORDER BY updated_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, cursor, cursor, cursor, id, limit }) or {}
+        for i = 1, #rows do rows[i].ts = isoToEpoch(rows[i].updated_at) end
+        return rows
+    end,
+}
+
+CONTENT.voicememos = {
+    deletable = true,
+    source = { table = 'phone_voice_memos' },
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT id, created_at AS ts, citizenid AS author_cid, name AS title, url, duration,
+                   'audio' AS kind
+            FROM phone_voice_memos
+            WHERE (? IS NULL OR name LIKE ? OR citizenid LIKE ?)
+              AND (? IS NULL OR created_at < ? OR (created_at = ? AND id < ?))
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    delete = function(id)
+        return tonumber(MySQL.update.await('DELETE FROM phone_voice_memos WHERE id = ?', { id })) or 0
+    end,
+    -- A memo's `url` is a recording, so it is handed over as audio rather than left to render as
+    -- a picture that will never load.
+    shape = function(item, row)
+        item.media = type(row.url) == 'string' and row.url ~= '' and { { url = row.url, audio = row.url } } or {}
+        item.imageUrl = nil
+        local seconds = tonumber(row.duration) or 0
+        item.label = seconds > 0 and ('%d:%02d'):format(seconds // 60, seconds % 60) or nil
+    end,
+}
+
+CONTENT.callrecordings = {
+    deletable = true,
+    source = { table = 'phone_call_recordings' },
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT id, created_at AS ts, citizenid AS author_cid, peer_name, peer_number,
+                   direction, one_sided, url, duration, 'audio' AS kind
+            FROM phone_call_recordings
+            WHERE (? IS NULL OR peer_number LIKE ? OR peer_name LIKE ? OR citizenid LIKE ?)
+              AND (? IS NULL OR created_at < ? OR (created_at = ? AND id < ?))
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    delete = function(id)
+        return tonumber(MySQL.update.await('DELETE FROM phone_call_recordings WHERE id = ?', { id })) or 0
+    end,
+    -- The `url` is a recording, so it is handed over as audio rather than left to render as a
+    -- picture that will never load, the same way voice memos are.
+    shape = function(item, row)
+        item.media = type(row.url) == 'string' and row.url ~= '' and { { url = row.url, audio = row.url } } or {}
+        item.imageUrl = nil
+        item.title = (row.peer_name and row.peer_name ~= '' and row.peer_name)
+            or util.formatNumber(row.peer_number or '')
+        local seconds = tonumber(row.duration) or 0
+        item.label = ('%s · %d:%02d%s'):format(
+            row.direction == 'incoming' and 'incoming' or 'outgoing',
+            seconds // 60, seconds % 60,
+            util.truthy(row.one_sided) and ' · one-sided' or '')
+    end,
+}
+
+CONTENT.groups = {
+    deletable = false,
+    list = function(ts, id, like, limit)
+        return MySQL.query.await([[
+            SELECT id, UNIX_TIMESTAMP(created_at) AS ts, leader_cid AS author_cid, name AS title,
+                   avatar AS image, members
+            FROM phone_groups
+            WHERE (? IS NULL OR name LIKE ? OR leader_cid LIKE ?)
+              AND (? IS NULL OR created_at < FROM_UNIXTIME(?)
+                   OR (created_at = FROM_UNIXTIME(?) AND id < ?))
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+        ]], { like, like, like, ts, ts, ts, id, limit }) or {}
+    end,
+    shape = function(item, row)
+        local members = row.members
+        if type(members) == 'string' then
+            local okJson, decoded = pcall(json.decode, members)
+            members = okJson and decoded or nil
+        end
+        local n = type(members) == 'table' and #members or 0
+        item.label = n > 0 and (n .. (n == 1 and ' member' or ' members')) or nil
+    end,
+}
+
+---Whether an app id has a content adapter, whether its rows can be deleted, and whether a row
+---expands into a thread the panel can open.
 ---@param app string
----@return boolean known, boolean deletable
+---@return boolean known, boolean deletable, boolean threaded
 function store.contentInfo(app)
     local adapter = CONTENT[app]
-    if not adapter then return false, false end
-    return true, adapter.deletable
+    if not adapter then return false, false, false end
+    return true, adapter.deletable, adapter.thread ~= nil
+end
+
+---@type integer Hardest cap on media carried per row, so one absurd post cannot bloat a page.
+local MAX_MEDIA = 12
+
+---Every media reference on one adapter row: a JSON `images`/`photos` array, a single `image`,
+---`url` or `gif_url` column, or a `video` with its poster frame. Returns an empty table when the
+---row carries none, so the panel never has to null-check. `images` arrives as a JSON string from
+---TEXT columns and can arrive pre-decoded from a real JSON column, so both are accepted.
+---@param r table raw adapter row
+---@return table[] media { url = string, video = string|nil }
+local function mediaOf(r)
+    local out = {}
+
+    local function push(url, video)
+        if type(url) ~= 'string' or url == '' or #out >= MAX_MEDIA then return end
+        out[#out + 1] = { url = url, video = video }
+    end
+
+    for _, column in ipairs({ r.images or false, r.photos or false }) do
+        local list = column
+        if type(list) == 'string' and list ~= '' then
+            local okJson, decoded = pcall(json.decode, list)
+            list = okJson and decoded or nil
+        end
+        if type(list) == 'table' then
+            for _, url in ipairs(list) do push(url) end
+        end
+    end
+
+    -- Only when the JSON array held nothing: classifieds write the same picture to both columns.
+    if #out == 0 then push(r.image) end
+    push(r.url)
+    push(r.gif_url)
+
+    -- Texts and Dark Chat lines keep an attached picture in meta.gifUrl rather than a column of
+    -- its own, so an image message reads as "(no text)" without this.
+    local meta = r.meta
+    if type(meta) == 'string' and meta ~= '' then
+        local okMeta, decoded = pcall(json.decode, meta)
+        meta = okMeta and decoded or nil
+    end
+    if type(meta) == 'table' then push(meta.gifUrl) end
+
+    if type(r.video) == 'string' and r.video ~= '' then
+        push((type(r.thumb) == 'string' and r.thumb ~= '') and r.thumb or r.video, r.video)
+    end
+    return out
 end
 
 ---One page of an app's content, normalized. Read-only.
@@ -756,7 +1201,11 @@ function store.listContent(app, cursor, limit, query)
     local ts, id = splitCursor(cursor)
     local like = (type(query) == 'string' and query ~= '') and ('%' .. escapeLike(query) .. '%') or nil
 
-    local rows = adapter.list(ts, id, like, limit + 1)
+    -- Guarded per app, like the media wall: a table this server never created empties one tab
+    -- rather than failing the callback that draws it.
+    local okQuery, rows = pcall(adapter.list, ts, id, like, limit + 1)
+    if not okQuery or type(rows) ~= 'table' then return {}, nil end
+
     local nextCursor = nil
     if #rows > limit then
         rows[limit + 1] = nil
@@ -766,12 +1215,7 @@ function store.listContent(app, cursor, limit, query)
 
     local items = {}
     for i, r in ipairs(rows) do
-        local images = nil
-        if r.images then
-            local decoded = json.decode(r.images)
-            if type(decoded) == 'table' then images = #decoded end
-        end
-        if (not images or images == 0) and r.image then images = 1 end
+        local media = mediaOf(r)
         items[i] = {
             id        = tostring(r.id),
             createdAt = tonumber(r.ts),
@@ -779,8 +1223,12 @@ function store.listContent(app, cursor, limit, query)
             kind      = r.kind,
             title     = r.title,
             body      = r.body,
-            images    = images,
-            imageUrl  = r.url,
+            media     = media,
+            images    = #media > 0 and #media or nil,
+            imageUrl  = media[1] and media[1].url or nil,
+            likes     = tonumber(r.likes),
+            comments  = tonumber(r.comments),
+            views     = tonumber(r.views),
             price     = r.price and tonumber(r.price) or nil,
             label     = r.room_id and ('#' .. r.room_id .. ' as ' .. tostring(r.author))
                 or (r.author and ('@' .. r.author))
@@ -788,6 +1236,7 @@ function store.listContent(app, cursor, limit, query)
                 or (r.conversation and ((lib.string.startsWith(r.conversation, 'g-')) and ('group ' .. r.conversation) or ('to ' .. util.formatNumber(r.conversation))))
                 or nil,
         }
+        if adapter.shape then adapter.shape(items[i], r) end
     end
     return items, nextCursor
 end
@@ -800,6 +1249,159 @@ function store.deleteContent(app, id)
     return CONTENT[app].delete(id)
 end
 
+---@type integer Most thread rows one expansion returns, before plus after the anchor.
+local THREAD_LIMIT = THREAD_BEFORE + THREAD_AFTER
+
+---What one content row expands into, oldest first: the replies under a post, or the room and
+---conversation lines around a message. The row the thread was opened from is flagged `anchor`
+---so the panel can mark it in a wall of surrounding context.
+---@param app string adapter key (validated + threaded-checked by the caller)
+---@param id string anchor row id
+---@return table[] items
+function store.contentThread(app, id)
+    local rows = CONTENT[app].thread.list(id, THREAD_LIMIT) or {}
+    local items = {}
+    for i, r in ipairs(rows) do
+        items[i] = {
+            id        = tostring(r.id),
+            createdAt = tonumber(r.ts),
+            authorCid = r.author_cid,
+            handle    = r.author,
+            body      = r.body,
+            kind      = r.kind,
+            direction = r.direction,
+            media     = mediaOf(r),
+            likes     = tonumber(r.likes),
+            anchor    = tostring(r.id) == tostring(id) or nil,
+        }
+    end
+    return items
+end
+
+---@type table<string, table> Bin sources for apps that have no content adapter to carry one.
+---Squawk is read by a bespoke query rather than an adapter, because its posts resolve handles the
+---generic readers know nothing about, so without this its deletes could never reach the bin.
+local EXTRA_SOURCE = {
+    birdy = { table = 'phone_birdy_posts', lost = 'its replies, likes and reposts' },
+}
+
+---Where one app's rows are copied out of, and written back to, for the Recycle bin.
+---@param app string adapter key
+---@return table|nil source
+local function binSource(app)
+    return EXTRA_SOURCE[app] or (CONTENT[app] or {}).source
+end
+
+---@type table<string, table<string, string>> Date/time columns per source table, resolved once each.
+local DATE_COLUMNS = {}
+
+---Which of a table's columns hold a date or time, keyed to their type. Looked up rather than
+---hard-coded, so a source table that gains a timestamp column later restores without anyone
+---remembering this exists.
+---@param tbl string table name
+---@return table<string, string> columns column name to data type
+local function datetimeColumns(tbl)
+    local cached = DATE_COLUMNS[tbl]
+    if cached then return cached end
+
+    local out = {}
+    local rows = MySQL.query.await([[
+        SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+    ]], { tbl }) or {}
+    for i = 1, #rows do
+        local kind = tostring(rows[i].DATA_TYPE or ''):lower()
+        if kind == 'datetime' or kind == 'timestamp' or kind == 'date' then
+            out[rows[i].COLUMN_NAME] = kind
+        end
+    end
+
+    DATE_COLUMNS[tbl] = out
+    return out
+end
+
+---What a delete would take with it that a restore cannot bring back, and whether the row can be
+---copied out at all.
+---@param app string adapter key
+---@return boolean recoverable, string|nil lost what a restore leaves behind
+function store.contentSource(app)
+    local source = binSource(app)
+    if not source then return false, nil end
+    return true, source.lost
+end
+
+---Copies one content row out of its own table, verbatim, before it is deleted. The copy is what a
+---restore writes back, so it is taken as the table stores it rather than as the panel shows it.
+---@param app string adapter key
+---@param id string row id
+---@return table|nil row, string excerpt a short readable summary for the bin listing
+function store.snapshotRow(app, id)
+    local source = binSource(app)
+    if not source then return nil, '' end
+
+    local column = source.idColumn or 'id'
+    local okRow, row = pcall(MySQL.single.await,
+        ('SELECT * FROM %s WHERE %s = ?'):format(source.table, column), { id })
+    if not okRow or type(row) ~= 'table' then return nil, '' end
+
+    local excerpt = row.body or row.caption or row.about or row.title or row.name
+        or row.headline or row.url or ''
+    return row, tostring(excerpt):sub(1, 300)
+end
+
+---Writes a snapshot back into its own table. Column names come from the snapshot rather than from
+---anything the caller passed, so a restore can only ever rebuild the row it copied.
+---@param app string adapter key
+---@param row table the snapshot taken by store.snapshotRow
+---@return boolean ok
+---@return table? refusal keyed refusal envelope when ok is false
+function store.restoreRow(app, row)
+    local source = binSource(app)
+    if not source then return false, util.fail('admin.appCannotRestoredInto', 'That app cannot be restored into') end
+
+    local stamps = datetimeColumns(source.table)
+    local columns, marks, values = {}, {}, {}
+    for column, value in pairs(row) do
+        -- Column names come from a snapshot this server wrote, never from a payload, but they are
+        -- concatenated into SQL rather than bound, so anything unexpected is refused outright.
+        if type(column) ~= 'string' or not column:match('^[%w_]+$') then
+            return false, util.fail('admin.unreadableSnapshot', 'Unreadable snapshot')
+        end
+        -- A DATETIME or TIMESTAMP column is read back as epoch milliseconds, and MariaDB refuses
+        -- to take that number as a datetime. Without turning it back into a stamp, a restore into
+        -- any table carrying one fails outright: Squawk and the gallery are the two here.
+        if stamps[column] and type(value) == 'number' then
+            value = os.date(stamps[column] == 'date' and '%Y-%m-%d' or '%Y-%m-%d %H:%M:%S',
+                math.floor(value / 1000))
+        end
+        columns[#columns + 1] = column
+        marks[#marks + 1]     = '?'
+        values[#values + 1]   = value
+    end
+    if #columns == 0 then return false, util.fail('admin.emptySnapshot', 'Empty snapshot') end
+
+    local okInsert, err = pcall(MySQL.insert.await, ('INSERT INTO %s (%s) VALUES (%s)')
+        :format(source.table, table.concat(columns, ', '), table.concat(marks, ', ')), values)
+    if not okInsert then return false, util.fail(tostring(err)) end
+    return true, nil
+end
+
+---Whether an app's thread rows can be deleted one at a time.
+---@param app string adapter key
+---@return boolean
+function store.threadDeletable(app)
+    local adapter = CONTENT[app]
+    return adapter ~= nil and adapter.thread ~= nil and adapter.thread.delete ~= nil
+end
+
+---Deletes one row inside a thread: a comment, or a single line of a room log.
+---@param app string adapter key (validated + threadDeletable-checked by the caller)
+---@param id string thread row id
+---@return integer removed
+function store.deleteThreadItem(app, id)
+    return CONTENT[app].thread.delete(id)
+end
+
 -- ---------------------------------------------------------------------------
 -- Audit + dashboard reads
 -- ---------------------------------------------------------------------------
@@ -807,15 +1409,22 @@ end
 ---Audit log, newest first, keyset-paginated by row id. Read-only.
 ---@param cursor integer|nil last row id of the previous page
 ---@param limit integer page size (already clamped)
+---@param query string|nil free text over admin, target and detail
+---@param action string|nil exact action name
 ---@return table[] rows, integer|nil nextCursor
-function store.listAudit(cursor, limit)
+function store.listAudit(cursor, limit, query, action)
+    local like = (type(query) == 'string' and query ~= '') and ('%' .. escapeLike(query) .. '%') or nil
+    if type(action) ~= 'string' or action == '' then action = nil end
+
     local rows = MySQL.query.await([[
         SELECT id, admin_cid, admin_name, action, target_cid, detail, created_at
         FROM phone_admin_audit
         WHERE (? IS NULL OR id < ?)
+          AND (? IS NULL OR action = ?)
+          AND (? IS NULL OR admin_name LIKE ? OR admin_cid LIKE ? OR target_cid LIKE ? OR detail LIKE ?)
         ORDER BY id DESC
         LIMIT ?
-    ]], { cursor, cursor, limit + 1 }) or {}
+    ]], { cursor, cursor, action, action, like, like, like, like, like, limit + 1 }) or {}
 
     local nextCursor = nil
     if #rows > limit then
@@ -850,6 +1459,116 @@ function store.stats()
         messages    = count('SELECT COUNT(*) FROM phone_messages'),
         activeMutes = count(('SELECT COUNT(*) FROM phone_admin_mutes WHERE expires_at IS NULL OR expires_at > %d'):format(os.time())),
     }
+end
+
+---Every image and clip posted anywhere on the phone, newest first, as one merged wall.
+---
+---Each app is queried on its own and the results are merged in Lua rather than UNIONed in SQL:
+---the tables disagree on column names, on how they store a timestamp, and Squawk keeps a JSON
+---array where the others keep a single URL. A per-app pcall means an app whose table this server
+---never created drops out of the wall instead of emptying it.
+---@param limit? integer rows per app before merging (default 40)
+---@return table[] rows { app, url, author, createdAt, id }
+function store.mediaWall(limit)
+    local n = math.floor(tonumber(limit) or 40)
+    local out = {}
+
+    local function pull(app, sql, shape)
+        local okQuery, rows = pcall(MySQL.query.await, (sql):format(n))
+        if not okQuery or not rows then return end
+        for _, r in ipairs(rows) do shape(r) end
+    end
+
+    pull('photos', [[
+        SELECT id, url, citizenid, UNIX_TIMESTAMP(created_at) AS ts
+        FROM phone_photos ORDER BY created_at DESC LIMIT %d
+    ]], function(r)
+        out[#out + 1] = { app = 'photos', id = r.id, url = r.url, author = r.citizenid, createdAt = tonumber(r.ts) or 0 }
+    end)
+
+    pull('clout', [[
+        SELECT id, video, thumb, author, created_at AS ts
+        FROM phone_vibez_posts ORDER BY created_at DESC LIMIT %d
+    ]], function(r)
+        out[#out + 1] = { app = 'clout', id = r.id, url = r.thumb ~= '' and r.thumb or r.video,
+                          video = r.video, author = r.author, createdAt = tonumber(r.ts) or 0 }
+    end)
+
+    pull('photogram', [[
+        SELECT id, media, username, UNIX_TIMESTAMP(timestamp) AS ts
+        FROM phone_instagram_posts ORDER BY timestamp DESC LIMIT %d
+    ]], function(r)
+        out[#out + 1] = { app = 'photogram', id = tostring(r.id), url = r.media, author = r.username, createdAt = tonumber(r.ts) or 0 }
+    end)
+
+    pull('squawk', [[
+        SELECT id, images, author, UNIX_TIMESTAMP(created_at) AS ts
+        FROM phone_birdy_posts WHERE images IS NOT NULL AND images <> '' ORDER BY created_at DESC LIMIT %d
+    ]], function(r)
+        local okJson, list = pcall(json.decode, r.images)
+        if not okJson or type(list) ~= 'table' then return end
+        for _, url in ipairs(list) do
+            out[#out + 1] = { app = 'squawk', id = r.id, url = url, author = r.author, createdAt = tonumber(r.ts) or 0 }
+        end
+    end)
+
+    table.sort(out, function(a, b) return a.createdAt > b.createdAt end)
+    return out
+end
+
+---@type integer How many days of history the dashboard charts cover.
+local TREND_DAYS = 14
+
+---@type { key: string, tbl: string, col: string, unix: boolean }[] One entry per charted series.
+---`unix` marks a column stored as epoch seconds rather than a TIMESTAMP, which the two tables
+---below disagree on - phone_messages counts seconds, phone_birdy_posts holds a real timestamp.
+local TREND_SERIES = {
+    { key = 'messages',   tbl = 'phone_messages',      col = 'created_at', unix = true  },
+    { key = 'calls',      tbl = 'phone_calls',         col = 'called_at',  unix = true  },
+    { key = 'birdyPosts', tbl = 'phone_birdy_posts',   col = 'created_at', unix = false },
+    { key = 'cloutPosts', tbl = 'phone_vibez_posts',   col = 'created_at', unix = true  },
+    { key = 'photos',     tbl = 'phone_photos',        col = 'created_at', unix = false },
+    { key = 'accounts',   tbl = 'phone_app_accounts',  col = 'created_at', unix = false },
+}
+
+---Daily counts per series for the last TREND_DAYS days, oldest first and zero-filled, so the
+---panel can draw a line without knowing which days had no rows.
+---
+---Each series is pcall-guarded on its own: an app whose table this server has never created
+---returns an empty line instead of taking the whole dashboard down with it.
+---@return table<string, integer[]> series key -> one count per day
+---@return string[] days ISO dates matching the arrays, oldest first
+function store.trends()
+    local days = {}
+    local now  = os.time()
+    for i = TREND_DAYS - 1, 0, -1 do
+        days[#days + 1] = os.date('%Y-%m-%d', now - i * 86400)
+    end
+
+    local out = {}
+    for _, s in ipairs(TREND_SERIES) do
+        local line = {}
+        for i = 1, TREND_DAYS do line[i] = 0 end
+
+        local okQuery, rows = pcall(function()
+            local where = s.unix
+                and ('%s >= UNIX_TIMESTAMP(CURDATE() - INTERVAL %d DAY)'):format(s.col, TREND_DAYS - 1)
+                or  ('%s >= CURDATE() - INTERVAL %d DAY'):format(s.col, TREND_DAYS - 1)
+            local bucket = s.unix and ('DATE(FROM_UNIXTIME(%s))'):format(s.col) or ('DATE(%s)'):format(s.col)
+            return MySQL.query.await(('SELECT %s AS d, COUNT(*) AS n FROM %s WHERE %s GROUP BY d')
+                :format(bucket, s.tbl, where))
+        end)
+
+        if okQuery and rows then
+            local byDay = {}
+            for _, r in ipairs(rows) do byDay[tostring(r.d):sub(1, 10)] = tonumber(r.n) or 0 end
+            for i = 1, TREND_DAYS do line[i] = byDay[days[i]] or 0 end
+        end
+
+        out[s.key] = line
+    end
+
+    return out, days
 end
 
 return store

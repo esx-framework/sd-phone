@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { AlarmClock, Music2, Pause, Phone, Play, Radio, SkipBack, SkipForward } from 'lucide-react';
 
 import { device } from '@device';
+import { useViewportScale } from '@/device/viewport';
+import { isDemo } from '@/core/demo';
 import { useTheme } from '@/stores/themeStore';
 import type { PhoneAlign } from '@/stores/themeStore';
 import { useCallStore } from '@/stores/callStore';
@@ -508,7 +510,9 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
 
     const dimOpacity = (1 - brightness / 100) * 0.85;
 
-    const scale = 0.4 + (phoneScale / 100) * 0.6;
+    const viewport = useViewportScale();
+    const stage = isDemo ? 1 : viewport;
+    const scale = (0.4 + (phoneScale / 100) * 0.6) * stage;
     const tilt  = tiltTransform(phoneTilt, H);
 
     const stageH = Math.round(H);
@@ -529,7 +533,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
     return (
         <div
             className={`flex h-screen w-full ${flexClasses}`}
-            style={{ padding: EDGE_PADDING, display: hidden ? 'none' : undefined }}
+            style={{ padding: EDGE_PADDING * stage, display: hidden ? 'none' : undefined }}
         >
             <div
                 className="shrink-0"
@@ -557,6 +561,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                         className="absolute overflow-hidden"
                         style={{
                             left: SX, top: SY, width: SW, height: SH,
+                            overflow: 'clip',
                             borderRadius: SR,
                             clipPath: `inset(0 round ${SR}px)`,
                             WebkitClipPath: `inset(0 round ${SR}px)`,
@@ -953,7 +958,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                     {hostsIsland && device.calls && (
                         <IslandPill m={m}
                             active={callActive}
-                            onClick={() => void fetchNui('sd-phone:requestOpen')}
+                            onClick={() => { useCallStore.getState().setMinimised(false); void fetchNui('sd-phone:requestOpen'); }}
                             compactX={DI_X} compactW={DI_W} expandedX={CALL_X} expandedW={CALL_W}
                         >
                             <span className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">

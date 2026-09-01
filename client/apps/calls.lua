@@ -1,5 +1,7 @@
 ---@type fun(nuiAction: string, serverEvent: string) NUI->server pass-through registrar (client.nui).
 local proxyCallback = require 'client.nui'
+---@type table sd-phone config root (configs.config): read for Phone.OpenOnIncomingCall.
+local config = require 'configs.config'
 ---@type table Scripted phone camera (client.phonecam): owns the view whenever the video call is
 ---allowed to keep the player moving, since the native cell cam pins the ped at engine level.
 local phonecam = require 'client.phonecam'
@@ -26,6 +28,31 @@ end
 ---@type boolean True while the local mic is muted for the active call.
 local micMuted = false
 
+---@type boolean True from the moment a call starts ringing out until it ends.
+local callLive = false
+
+---@type boolean True while the call screen has been minimised away, so the phone is open on some
+---other app. Only meaningful while callLive.
+local callMinimised = false
+
+---Tells the shell whether a call is live and whether its screen has been minimised away, so the
+---held pose survives the phone being put away and drops out of the ear pose once the player has
+---left the call screen for another app.
+local function syncCallPose()
+    TriggerEvent('sd-phone:client:callPose', callLive, callMinimised)
+end
+
+---Only ever announced on a change: the pose refresh it drives also re-broadcasts the prop
+---statebag, which is not worth doing on every roster or connect push. Ending a call clears the
+---minimised flag too, so the next one opens on its call screen rather than inheriting this one.
+---@param on boolean
+local function setCallLive(on)
+    if callLive == on then return end
+    callLive = on
+    if not on then callMinimised = false end
+    syncCallPose()
+end
+
 ---Mutes/unmutes the local mic entirely (call AND proximity), through whichever voice script is
 ---running. A backend with no mute (SaltyChat) leaves the flag alone, so the phone never reports
 ---itself muted when nothing was actually silenced.
@@ -40,6 +67,19 @@ end
 ---@param cb fun(ok: string) NUI response
 RegisterNUICallback('sd-phone:call:mute', function(data, cb)
     setMicMuted(data and data.on)
+    cb('ok')
+end)
+
+---React to Lua: the call screen was minimised away or brought back. Drives the held pose only, so
+---it is dropped outside a live call rather than remembered for the next one.
+---@param data { on: boolean }
+---@param cb fun(ok: string) NUI response
+RegisterNUICallback('sd-phone:call:minimised', function(data, cb)
+    local on = data and data.on == true
+    if callLive and callMinimised ~= on then
+        callMinimised = on
+        syncCallPose()
+    end
     cb('ok')
 end)
 
@@ -72,22 +112,28 @@ RegisterNUICallback('sd-phone:call:voiceCapabilities', function(_, cb)
     cb(voice.capabilities())
 end)
 
----Incoming call: forces the phone open, waits briefly for the React tree to mount, then pushes
----the ringing payload.
----@param data table incoming-call payload from the server
+---An inbound ring. The page is told either way; what differs is whether the phone is thrown onto
+---the screen with it. Left closed, the shell peeks with a banner naming the caller and the ring
+---plays from the page, which is alive whether or not the UI is showing - so the only thing lost by
+---not opening is the takeover itself.
+---@param data table { channel: number, name?: string, number: string, video?: boolean }
 RegisterNetEvent('sd-phone:client:call:incoming', function(data)
-    exports['sd-phone']:open()
-    Wait(200)
+    if config.Phone.OpenOnIncomingCall then
+        exports['sd-phone']:open()
+        Wait(200)
+    end
     pushCall('sd-phone:call:incoming', data)
 end)
 
 -- Call-lifecycle relays: outgoing ring-back, connect, and end push straight into the React
 -- overlay.
 RegisterNetEvent('sd-phone:client:call:outgoing', function(data)
+    setCallLive(true)
     pushCall('sd-phone:call:outgoing', data)
 end)
 
 RegisterNetEvent('sd-phone:client:call:connected', function(data)
+    setCallLive(true)
     pushCall('sd-phone:call:connected', data)
 end)
 
@@ -95,6 +141,7 @@ RegisterNetEvent('sd-phone:client:call:ended', function(data)
     -- Push first: the mic reset reaches into the voice script, and anything it raises must not
     -- take the end of the call down with it.
     pushCall('sd-phone:call:ended', data)
+    setCallLive(false)
     if micMuted then pcall(setMicMuted, false) end
 end)
 
@@ -336,3 +383,26 @@ RegisterNetEvent('sd-phone:client:call:video:begin',   function(data)  pushCall(
 RegisterNetEvent('sd-phone:client:call:video:accept',  function()      pushCall('sd-phone:video:accept',  nil) end)
 RegisterNetEvent('sd-phone:client:call:video:stop',    function()      pushCall('sd-phone:video:stop',    nil) end)
 RegisterNetEvent('sd-phone:client:call:video:signal',  function(data)  pushCall('sd-phone:video:signal',  data) end)
+
+-- Call recording: NUI to server one-way, and the peer's notifications back into the overlay.
+RegisterNUICallback('sd-phone:record:start', function(_, cb) TriggerServerEvent('sd-phone:server:call:record:start'); cb('ok') end)
+RegisterNUICallback('sd-phone:record:stop',  function(_, cb) TriggerServerEvent('sd-phone:server:call:record:stop');  cb('ok') end)
+
+RegisterNetEvent('sd-phone:client:call:record:start', function() pushCall('sd-phone:record:peerStart', nil) end)
+RegisterNetEvent('sd-phone:client:call:record:stop',  function() pushCall('sd-phone:record:peerStop',  nil) end)
+
+---Dev only: opens the phone and drives the in-call panel with no real call behind it. The
+---sequencing lives here rather than on the server so the open animation is given time to finish
+---before the panel is pushed on top of it.
+---@param data table { channel: number, name: string, number: string }
+RegisterNetEvent('sd-phone:client:call:devFake', function(data)
+    if type(data) ~= 'table' then return end
+    exports['sd-phone']:open()
+    SetTimeout(450, function()
+        setCallLive(true)
+        pushCall('sd-phone:call:outgoing', data)
+        SetTimeout(1200, function()
+            pushCall('sd-phone:call:connected', { channel = data.channel })
+        end)
+    end)
+end)

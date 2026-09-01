@@ -27,7 +27,6 @@ local FEATURES = type(CFG.Features) == 'table' and CFG.Features or {}
 ---@type table<string, boolean> Feature ids switched off in the config, keyed on the id a feature
 ---registers under. Keyed on the disabled ones so a feature this file has never heard of is on.
 local FEATURE_OFF = {
-    ['mdt:cam']        = FEATURES.Cameras == false,
     ['photogram:live'] = FEATURES.PhotogramLive == false,
     ['vibez:live']     = FEATURES.VibezLive == false,
 }
@@ -63,12 +62,25 @@ local STREAM_KINDS = { cam = true, live = true }
 ---@type table<string, boolean> Roles a token may be minted for.
 local ROLES = { session = true, publish = true, watch = true }
 
----@type string Refusal answered when a caller asks faster than any terminal legitimately would.
-local BUSY = 'Too many requests, try again in a moment'
----@type string Refusal answered for a stream name no feature owns.
-local UNKNOWN_STREAM = 'That stream does not exist'
----@type string Refusal answered when the feature that owns a stream would not have it watched.
-local REFUSED = 'You cannot watch that stream'
+---@type table Refusal answered when a caller asks faster than any terminal legitimately would.
+local BUSY = util.fail('media.tooManyRequestsTryAgain', 'Too many requests, try again in a moment')
+---@type table Refusal answered for a stream name no feature owns.
+local UNKNOWN_STREAM = util.fail('media.streamDoesNotExist', 'That stream does not exist')
+---@type table Refusal answered when the feature that owns a stream would not have it watched.
+local REFUSED = util.fail('media.cannotWatchStream', 'You cannot watch that stream')
+
+---@type boolean Whether the relay may run inside this resource (configs/media.lua SelfHost).
+local SELF_HOST = CFG.SelfHost ~= false
+---@type integer Milliseconds to wait for the in-process relay to report which port it took.
+local HOST_START_MS = 3000
+
+---@type string Signing key minted for the relay running inside this resource, empty when there is
+---not one. It exists for this boot only and is never written anywhere.
+local hostedKey = ''
+---@type integer Port that relay took, 0 when nothing is hosted here.
+local hostedPort = 0
+---@type boolean Whether that relay is terminating TLS itself.
+local hostedTls = false
 
 ---@type boolean|nil Cached gate result; nil until the first resolve.
 local ready
@@ -131,6 +143,68 @@ local function probeClaims()
     }
 end
 
+---Starts the relay inside this resource and waits for it to say which port it took. Everything a
+---standalone relay needs configuring by hand is decided here instead: the signing key is minted for
+---this boot and never leaves the process, and the port is whatever is free, because a server owner
+---should not have to know that the relay's own default lands on the HTTP endpoint FiveM opens ten
+---above the game port.
+---
+---This does not conjure a certificate, and nothing can: the phone's browser refuses a ws:// socket
+---to anything but loopback, so a server serving real players still needs TLS terminated in front of
+---this and its address in the URL convar. What it removes is the Node install, the second process,
+---the key and the port.
+---@return boolean hosted
+local function startHost()
+    if not crypto.available() then return false end
+
+    local key = crypto.randomHex(32)
+    if type(key) ~= 'string' or #key ~= 64 then return false end
+
+    local answered, result = false, nil
+    local cookie = AddEventHandler('sd-phone:media:relayHosted', function(payload)
+        answered, result = true, payload
+    end)
+
+    local okCall = pcall(function()
+        exports[GetCurrentResourceName()]:sdRelayHost({
+            keyHex     = key,
+            port       = math.floor(tonumber(GetConvar('sd_phone_relay_port', '')) or 0),
+            logLevel   = GetConvar('sd_phone_relay_log', 'warn'),
+            tlsCert    = GetConvar('sd_phone_relay_tls_cert', ''),
+            tlsKey     = GetConvar('sd_phone_relay_tls_key', ''),
+            trustProxy = GetConvar('sd_phone_relay_url', '') ~= '',
+        })
+    end)
+
+    if okCall then
+        local waited = 0
+        while not answered and waited < HOST_START_MS do
+            Wait(50)
+            waited = waited + 50
+        end
+    end
+    RemoveEventHandler(cookie)
+
+    if not okCall then
+        print('^3[sd-phone:media]^0 the relay could not be started in this resource: the Node runtime did not answer. Run media-server/ separately, or set Media.SelfHost = false to silence this.')
+        return false
+    end
+    if not answered then
+        print('^3[sd-phone:media]^0 the relay did not report back in time; live video stays on the event path.')
+        return false
+    end
+    if type(result) ~= 'table' or result.ok ~= true then
+        local why = type(result) == 'table' and (result.detail or result.reason) or 'unknown'
+        print(('^3[sd-phone:media]^0 the relay could not start: %s'):format(tostring(why)))
+        return false
+    end
+
+    hostedKey  = key
+    hostedPort = math.floor(tonumber(result.port) or 0)
+    hostedTls  = result.tls == true
+    return hostedPort > 0
+end
+
 local function resolve()
     if ready ~= nil then return ready end
     ready = false
@@ -138,6 +212,38 @@ local function resolve()
 
     local url = GetConvar(URL_CONVAR, '')
     local key = GetConvar(KEY_CONVAR, '')
+
+    -- A relay running inside this resource signs with a key nobody had to generate and listens on
+    -- a port nobody had to pick, so both are taken from it rather than from the convars. An owner
+    -- who put TLS in front still sets the URL convar, and that address wins: it is the one their
+    -- players can actually reach.
+    if hostedPort > 0 then
+        key = hostedKey
+
+        -- A loopback URL naming a different port than the one we are listening on cannot be right:
+        -- there is no second relay on this machine, and what is usually there instead is FiveM's
+        -- own HTTP endpoint, which answers the browser's handshake with a redirect. Correcting it
+        -- silently would hide a setting the owner still has wrong somewhere else, so it is said.
+        local convarPort = tonumber(url:match('^wss?://127%.0%.0%.1:(%d+)') or url:match('^wss?://localhost:(%d+)'))
+        if convarPort and convarPort ~= hostedPort then
+            print(('^3[sd-phone:media]^0 %s points at loopback port %d, but the relay in this resource is on %d. Using the one that exists; clear the convar, or set it to the address your players reach.')
+                :format(URL_CONVAR, convarPort, hostedPort))
+            url = ''
+        end
+
+        -- With nothing configured, the relay is listening but has no address a player could use:
+        -- loopback reaches the player's own machine, not this one. Handing that out would cost
+        -- every player a connection that cannot succeed, so it is only advertised when somebody
+        -- deliberately says this is a local test.
+        if url == '' then
+            if GetConvarInt('sd_phone_relay_loopback', 0) == 1 then
+                url = ('%s://127.0.0.1:%d'):format(hostedTls and 'wss' or 'ws', hostedPort)
+            else
+                print(('^3[sd-phone:media]^0 the relay is up on port %d, but no address is set for it. Put TLS in front and `set %s "wss://your.host/ws"`, or `set sd_phone_relay_loopback 1` to test it on this machine. Live video stays on the event path until then.')
+                    :format(hostedPort, URL_CONVAR))
+            end
+        end
+    end
 
     local reason
     if url == '' then
@@ -178,7 +284,7 @@ end
 
 ---Whether one feature may mint tokens: the relay is up and the feature is not switched off in
 ---configs/media.lua. A feature id this module has never heard of counts as on.
----@param feature string '<app>:<kind>', e.g. 'mdt:cam'
+---@param feature string '<app>:<kind>', e.g. 'photogram:live'
 ---@return boolean enabled
 function media.featureEnabled(feature)
     if not resolve() then return false end
@@ -211,10 +317,10 @@ end
 ---token by stream name and be routed back to the code that actually knows the answer.
 ---
 ---`entitle` is handed the requesting source and the stream being asked for, and returns the grant
----to sign (`{ key, role, gen }`) or nil plus a refusal message. It runs the feature's own
+---to sign (`{ key, role, gen }`) or nil plus a keyed refusal envelope. It runs the feature's own
 ---permission check: nothing in this module inspects a job, a duty state or a follower list.
----@param feature string '<app>:<kind>', e.g. 'mdt:cam'
----@param handler { entitle: fun(src: integer, req: { streamId: string, role: string }): table|nil, string|nil }
+---@param feature string '<app>:<kind>', e.g. 'photogram:live'
+---@param handler { entitle: fun(src: integer, req: { streamId: string, role: string }): table|nil, table|nil }
 function media.registerFeature(feature, handler)
     if type(feature) ~= 'string' or feature == '' then return end
     if type(handler) ~= 'table' or type(handler.entitle) ~= 'function' then return end
@@ -331,7 +437,7 @@ end
 ---Where the relay is, and whether there is one. Called once per phone session before anything
 ---tries to open a socket, so a server without a relay never constructs one at all.
 lib.callback.register('sd-phone:server:relay:endpoint', function(src)
-    if not util.rateLimit(player.getIdentifier(src), 'relay:endpoint', 60000, 10) then return util.fail(BUSY) end
+    if not util.rateLimit(player.getIdentifier(src), 'relay:endpoint', 60000, 10) then return BUSY end
     if not resolve() then return util.ok({ enabled = false }) end
 
     return util.ok({
@@ -354,7 +460,7 @@ end)
 ---that is not an error the player did anything about: the feature falls back and keeps playing.
 lib.callback.register('sd-phone:server:relay:token', function(src, payload)
     if type(payload) ~= 'table' then payload = {} end
-    if not util.rateLimit(player.getIdentifier(src), 'relay:token', 10000, 40) then return util.fail(BUSY) end
+    if not util.rateLimit(player.getIdentifier(src), 'relay:token', 10000, 40) then return BUSY end
     if not resolve() then return util.ok({ enabled = false }) end
 
     if payload.role == 'session' then
@@ -365,17 +471,20 @@ lib.callback.register('sd-phone:server:relay:token', function(src, payload)
     end
 
     local streamId = payload.streamId
-    if not media.validStreamId(streamId) then return util.fail(UNKNOWN_STREAM) end
+    if not media.validStreamId(streamId) then return UNKNOWN_STREAM end
 
     local feature = streamId:match('^(%l+:%l+):')
     local handler = features[feature]
-    if not handler then return util.fail(UNKNOWN_STREAM) end
+    if not handler then return UNKNOWN_STREAM end
     if not media.featureEnabled(feature) then return util.ok({ enabled = false }) end
 
     local role = payload.role == 'publish' and 'publish' or 'watch'
-    local okCall, grant, message = pcall(handler.entitle, src, { streamId = streamId, role = role })
-    if not okCall then return util.fail(REFUSED) end
-    if type(grant) ~= 'table' then return util.fail(type(message) == 'string' and message or REFUSED) end
+    local okCall, grant, refusal = pcall(handler.entitle, src, { streamId = streamId, role = role })
+    if not okCall then return REFUSED end
+    if type(grant) ~= 'table' then
+        if type(refusal) == 'table' then return refusal end
+        return REFUSED
+    end
 
     -- The grant may narrow the request (a viewer asking to publish gets watch) but never widen it
     -- into a session token, which is the one role no stream permission has anything to say about.
@@ -396,6 +505,7 @@ if ENABLED then
     -- that has to be a live export by then rather than a file the runtime is still reading.
     CreateThread(function()
         Wait(0)
+        if SELF_HOST then startHost() end
         if resolve() then
             print(('^2[sd-phone:media]^0 relay ready at %s ^2·^0 %ds tokens'):format(endpointUrl, ttlSeconds))
         end

@@ -84,15 +84,15 @@ local function str(v)
     return util.trim(v)
 end
 
----Delivers a one-way system text to a phone number from another resource, with
+---Sanitises the export boundary for a one-way system message and hands it to the delivery layer:
 ---digit-normalised numbers, a trimmed and capped body, and capped sender fields.
----@param senderNumber string|number service short code the recipient's thread files under
----@param senderName string|number display name for the banner and thread header
----@param targetNumber string|number recipient phone number
----@param body string|number message body
----@param opts table|nil presentation-safe kind + its fields (see above)
+---@param senderNumber string|number
+---@param senderName string|number
+---@param targetNumber string|number
+---@param body string|number
+---@param opts table|nil presentation-safe kind + its fields
 ---@return boolean delivered
-exports('sendSystemMessage', function(senderNumber, senderName, targetNumber, body, opts)
+local function systemSend(senderNumber, senderName, targetNumber, body, opts)
     local sender = util.digits(str(senderNumber)):sub(1, 32)
     local target = util.digits(str(targetNumber))
     if sender == '' or target == '' then return false end
@@ -103,4 +103,42 @@ exports('sendSystemMessage', function(senderNumber, senderName, targetNumber, bo
     if #text > maxBody then text = text:sub(1, maxBody) end
 
     return actions.systemText(sender, name, target, text, type(opts) == 'table' and opts or nil)
+end
+
+---Delivers a one-way system text to a phone number from another resource, with
+---digit-normalised numbers, a trimmed and capped body, and capped sender fields.
+---@param senderNumber string|number service short code the recipient's thread files under
+---@param senderName string|number display name for the banner and thread header
+---@param targetNumber string|number recipient phone number
+---@param body string|number message body
+---@param opts table|nil presentation-safe kind + its fields (see above)
+---@return boolean delivered
+exports('sendSystemMessage', function(senderNumber, senderName, targetNumber, body, opts)
+    return systemSend(senderNumber, senderName, targetNumber, body, opts)
+end)
+
+---Delivers a tappable location card: the same message kind the composer's Share Location
+---produces, showing a map preview with a pin that opens in Maps on tap.
+---@param senderNumber string|number service short code the recipient's thread files under
+---@param senderName string|number display name for the banner and thread header
+---@param targetNumber string|number recipient phone number
+---@param x number world x
+---@param y number world y
+---@param opts table|nil label, icon and color for the pin; body for the notification preview
+---@return boolean delivered
+exports('sendLocation', function(senderNumber, senderName, targetNumber, x, y, opts)
+    opts = type(opts) == 'table' and opts or {}
+
+    local code = util.waypointCode(x, y, opts.label, opts.icon, opts.color)
+    if not code then return false end
+
+    local label = str(opts.label)
+    local body  = str(opts.body)
+    if body == '' then body = label ~= '' and label or 'Shared location' end
+
+    return systemSend(senderNumber, senderName, targetNumber, body, {
+        kind   = 'location',
+        wpCode = code,
+        wpSub  = ('%d, %d'):format(math.floor(tonumber(x) + 0.5), math.floor(tonumber(y) + 0.5)),
+    })
 end)

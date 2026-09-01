@@ -13,6 +13,19 @@ local player   = require 'bridge.server.player'
 local mediaLimit = require 'server.photos.mediaLimit'
 ---@type table Shared server helpers (server.util): finite-number guard for the export boundary.
 local util     = require 'server.util'
+---@type table AirShare core (server.share.core): per-kind delivery handler registry.
+local share    = require 'server.share.core'
+
+-- Without a media token nothing a player captures can ever be stored, and the Camera used to
+-- swallow that: the shutter span, the spinner ran out, no photo, no reason. Say it once at boot
+-- so the gap is the server owner's to fix, not something players rediscover one capture at a time.
+if not uploader.configured() then
+    boot.warn(('^3[sd-phone]^0 no %s key set: Camera, Photos and Voice Memos will accept a capture but never save it.')
+        :format(uploader.provider() == 'qbox' and 'Qbox CDN' or 'Fivemanage media'))
+    boot.warn(uploader.provider() == 'qbox'
+        and '^3[sd-phone]^0 set QboxCdn in configs/server/apikeys.lua (token from dashboard.qbox.re -> CDN -> API).'
+        or '^3[sd-phone]^0 set FivemanageMedia in configs/server/apikeys.lua (free at fivemanage.com, token type "Media").')
+end
 
 ---Bootstraps the schema in a thread, pcall-guarded.
 CreateThread(function()
@@ -39,8 +52,20 @@ local MAX_VIDEO_BYTES <const> = 32 * 1024 * 1024
 ---time, so a client can't fan out many concurrent multi-MB uploads at the Fivemanage backend.
 local uploading = {}
 
+---Tells the capturing player their upload is not coming, and logs the detail for the console.
+---The relay is a latent event with no reply channel, so without this every failure reached the
+---Camera as an 8s spinner that simply stopped: a missing API key and a slow network looked alike.
+---@param src number player the capture came from
+---@param code string stable reason token the Camera maps to a translated line
+---@param detail string console-only detail, which may name paths or provider text
+local function uploadFailed(src, code, detail)
+    print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s failed (%s): %s'):format(tostring(src), code, detail))
+    TriggerClientEvent('sd-phone:client:photos:uploadFailed', src, { code = code })
+end
+
 ---Receives the Camera app's captured media as a base64 data-URL over a latent event: validates
----the data-URL shape and byte cap, uploads to Fivemanage, saves the row, and pushes photos:added.
+---the data-URL shape and byte cap, uploads to Fivemanage, saves the row, and pushes photos:added
+---or, on any failure, photos:uploadFailed with the reason.
 ---One upload per source may be in flight; the flag clears once the upload settles.
 ---@param image string base64 data-URL (data:image/... or data:video/...)
 ---@param kind string 'video' for clips; anything else is treated as a photo
@@ -50,20 +75,20 @@ RegisterNetEvent('sd-phone:server:photos:upload', function(image, kind)
 
     local prefix  = isVideo and 'data:video/' or 'data:image/'
     if type(image) ~= 'string' or image:sub(1, #prefix) ~= prefix then
-        print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s rejected — not a %s data-URL'):format(tostring(src), isVideo and 'video' or 'image'))
+        uploadFailed(src, 'bad-data', ('not a %s data-URL'):format(isVideo and 'video' or 'image'))
         return
     end
     if #image > (isVideo and MAX_VIDEO_BYTES or MAX_PHOTO_BYTES) then
-        print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s rejected — payload too large (%d bytes)'):format(tostring(src), #image))
+        uploadFailed(src, 'too-large', ('payload too large (%d bytes)'):format(#image))
         return
     end
     if uploading[src] then
-        print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s rejected — an upload is already in progress'):format(tostring(src)))
+        uploadFailed(src, 'busy', 'an upload is already in progress')
         return
     end
     local okLimit, why = mediaLimit.check(player.getIdentifier(src), #image)
     if not okLimit then
-        print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s rejected — rate limit (%s)'):format(tostring(src), why))
+        uploadFailed(src, 'rate-limit', ('rate limit (%s)'):format(tostring(why)))
         return
     end
 
@@ -74,17 +99,23 @@ RegisterNetEvent('sd-phone:server:photos:upload', function(image, kind)
     end
     local filename = ('sdphone-%d-%d.%s'):format(src, os.time(), ext)
     uploading[src] = true
-    uploader.uploadMedia(image, filename, function(url, err)
+    uploader.uploadMedia(image, filename, function(url, err, code)
         uploading[src] = nil
         if not url then
-            print(('^1[sd-phone:photos]^0 [UPLOAD] failed: %s'):format(tostring(err)))
+            uploadFailed(src, code or 'provider', tostring(err))
             return
         end
 
+        -- The upload landed but the row did not, which used to report nothing on either end: the
+        -- player waited on a photo that was hosted yet unreachable, and the console stayed quiet.
         local saveRes = actions.saveFromUrl(src, url)
-        if saveRes and saveRes.success and saveRes.data and saveRes.data.photo then
-            TriggerClientEvent('sd-phone:client:photos:added', src, saveRes.data.photo)
+        if not (saveRes and saveRes.success and saveRes.data and saveRes.data.photo) then
+            uploadFailed(src, 'save-failed', ('uploaded to %s but the row would not save: %s')
+                :format(url, tostring(saveRes and saveRes.message or 'no reason given')))
+            return
         end
+
+        TriggerClientEvent('sd-phone:client:photos:added', src, saveRes.data.photo)
     end)
 end)
 
@@ -98,15 +129,15 @@ end)
 ---Player-supplied, so the URL must pass config.Photos.AllowImport + the block/allow lists.
 lib.callback.register('sd-phone:server:photos:saveUrl', function(src, payload)
     if not actions.importEnabled() then
-        return { success = false, message = 'URL import is disabled on this server' }
+        return { success = false, messageKey = 'photos.urlImportDisabledServer', message = 'URL import is disabled on this server' }
     end
     if not actions.isAllowedImportUrl(payload and payload.url) then
-        return { success = false, message = 'Images from that site aren\'t allowed' }
+        return { success = false, messageKey = 'photos.imagesFromSiteArenT', message = 'Images from that site aren\'t allowed' }
     end
     -- Same budget the capture upload uses: saving a hosted URL is a deliberate tap, so the 1s
     -- gap is invisible, and without it this path writes and prunes phone_photos at line rate.
     local okLimit = mediaLimit.check(player.getIdentifier(src), #(payload and payload.url or ''))
-    if not okLimit then return { success = false, message = 'Slow down a moment' } end
+    if not okLimit then return { success = false, messageKey = 'photos.slowDownMoment', message = 'Slow down a moment' } end
     local res = actions.saveFromUrl(src, payload and payload.url)
     if res and res.success and res.data and res.data.photo then
         TriggerClientEvent('sd-phone:client:photos:added', src, res.data.photo)
@@ -145,6 +176,15 @@ end)
 
 lib.callback.register('sd-phone:server:albums:photos', function(src, payload)
     return actions.listAlbumPhotos(src, payload and payload.albumId or '')
+end)
+
+-- Delivers an accepted photo AirShare into the recipient's gallery.
+share.registerHandler('photo', actions.deliverShare)
+
+---Offers a photo to a nearby phone; the recipient decides whether to accept it.
+lib.callback.register('sd-phone:server:photos:share', function(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+    return actions.requestShare(src, payload.target, payload.id)
 end)
 
 ---Public export: exports['sd-phone']:getPhotos(source, opts). Reads a player's gallery, newest

@@ -70,6 +70,15 @@ proxyCallback('sd-phone:admin:birdyDeletePost',      'sd-phone:server:admin:bird
 proxyCallback('sd-phone:admin:birdySetVerified',     'sd-phone:server:admin:birdySetVerified')
 proxyCallback('sd-phone:admin:content',              'sd-phone:server:admin:content')
 proxyCallback('sd-phone:admin:contentDelete',        'sd-phone:server:admin:contentDelete')
+proxyCallback('sd-phone:admin:contentThread',        'sd-phone:server:admin:contentThread')
+proxyCallback('sd-phone:admin:contentThreadDelete',  'sd-phone:server:admin:contentThreadDelete')
+proxyCallback('sd-phone:admin:media',                'sd-phone:server:admin:media')
+proxyCallback('sd-phone:admin:livePositions',        'sd-phone:server:admin:livePositions')
+proxyCallback('sd-phone:admin:flags',                'sd-phone:server:admin:flags')
+proxyCallback('sd-phone:admin:flagsScan',            'sd-phone:server:admin:flagsScan')
+proxyCallback('sd-phone:admin:flagResolve',          'sd-phone:server:admin:flagResolve')
+proxyCallback('sd-phone:admin:bin',                  'sd-phone:server:admin:bin')
+proxyCallback('sd-phone:admin:binRestore',           'sd-phone:server:admin:binRestore')
 proxyCallback('sd-phone:admin:messages',             'sd-phone:server:admin:messages')
 proxyCallback('sd-phone:admin:calls',                'sd-phone:server:admin:calls')
 proxyCallback('sd-phone:admin:mute',                 'sd-phone:server:admin:mute')
@@ -81,3 +90,15 @@ proxyCallback('sd-phone:admin:stats',                'sd-phone:server:admin:stat
 proxyCallback('sd-phone:admin:simLookup',            'sd-phone:server:admin:simLookup')
 proxyCallback('sd-phone:admin:giveSim',              'sd-phone:server:admin:giveSim')
 proxyCallback('sd-phone:admin:numbers',              'sd-phone:server:admin:numbers')
+proxyCallback('sd-phone:admin:migrateScan',          'sd-phone:server:admin:migrateScan')
+proxyCallback('sd-phone:admin:migrateState',         'sd-phone:server:admin:migrateState')
+proxyCallback('sd-phone:admin:migrateStart',         'sd-phone:server:admin:migrateStart')
+proxyCallback('sd-phone:admin:migrateStop',          'sd-phone:server:admin:migrateStop')
+proxyCallback('sd-phone:admin:migrateWatch',         'sd-phone:server:admin:migrateWatch')
+
+---Server to React: one migration progress push. The server only sends these to admins who asked
+---to watch, so this relays whatever arrives without a gate of its own.
+---@param payload table { state?: table, lines?: table[], reset?: boolean }
+RegisterNetEvent('sd-phone:client:migrate:push', function(payload)
+    SendNUIMessage({ action = 'sd-phone:admin:migrate', data = payload })
+end)

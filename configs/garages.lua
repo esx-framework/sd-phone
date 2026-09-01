@@ -15,10 +15,13 @@ return {
 
     -- Resources checked, in priority order, when System = 'auto'. The first
     -- one that's `started` wins. Add custom/renamed resources here.
+    -- ND_Core is last on purpose: on ND it owns the vehicles itself (`nd_vehicles`, with its own
+    -- stored/impounded flags), so it is the fallback once no dedicated garage resource is running.
+    -- ND keeps no garage-NAME column, so vehicles list with their status but without a location.
     Resources = {
         'qs-advancedgarages', 'jg-advancedgarages', 'qbx_garages', 'qb-garages',
         'cd_garage', 'okokGarage', 'codem-garage', 'lunar_garage', 'nc_garage',
-        'op_garages', 'esx_garage',
+        'op_garages', 'aty_garage_v2', 'aty_garage', 'esx_garage', 'ND_Core',
     },
 
     -- Default for whether a real photo of each vehicle (matched by spawn name)
@@ -42,7 +45,10 @@ return {
     -- Garage waypoint coordinates - used as a FALLBACK. The app first auto-reads
     -- a garage's coords from the running system's own export, so these systems
     -- need NO setup: qs-advancedgarages, qbx_garages, qb-garages,
-    -- jg-advancedgarages, cd_garage, op-garages. Only systems without a usable
+    -- jg-advancedgarages, cd_garage, op-garages. ATY is read without an export -
+    -- aty_garage from its own config file, aty_garage_v2 from the `aty_garages`
+    -- table its in-game editor writes - so it usually needs no setup either;
+    -- run `garagediag` to see whether it resolved. Only systems without a usable
     -- export (esx, codem, okok, nc, lunar) need entries here, plus any garage a
     -- player built themselves in qs-advancedgarages (those live in
     -- `player_garages`, not the config): key by the exact Location TEXT a

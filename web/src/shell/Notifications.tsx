@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Bell } from 'lucide-react';
+import { AlertTriangle, Bell } from 'lucide-react';
 
 import { AppIconSVG } from './AppIconSVG';
 import { t } from '@/i18n';
@@ -16,6 +16,7 @@ export interface NotificationItem {
     time?:  string;
     appId?: string;
     link?:  Record<string, unknown>;
+    emergency?: boolean;
     /** Pocket buzz from a carried-but-not-active phone: transient banner only, never this
      *  phone's lockscreen stack or badges. */
     otherPhone?: boolean;
@@ -30,6 +31,13 @@ const SHOW_MS = 5000;
 
 export function NotifIcon({ item, size = 38 }: { item: NotificationItem; size?: number }) {
     const style = { width: size, height: size };
+    if (item.emergency) {
+        return (
+            <span className="flex shrink-0 items-center justify-center rounded-[11px] bg-[#FF453A] text-white" style={style}>
+                <AlertTriangle style={{ width: size * 0.56, height: size * 0.56 }} strokeWidth={2.4} />
+            </span>
+        );
+    }
     if (item.image) {
         return (
             <span className="squircle shrink-0" style={style}>
@@ -73,6 +81,7 @@ function NotificationBanner({ item, onDismiss, onOpen }: {
     }
 
     useEffect(() => {
+        if (item.emergency) return;
         const t = window.setTimeout(dismiss, SHOW_MS);
         return () => window.clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,11 +119,21 @@ function NotificationBanner({ item, onDismiss, onOpen }: {
             onPointerMove={onMove}
             onPointerUp={onUp}
             onPointerCancel={onUp}
-            className="flex cursor-pointer items-start gap-2.5 rounded-[22px] bg-elevated/75 px-3 py-3 shadow-[0_10px_34px_rgba(0,0,0,0.20)] ring-1 ring-black/[0.06] backdrop-blur-2xl backdrop-saturate-150 dark:bg-elevated/75 dark:ring-white/10"
+            className={[
+                'flex cursor-pointer items-start gap-2.5 rounded-[22px] bg-elevated/75 px-3 py-3 shadow-[0_10px_34px_rgba(0,0,0,0.20)] backdrop-blur-2xl backdrop-saturate-150 dark:bg-elevated/75',
+                item.emergency
+                    ? 'ring-[1.5px] ring-inset ring-[#FF3B30]/75 dark:ring-[#FF3B30]/75'
+                    : 'ring-1 ring-black/[0.06] dark:ring-white/10',
+            ].join(' ')}
             style={{ willChange: 'transform', ...style }}
         >
             <NotifIcon item={item} />
             <div className="min-w-0 flex-1 pt-px">
+                {item.emergency && (
+                    <span className="mb-[1px] block text-[12.5px] font-bold uppercase leading-[1.15] tracking-[0.09em] text-[#FF3B30]">
+                        {t('shell.emergencyAlert', 'Emergency Alert')}
+                    </span>
+                )}
                 <div className="flex items-baseline justify-between gap-2">
                     <span className="truncate text-[15px] font-semibold text-black dark:text-white">{item.title}</span>
                     <span className="shrink-0 text-[13px] text-black/45 dark:text-white/45">{item.time ?? t('shell.now','now')}</span>

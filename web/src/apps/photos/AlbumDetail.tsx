@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
 
 import { useIosPush } from '@/hooks/useIosPush';
 import { t } from '@/i18n';
@@ -17,7 +17,7 @@ export function AlbumDetail({
     onAddPhotos?:   () => void;
     onRemovePhotos?: (ids: string[]) => void;
 }) {
-    const { goBack, pageStyle, animating } = useIosPush(onBack);
+    const { goBack, pageStyle } = useIosPush(onBack);
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -53,7 +53,13 @@ export function AlbumDetail({
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar pb-2">
+            <div
+                className="flex-1 overflow-y-auto no-scrollbar"
+                style={{
+                    paddingBottom: isCustom && selectMode ? 112 : 8,
+                    transition:    'padding-bottom 0.28s cubic-bezier(0.32,0.72,0,1)',
+                }}
+            >
                 <h1 className="px-4 pb-3 pt-1 text-[26px] font-bold tracking-tight">{title}</h1>
 
                 {photos.length === 0 && !isCustom ? (
@@ -62,11 +68,13 @@ export function AlbumDetail({
                     </p>
                 ) : (
                     <div className="grid grid-cols-3 gap-[2px]">
-                        {isCustom && !selectMode && (
+                        {isCustom && (
                             <button
                                 type="button"
                                 onClick={onAddPhotos}
-                                className="flex aspect-square items-center justify-center bg-black/5 active:bg-black/10 dark:bg-white/5"
+                                disabled={selectMode}
+                                tabIndex={selectMode ? -1 : undefined}
+                                className="flex aspect-square items-center justify-center bg-black/5 transition-opacity duration-200 active:bg-black/10 disabled:opacity-35 dark:bg-white/5"
                                 aria-label={t('photos.addPhotos','Add photos')}
                             >
                                 <Plus className="h-8 w-8 text-ios-blue" strokeWidth={2} />
@@ -85,15 +93,28 @@ export function AlbumDetail({
                 )}
             </div>
 
-            {isCustom && selectMode && (
-                <div className={`flex shrink-0 items-center justify-center gap-2 border-t border-black/10 px-4 pb-7 pt-3 dark:border-white/10 ${animating ? 'bg-base' : 'bg-elevated/95 backdrop-blur-xl dark:bg-base/80'}`}>
+            {isCustom && (
+                <div
+                    aria-hidden={!selectMode}
+                    className="absolute inset-x-0 bottom-0 flex items-stretch justify-around border-t border-black/10 bg-elevated px-1 pb-9 pt-2.5 dark:border-white/10 dark:bg-base"
+                    style={{
+                        transform:     selectMode ? 'translateY(0)' : 'translateY(100%)',
+                        transition:    'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+                        pointerEvents: selectMode ? undefined : 'none',
+                        willChange:    'transform',
+                    }}
+                >
                     <button
                         type="button"
+                        tabIndex={selectMode ? undefined : -1}
                         disabled={selected.size === 0}
                         onClick={() => { onRemovePhotos?.(Array.from(selected)); exitSelect(); }}
-                        className="rounded-full bg-[#ff3b30] px-5 py-2 text-[15px] font-semibold text-white disabled:opacity-40"
+                        className="flex flex-1 flex-col items-center gap-1.5 py-1 text-[#ff3b30] disabled:opacity-40"
                     >
-                        {t('photos.remove','Remove')}{selected.size > 0 ? ` (${selected.size})` : ''}
+                        <Trash2 className="h-[33px] w-[33px]" strokeWidth={1.9} />
+                        <span className="text-[15px] font-bold tracking-tight">
+                            {t('photos.remove','Remove')}{selected.size > 0 ? ` (${selected.size})` : ''}
+                        </span>
                     </button>
                 </div>
             )}

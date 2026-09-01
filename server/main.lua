@@ -39,14 +39,14 @@ require 'server.garages.valet'
 require 'server.darkchat.init'
 require 'server.marketplace.init'
 require 'server.pages.init'
-require 'server.review.init'
 require 'server.weazelnews.init'
 require 'server.banking.init'
 require 'server.services.init'
 require 'server.voicememos.init'
+require 'server.callrec.init'
 require 'server.music.init'
 require 'server.share.init'
-require 'server.devseed'
+require 'server.devseed.init'
 -- Optional local-only helpers; absent on every install but a developer's, so a missing file is
 -- expected rather than an error.
 pcall(require, 'server.devswap')
@@ -67,6 +67,7 @@ require 'server.voice.init'
 require 'server.streaks.init'
 require 'server.mdt.init'
 require 'server.racing.init'
+require 'server.health.init'
 require 'server.gates'
 require 'server.appgate'
 require 'server.ryde.init'
@@ -89,8 +90,19 @@ require 'server.admin.wipe'
 require 'server.admin.init'
 -- lb-phone -> sd-phone one-time data import (no-op unless lb-phone's tables are present).
 require 'server.migrate.init'
+-- Loaded for side effects: publishes the phone's live per-player state onto player state bags.
+require 'server.statebags'
+
 -- lb-phone export compatibility shim (inert while the real lb-phone runs; sd_phone_lbcompat kill switch).
 require 'server.compat.lbphone.init'
+-- yseries export compatibility shim (inert while the real yseries runs; sd_phone_yseriescompat kill switch).
+require 'server.compat.yseries.init'
+-- qs-smartphone export compatibility shim (sd_phone_qscompat kill switch).
+require 'server.compat.qssmartphone.init'
+-- gksphone export compatibility shim (sd_phone_gkscompat kill switch).
+require 'server.compat.gksphone.init'
+-- roadphone export compatibility shim (sd_phone_roadcompat kill switch).
+require 'server.compat.roadphone.init'
 
 ---@type table SIM feature flags (server.sim.state): active + mode.
 local simState = require 'server.sim.state'

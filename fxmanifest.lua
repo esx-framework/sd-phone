@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'sd-phone'
 author 'Samuel#0008'
-version '0.9.8'
-description 'Full-featured in-game smartphone: 47 apps covering calls, messages, mail, social feeds, banking, stocks, marketplace, garages, housing, jobs, maps, camera, music and games, plus home screen widgets, icon themes you can design, cell tower and Wi-Fi coverage, payphones, unique phones and SIM cards, an API for third-party apps and widgets, and lb-phone compatibility'
+version '0.9.10'
+description 'Full-featured in-game smartphone: 46 apps covering calls, messages, mail, social feeds, banking, stocks, marketplace, garages, housing, jobs, maps, camera, music and games, plus home screen widgets, icon themes you can design, cell tower and Wi-Fi coverage, payphones, unique phones and SIM cards, an API for third-party apps and widgets, and lb-phone compatibility'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -20,6 +20,8 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/crypto.js',
+    'server/relay.js',
+    'server/upload.js',
     'bridge/server/init.lua',
     'server/main.lua',
 }
@@ -53,3 +55,10 @@ dependencies {
 }
 
 provide 'lb-phone'
+provide 'yseries'
+
+provide 'qs-smartphone'
+provide 'qs-smartphone-pro'
+provide 'qs-smartphone-lite'
+provide 'gksphone'
+provide 'roadphone'

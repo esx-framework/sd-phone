@@ -9,6 +9,7 @@ import { AlertDialog } from '@/ui/AlertDialog';
 import { SearchBar } from '@/ui/SearchBar';
 import { PromptDialog } from '@/ui/PromptDialog';
 import { ShareAction, ShareSheet } from '@/shared/ShareSheet';
+import { trackFraction } from '@/lib/zoom';
 import {
     deleteMemo, fetchMemos, fmtDuration, fmtMemoDate, renameMemo, shareMemo, uploadMemo, type VoiceMemo,
 } from './voiceApi';
@@ -294,14 +295,12 @@ function Player({ memo, active, onShare, onDelete }: { memo: VoiceMemo; active: 
     function toggle() { const a = audioRef.current; if (!a) return; if (playing) a.pause(); else void a.play(); }
     function skip(d: number) { const a = audioRef.current; if (!a) return; a.currentTime = clamp((a.currentTime || 0) + d); }
 
-    function timeAt(clientX: number): number {
-        const el = trackRef.current;
-        if (!el || !dur) return 0;
-        const r = el.getBoundingClientRect();
-        return clamp(((clientX - r.left) / r.width) * dur);
-    }
     function applyScrub(clientX: number) {
-        const t = timeAt(clientX);
+        const el = trackRef.current;
+        if (!el || !dur) return;
+        const f = trackFraction(el, clientX);
+        if (f === null) return;
+        const t = clamp(f * dur);
         if (audioRef.current) audioRef.current.currentTime = t;
         setCur(t);
     }

@@ -1,12 +1,17 @@
 -- Framework-specific settings.
 --
--- ox_core support is EXPERIMENTAL: it is built against ox_core's published API but has not been
--- run against a live ox_core server. Employee and owner NAMES come back blank in the Services
--- roster, the MDT people search and Homes offline lookups, and jail features stay off. Identity,
--- cash and bank money, jobs, gangs and society balances are all wired.
+-- ox_core, not yet wired: employee and owner NAMES come back blank in the Services roster, the
+-- MDT people search and Homes offline lookups, and jail features stay off. Identity, cash and
+-- bank money, jobs, gangs and society balances are all wired.
 --
--- Only ox_core needs anything here: QBCore, QBox and ESX all name
+-- Only ox_core needs anything here: QBCore, QBox, ESX and ND all name
 -- their concepts the same way on every install, so the bridge reads them without asking.
+--
+-- ND in particular needs NOTHING configured. Its `nd_groups` table carries an `isJob` flag per
+-- group, so the phone reads which groups are jobs and which are gangs straight from ND, and
+-- `nd_group_ranks.isBoss` gives it a real boss grade rather than the guess ox_core needs below.
+-- Not wired on ND, because ND_Core has no such concept: company balances (the Services app keeps
+-- its roster, hiring and boss actions, but shows no shared account), on-duty state, and jail.
 --
 -- ox_core has no jobs or gangs. It has GROUPS, and a group's `type` is a free-form string the
 -- server owner picks when creating it (types/index.ts declares it `type?: string`, with no

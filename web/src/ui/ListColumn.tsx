@@ -11,12 +11,13 @@ export interface ListColumnSearch {
 }
 
 export function ListColumn({
-    title, count, action, search, query, onQuery, placeholder, isEmpty, empty, footer,
+    title, count, action, filters, search, query, onQuery, placeholder, isEmpty, empty, footer,
     minWidth = 268, className = '', children,
 }: {
     title:        string;
     count?:       number;
     action?:      ReactNode;
+    filters?:     ReactNode;
     search?:      ListColumnSearch;
     query?:       string;
     onQuery?:     (value: string) => void;
@@ -59,6 +60,10 @@ export function ListColumn({
                         textClassName="text-[14px] font-medium text-black placeholder-black/40 dark:text-white dark:placeholder-white/40"
                     />
                 </div>
+            )}
+
+            {filters && (
+                <div className="flex shrink-0 items-center gap-2 px-4 pt-2.5">{filters}</div>
             )}
 
             {showEmpty ? (

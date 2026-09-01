@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 
 import { device } from '@device';
-import { isDensity, setDensity, setExtraRow } from '@/device/grid';
+import { clampIconScale, isDensity, setDensity, setExtraRow, setIconScale } from '@/device/grid';
 import type { Density, DeviceAlign } from '@/device/types';
 import lockscreenAsset from '@/assets/wallpapers/lockscreen.webp';
 import devDefaultAsset from '@/assets/photos/background5.webp';
@@ -281,6 +281,21 @@ function saveDensityLocal(v: Density) {
 const initialDensity: Density = isFiveM ? 'default' : loadDensityLocal();
 setDensity(initialDensity);
 
+const ICON_SCALE_KEY = 'sd-phone:homeIconScale';
+function loadIconScaleLocal(): number {
+    try {
+        const raw = window.localStorage.getItem(ICON_SCALE_KEY);
+        if (raw === null || raw === '') return 1;
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? clampIconScale(n) : 1;
+    } catch { return 1; }
+}
+function saveIconScaleLocal(v: number) {
+    try { window.localStorage.setItem(ICON_SCALE_KEY, String(v)); } catch { /* ignore */ }
+}
+const initialIconScale: number = isFiveM ? 1 : loadIconScaleLocal();
+setIconScale(initialIconScale);
+
 const initialLook = isFiveM ? DEFAULT_SHELL_LOOK : loadShellLookLocal();
 setExtraRow(initialLook.dockStyle === 'hidden');
 
@@ -356,7 +371,9 @@ interface ThemeState {
     textScale:         number;
     setTextScale:      (v: number) => void;
     homeDensity:       Density;
+    homeIconScale:     number;
     setHomeDensity:    (v: Density) => void;
+    setHomeIconScale:  (v: number) => void;
     appLabels:         Record<string, string>;
     setAppLabel:       (appId: string, label: string) => void;
     resetAppLabels:    () => void;
@@ -494,6 +511,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     boldText:     isFiveM ? false : loadA11yLocal().boldText,
     textScale:    isFiveM ? 1     : loadA11yLocal().textScale,
     homeDensity:  initialDensity,
+    homeIconScale: initialIconScale,
     appLabels:    isFiveM ? {}    : loadAppLabelsLocal(),
     phoneAlign: isFiveM && device.id === 'phone' ? device.defaultAlign : loadPhoneAlignLocal(),
     phoneTilt: isFiveM ? DEFAULT_PHONE_TILT : loadPhoneTiltLocal(),
@@ -738,6 +756,14 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         else saveA11yLocal({ motion: motionToCode(get().motion), boldText: get().boldText, textScale: next });
     },
 
+    setHomeIconScale: (v) => {
+        const next = clampIconScale(v);
+        setIconScale(next);
+        set({ homeIconScale: next });
+        if (isFiveM) void fetchNui('sd-phone:settings:setHomeIconScale', { scale: next }).catch(() => {});
+        else saveIconScaleLocal(next);
+    },
+
     setHomeDensity: (v) => {
         setDensity(v);
         set({ homeDensity: v });
@@ -857,6 +883,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
             boldText: false,
             textScale: 1,
             homeDensity: 'default',
+            homeIconScale: 1,
             appLabels: {},
             phoneTilt: DEFAULT_PHONE_TILT,
             dockStyle: DEFAULT_SHELL_LOOK.dockStyle,
@@ -932,7 +959,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
             }
         };
         const keyAtRequest = wallpaperProfileKey;
-        void fetchNui<{ data?: { ringtone?: string; notificationTone?: string; customRingtones?: CustomTone[]; customNotificationTones?: CustomTone[]; airplaneMode?: boolean; hour24?: boolean; callerId?: boolean; streamerMode?: boolean; streamerHide?: unknown; gameTime?: boolean; reopenApp?: boolean; setupDone?: boolean; lockClock?: Partial<LockClock>; passcode?: string | null; faceId?: boolean; wallpaper?: string; wallpaperHome?: string; blurLock?: boolean; blurHome?: boolean; islandPet?: string; customWallpapers?: string[]; chatTextScale?: number; motion?: number; boldText?: boolean; textScale?: number; homeDensity?: string; appLabels?: Record<string, string>; phoneScale?: number; brightness?: number; phoneAlign?: string; phoneTilt?: { turn?: number; lean?: number }; dockStyle?: string; openAnim?: string; wallpaperParallax?: boolean; ringtoneVol?: number; callVol?: number; theme?: string; darkTheme?: string; lightTheme?: string; accent?: string; shell?: string; shellChoice?: boolean; shellsAllowed?: unknown[]; customPalettes?: unknown; iconTheme?: string; showAppNames?: boolean; customIconThemes?: unknown } }>('sd-phone:settings:get')
+        void fetchNui<{ data?: { ringtone?: string; notificationTone?: string; customRingtones?: CustomTone[]; customNotificationTones?: CustomTone[]; airplaneMode?: boolean; hour24?: boolean; callerId?: boolean; streamerMode?: boolean; streamerHide?: unknown; gameTime?: boolean; reopenApp?: boolean; setupDone?: boolean; lockClock?: Partial<LockClock>; passcode?: string | null; faceId?: boolean; wallpaper?: string; wallpaperHome?: string; blurLock?: boolean; blurHome?: boolean; islandPet?: string; customWallpapers?: string[]; chatTextScale?: number; motion?: number; boldText?: boolean; textScale?: number; homeDensity?: string; homeIconScale?: number; appLabels?: Record<string, string>; phoneScale?: number; brightness?: number; phoneAlign?: string; phoneTilt?: { turn?: number; lean?: number }; dockStyle?: string; openAnim?: string; wallpaperParallax?: boolean; ringtoneVol?: number; callVol?: number; theme?: string; darkTheme?: string; lightTheme?: string; accent?: string; shell?: string; shellChoice?: boolean; shellsAllowed?: unknown[]; customPalettes?: unknown; iconTheme?: string; showAppNames?: boolean; customIconThemes?: unknown } }>('sd-phone:settings:get')
             .then(res => {
                 if (!res?.data) { retry(); return; }
                 const d = res.data;
@@ -980,6 +1007,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
                 patch.textScale = typeof d.textScale === 'number' ? clampTextScale(d.textScale) : 1;
                 patch.homeDensity = isDensity(d.homeDensity) ? d.homeDensity : 'default';
                 setDensity(patch.homeDensity);
+                patch.homeIconScale = typeof d.homeIconScale === 'number' ? clampIconScale(d.homeIconScale) : 1;
+                setIconScale(patch.homeIconScale);
                 patch.appLabels = (() => {
                     const out: Record<string, string> = {};
                     const raw = d.appLabels;

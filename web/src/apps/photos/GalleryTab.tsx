@@ -90,6 +90,7 @@ export function GalleryTab({
                                     photo={p}
                                     selectable={selectionMode}
                                     selected={selectedIds.has(p.id)}
+                                    showFavorite
                                     defer={deferMedia}
                                     onClick={() => (selectionMode ? onToggleSelect(p) : onPhotoTap(p))}
                                 />

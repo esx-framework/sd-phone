@@ -27,6 +27,21 @@ exports('notify', function(source, data)
     return relay(source, data)
 end)
 
+---Sends an emergency alert: the same banner funnel, flagged so the phone gives it the alert
+---treatment (accent, warning glyph) and holds it on screen until the player dismisses it rather
+---than fading after a few seconds. Everything else behaves like notify, `-1` included.
+---@param source number player server id, or -1 for every player
+---@param data table notification payload (title required)
+---@return boolean sent
+exports('emergencyAlert', function(source, data)
+    if type(data) ~= 'table' then return false end
+
+    local alert = {}
+    for k, v in pairs(data) do alert[k] = v end
+    alert.emergency = true
+    return relay(source, alert)
+end)
+
 ---Delivers a notification to the player acting as `cid`. When the identity instead sits on a
 ---phone in their POCKET (carried, not active - unique phones), a transient "pocket buzz"
 ---banner tagged with that phone's colour goes out instead, flagged `otherPhone` so the NUI
@@ -54,8 +69,12 @@ function notifications.notifyCid(cid, data)
         app        = color and (color:gsub('^%l', string.upper) .. ' Phone') or 'Other Phone',
         appId      = data.appId,
         image      = data.image,
+        titleKey   = data.titleKey,
         title      = data.title,
+        titleVars  = data.titleVars,
+        bodyKey    = data.bodyKey,
         body       = data.body,
+        bodyVars   = data.bodyVars,
         time       = data.time,
         otherPhone = true,
         -- The buzzing phone's frame colour (peek shell tint) and its NUI profile key (device

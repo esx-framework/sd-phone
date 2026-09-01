@@ -9,7 +9,11 @@ const CADENCE: Record<RingKind, { on: number; off: number; gain: number }> = {
 
 const RING_FREQS = [440, 480];
 
-function burst(ac: AudioContext, gainPeak: number, duration: number): void {
+const FADE_OUT = 0.03;
+
+type Burst = { gain: GainNode; oscs: OscillatorNode[] };
+
+function burst(ac: AudioContext, gainPeak: number, duration: number): Burst {
     const now = ac.currentTime;
     const gain = ac.createGain();
     gain.gain.setValueAtTime(0.0001, now);
@@ -18,6 +22,7 @@ function burst(ac: AudioContext, gainPeak: number, duration: number): void {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     gain.connect(ac.destination);
 
+    const oscs: OscillatorNode[] = [];
     for (const freq of RING_FREQS) {
         const osc = ac.createOscillator();
         osc.type = 'sine';
@@ -25,6 +30,20 @@ function burst(ac: AudioContext, gainPeak: number, duration: number): void {
         osc.connect(gain);
         osc.start(now);
         osc.stop(now + duration);
+        oscs.push(osc);
+    }
+    return { gain, oscs };
+}
+
+function silence(ac: AudioContext, live: Burst): void {
+    const now = ac.currentTime;
+    try {
+        live.gain.gain.cancelScheduledValues(now);
+        live.gain.gain.setValueAtTime(Math.max(live.gain.gain.value, 0.0001), now);
+        live.gain.gain.exponentialRampToValueAtTime(0.0001, now + FADE_OUT);
+    } catch {}
+    for (const osc of live.oscs) {
+        try { osc.stop(now + FADE_OUT); } catch {}
     }
 }
 
@@ -34,8 +53,13 @@ export function startRing(kind: RingKind): () => void {
     if (ac.state === 'suspended') void ac.resume();
 
     const { on, off, gain } = CADENCE[kind];
-    burst(ac, gain, on);
-    const interval = window.setInterval(() => burst(ac, gain, on), (on + off) * 1000);
+    let live: Burst | null = burst(ac, gain, on);
+    const interval = window.setInterval(() => { live = burst(ac, gain, on); }, (on + off) * 1000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+        window.clearInterval(interval);
+        if (!live) return;
+        silence(ac, live);
+        live = null;
+    };
 }

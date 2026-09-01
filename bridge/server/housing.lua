@@ -106,6 +106,19 @@ local function offlineName(cid)
             local last  = s(r.lastname)
             if first or last then return (first or '') .. ' ' .. (last or '') end
         end
+    elseif framework.name == 'nd' then
+        local ok, rows = pcall(function()
+            return MySQL.query.await(
+                'SELECT firstname, lastname FROM nd_characters WHERE charid = ? LIMIT 1',
+                { tonumber(cid) }
+            )
+        end)
+        if ok and rows and rows[1] then
+            local r = rows[1]
+            local first = s(r.firstname)
+            local last  = s(r.lastname)
+            if first or last then return (first or '') .. ' ' .. (last or '') end
+        end
     else
         local ok, rows = pcall(function()
             return MySQL.query.await(
@@ -249,8 +262,21 @@ ADAPTERS['qs-housing'] = function(_source, id)
     return out
 end
 
+---Resolves a vms_housing property to a readable home type via its GetProperty export.
+---@param objectId any property id from the `houses` row, nil when the row carries none
+---@return string label 'Motel Room', 'Apartment' or 'House'
+local function vmsHomeType(objectId)
+    if not objectId then return 'House' end
+    local ok, prop = pcall(function() return exports['vms_housing']:GetProperty(objectId) end)
+    if not ok or type(prop) ~= 'table' then return 'House' end
+    if prop.type == 'motel' then return 'Motel Room' end
+    if prop.type then return 'Apartment' end
+    return 'House'
+end
+
 ---vms_housing: single `houses` table; `owner` owns, `renter` rents, with an owner-only fallback
----query. Entrance coords from `metadata.enter`.
+---query. Type comes from the GetProperty export, price from the `sale` column, and entrance
+---coords from `metadata.enter` then `metadata.menu` so MLO interiors land on the right door.
 ---@param _source number caller server id (unused - the table keys by identifier)
 ---@param id string caller identifier
 ---@return table[] homes
@@ -261,14 +287,16 @@ ADAPTERS['vms_housing'] = function(_source, id)
     local out = {}
     for _, r in ipairs(rows) do
         local meta = decodeJson(r.metadata)
+        local sale = decodeJson(r.sale)
         out[#out + 1] = home{
             id      = r.id,
             address = s(r.address) or s(r.name),
-            type    = s(r.type),
+            type    = vmsHomeType(r.object_id),
             area    = s(r.region),
-            value   = r.price or (meta and (meta.price or meta.value)),
+            value   = (sale and sale.price) or r.price or (meta and (meta.price or meta.value)),
             status  = (s(r.renter) == id) and 'rented' or 'owned',
-            coords  = (meta and (asXY(meta.enter) or asXY(meta.coords))) or coordsFrom(r, 'enter', 'coords'),
+            coords  = (meta and (asXY(meta.enter) or asXY(meta.menu) or asXY(meta.coords)))
+                      or coordsFrom(r, 'enter', 'menu', 'coords'),
         }
     end
     return out

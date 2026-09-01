@@ -27,6 +27,15 @@ local M = {}
 
 local ready = 0
 local failures = {}
+---@type string[] Deferred setup warnings, printed with the summary so a module never has to
+---print on its own and race the rest of the boot output.
+local warnings = {}
+
+---Queues a configuration warning to print with the boot summary.
+---@param text string one line, printed verbatim after the summary
+function M.warn(text)
+    warnings[#warnings + 1] = text
+end
 
 ---Records a module's schema as bootstrapped.
 function M.schemaReady()
@@ -65,6 +74,8 @@ CreateThread(function()
         print(('^3[sd-phone]^0 %d table(s) degraded: %s'):format(#degraded, table.concat(degraded, ', ')))
         print('^3[sd-phone]^0 these names are already used by another resource. Rename them (or drop them if unused) and restart.')
     end
+
+    for _, line in ipairs(warnings) do print(line) end
 
     local oxlib = version.ofResource('ox_lib')
     if oxlib and version.isNewer(oxlib, OXLIB_FLOOR) then

@@ -1,6 +1,8 @@
 ---@type fun(nuiAction: string, serverEvent: string, onAccepted?: function, transform?: fun(res: table))
 ---NUI->server pass-through registrar (client.nui).
 local proxyCallback = require 'client.nui'
+---@type table Locale bridge (bridge.shared.locale): t(key, english, vars) for in-world text.
+local locale = require 'bridge.shared.locale'
 ---@type table Notify bridge (bridge.client.notify): backend-agnostic toast notifications.
 local notify = require 'bridge.client.notify'
 ---@type fun(raw: any): VehicleModel Stored model value to hash/spawn/display (client.vehiclename).
@@ -15,7 +17,7 @@ local ACTIONS = {
     'persons:search', 'persons:get', 'persons:notes', 'persons:flags', 'persons:mugshot',
     'vehicles:search', 'vehicles:get', 'vehicles:update',
     'weapons:search', 'weapons:get', 'weapons:create', 'weapons:update',
-    'cameras:list', 'cameras:watch', 'cameras:unwatch',
+    'cameras:list', 'recordings:list', 'recordings:delete', 'recordings:share',
     'reports:list', 'reports:get', 'reports:save', 'reports:delete',
     'cases:list', 'cases:get', 'cases:save', 'cases:delete', 'cases:note', 'cases:assign', 'cases:linkReport',
     'warrants:list', 'warrants:get', 'warrants:issue', 'warrants:close', 'warrants:void',
@@ -78,13 +80,13 @@ RegisterNUICallback('sd-phone:mdt:setWaypoint', function(payload, cb)
     local x = type(payload) == 'table' and tonumber(payload.x) or nil
     local y = type(payload) == 'table' and tonumber(payload.y) or nil
     if not x or not y then
-        notify.show({ description = 'Could not set waypoint.', type = 'error' })
+        notify.show({ description = locale.t('mdt.waypointFailed', 'Could not set waypoint.'), type = 'error' })
         cb({ success = false })
         return
     end
 
     SetNewWaypoint(x + 0.0, y + 0.0)
-    notify.show({ description = 'Waypoint set.', type = 'success' })
+    notify.show({ description = locale.t('mdt.waypointSet', 'Waypoint set.'), type = 'success' })
     cb({ success = true })
 end)
 
@@ -119,22 +121,3 @@ RegisterNetEvent('sd-phone:client:mdt:warrant', function(data)
     SendNUIMessage({ action = 'sd-phone:mdt:warrant', data = data })
 end)
 
----Server push: one media segment from a unit's camera, addressed to this terminal only.
----@param data table { citizenid, gen, chunk, init, mime? }
-RegisterNetEvent('sd-phone:client:mdt:cameraChunk', function(data)
-    SendNUIMessage({ action = 'sd-phone:mdt:cameraChunk', data = data })
-end)
-
----Server push: a camera this terminal was watching has gone off the air.
----@param data table { citizenid, reason }
-RegisterNetEvent('sd-phone:client:mdt:cameraOff', function(data)
-    SendNUIMessage({ action = 'sd-phone:mdt:cameraOff', data = data })
-end)
-
----Server push: the transport a unit's camera publishes on changed. The terminal follows the
----publisher rather than choosing for itself, and it keeps listening on the event path above
----whichever way this points, so a downgrade costs a rebuilt picture and nothing else.
----@param data table { citizenid, transport }
-RegisterNetEvent('sd-phone:client:mdt:cameraTransport', function(data)
-    SendNUIMessage({ action = 'sd-phone:mdt:cameraTransport', data = data })
-end)

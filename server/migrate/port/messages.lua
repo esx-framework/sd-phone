@@ -46,40 +46,6 @@ local function firstAttachment(attachments)
     return nil
 end
 
----@type string base64url alphabet, matching web/src/lib/waypointCode.ts.
-local B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
-
----base64url without padding, so the client's decoder accepts it.
----@param data string
----@return string
-local function b64url(data)
-    local out, len = {}, #data
-    for i = 1, len, 3 do
-        local a, b, c = data:byte(i, i + 2)
-        local n = a * 65536 + (b or 0) * 256 + (c or 0)
-        local chunk = {
-            B64:sub((n >> 18) + 1, (n >> 18) + 1),
-            B64:sub(((n >> 12) & 63) + 1, ((n >> 12) & 63) + 1),
-            b and B64:sub(((n >> 6) & 63) + 1, ((n >> 6) & 63) + 1) or '',
-            c and B64:sub((n & 63) + 1, (n & 63) + 1) or '',
-        }
-        out[#out + 1] = table.concat(chunk)
-    end
-    return table.concat(out)
-end
-
----An sd-phone shared-waypoint code for a world position. Mirrors encodeWaypoint in
----web/src/lib/waypointCode.ts: an `SDW1:` prefix over base64url of { l, x, y, i, c }.
----@param x number
----@param y number
----@return string
-local function waypointCode(x, y)
-    return 'SDW1:' .. b64url(json.encode({
-        l = 'Shared location', x = lib.math.round(x), y = lib.math.round(y),
-        i = 'MapPin', c = '#5c6cf3',
-    }))
-end
-
 ---Translates lb-phone's in-body markers into sd-phone message kinds.
 ---
 ---lb-phone encodes non-text messages as tokens inside the body (`<!CALL-NO-ANSWER!>`,
@@ -99,7 +65,7 @@ local function fromMarker(body)
 
     local x, y = body:match('<!SENT%-LOCATION%-X=(-?[%d%.]+)Y=(-?[%d%.]+)!>')
     if x and y then
-        return 'location', 'Shared location', { wpCode = waypointCode(tonumber(x), tonumber(y)) }
+        return 'location', 'Shared location', { wpCode = util.waypointCode(tonumber(x), tonumber(y)) }
     end
 
     local requested = body:match('<!REQUESTED%-PAYMENT%-(%d+)!>')
@@ -153,7 +119,9 @@ function M.run(ctx)
     local groupRows, memberRows, msgRows = {}, {}, {}
     local migrated, skipped, groupCount = 0, 0, 0
 
-    for _, ch in ipairs(store.lbChannels()) do
+    local channels = store.lbChannels()
+    for chIndex, ch in ipairs(channels) do
+        if ctx.report then ctx.report(chIndex, #channels) end
         -- Resolve every channel member to { number, cid, isOwner }.
         local members = {}
         for _, m in ipairs(membersByChannel[ch.id] or {}) do

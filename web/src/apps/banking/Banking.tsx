@@ -12,11 +12,13 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { formatMoney } from './data';
 import { useStreamerHidden } from '@/stores/themeStore';
 import { HIDDEN_TEXT } from '@/shell/streamerMode';
-import { fetchOverview, type BankOverview, type BankTx } from './bankingApi';
+import { fetchOverview, setCardStyle, type BankOverview, type BankTx } from './bankingApi';
 import { fetchReceivedInvoices } from '@/apps/services/servicesApi';
 import { AllTransactions } from './AllTransactions';
 import { SendMoney, prefillTransferAgain } from './SendMoney';
-import { FleecaCard } from './FleecaCard';
+import { BankCard } from './BankCard';
+import { BankCardPicker } from './BankCardPicker';
+import { resolveStyle, type CardStyle } from './bankBrands';
 import { TxRows } from './TxRow';
 import { InvoicesTab } from './InvoicesTab';
 import { TabBar, type TabBarItem } from '@/ui/TabBar';
@@ -45,6 +47,8 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
     const [showAll,  setShowAll]  = useSessionState('banking:showAll', false);
     const [sending,  setSending]  = useSessionState('banking:sending', false);
     const [actionTx, setActionTx] = useState<BankTx | null>(null);
+    const [pickingCard, setPickingCard] = useState(false);
+    const [styleOverride, setStyleOverride] = useState<CardStyle | null>(null);
 
     function transferAgain(tx: BankTx) {
         if (!tx.peerNumber) return;
@@ -79,6 +83,17 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
     const holder  = (overview?.name || t('banking.accountHolderFallback', 'Account')).toUpperCase();
     const last4   = (overview?.number || '').replace(/\D/g, '').slice(-4) || '0000';
 
+    const cardLast4  = hideCard ? HIDDEN_TEXT : last4;
+    const cardLocked = overview?.cardLocked ?? true;
+    const cardStyle  = resolveStyle(styleOverride ?? overview?.cardStyle);
+
+    function pickCardStyle(style: CardStyle) {
+        setStyleOverride(style);
+        void setCardStyle(style).then(res => {
+            if (!res.success) setStyleOverride(null);
+        });
+    }
+
     const tabs: TabBarItem<BankingTab>[] = [
         { id: 'home',     label: t('banking.tabHome', 'Home'),     icon: a => <House       className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} /> },
         { id: 'invoices', label: t('banking.invoices', 'Invoices'), icon: a => <ReceiptText className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} />, badge: (receivedInv ?? []).filter(i => i.status === 'pending').length },
@@ -102,7 +117,18 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
             <div className="px-5 pb-2 pt-0.5 text-[34px] font-bold tracking-tight">{t('banking.wallet', 'Wallet')}</div>
 
             <div className="flex-1 overflow-y-auto overscroll-contain no-scrollbar px-4 pb-10 pt-3" style={{ contain: 'paint' }}>
-                <FleecaCard holder={holder} last4={hideCard ? HIDDEN_TEXT : last4} expiry={CARD_EXPIRY} />
+                {cardLocked ? (
+                    <BankCard holder={holder} last4={cardLast4} expiry={CARD_EXPIRY} style={cardStyle} />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setPickingCard(true)}
+                        aria-label={t('banking.chooseBank', 'Choose Your Bank')}
+                        className="block w-full rounded-[20px] transition-transform active:scale-[0.985]"
+                    >
+                        <BankCard holder={holder} last4={cardLast4} expiry={CARD_EXPIRY} style={cardStyle} />
+                    </button>
+                )}
 
                 <div className="mt-5 flex items-center justify-between rounded-[16px] bg-surface px-5 py-3">
                     <div>
@@ -150,8 +176,20 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
             {sending && (
                 <SendMoney
                     balance={balance}
+                    allowAnonymous={overview?.allowAnonymous ?? false}
                     onClose={() => setSending(false)}
                     onSent={() => { setSending(false); refresh(); }}
+                />
+            )}
+
+            {pickingCard && (
+                <BankCardPicker
+                    holder={holder}
+                    last4={cardLast4}
+                    expiry={CARD_EXPIRY}
+                    current={cardStyle}
+                    onPick={pickCardStyle}
+                    onClose={() => setPickingCard(false)}
                 />
             )}
 

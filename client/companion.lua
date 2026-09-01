@@ -17,10 +17,14 @@
 ---@class CompanionHook
 ---@field companionOpen boolean a companion device currently owns the screen
 ---@field phoneOpen boolean our own NUI is up (mirrored from client/main.lua)
+---@field mirrorOwner string|nil resource that armed the mirror, so only its stop disarms it
+---@field screenOwner string|nil resource that took the screen, on the same basis
 local hook = {
     companionOpen = false,
     phoneOpen     = false,
     mirroring     = false,
+    mirrorOwner   = nil,
+    screenOwner   = nil,
 }
 
 ---@type table<string, fun(payload: any, cb: fun(result: any))> Every NUI callback this resource registers.
@@ -149,24 +153,33 @@ end)
 
 ---exports['sd-phone']:setCompanionMirror(enabled) - start or stop re-emitting NUI pushes.
 exports('setCompanionMirror', function(enabled)
-    hook.mirroring = enabled == true
+    hook.mirroring   = enabled == true
+    hook.mirrorOwner = hook.mirroring and GetInvokingResource() or nil
 end)
 
 ---exports['sd-phone']:setCompanionOpen(open) - a companion device took or released the screen.
 exports('setCompanionOpen', function(open)
     hook.companionOpen = open == true
+    hook.screenOwner   = hook.companionOpen and GetInvokingResource() or nil
     TriggerEvent('sd-phone:client:companionState', hook.companionOpen)
 end)
 
 ---exports['sd-phone']:isCompanionOpen()
 exports('isCompanionOpen', function() return hook.companionOpen end)
 
--- A companion that stops mid-session must not leave the mirror or the focus guard armed.
+-- A companion that stops mid-session must not leave the mirror or the focus guard armed. Only
+-- the resource that armed each one disarms it: keying off any stop at all meant restarting an
+-- unrelated resource went deaf on a companion that was still very much on screen.
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then return end
-    if hook.mirroring or hook.companionOpen then
-        hook.mirroring     = false
+    if hook.mirrorOwner == resource then
+        hook.mirroring   = false
+        hook.mirrorOwner = nil
+    end
+    if hook.screenOwner == resource then
         hook.companionOpen = false
+        hook.screenOwner   = nil
+        TriggerEvent('sd-phone:client:companionState', false)
     end
 end)
 

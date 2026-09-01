@@ -53,6 +53,7 @@ end)
 -- Authoritative NUI-facing callbacks: thin delegates into server.banking.actions.
 lib.callback.register('sd-phone:server:banking:overview', function(src) return actions.overview(src) end)
 lib.callback.register('sd-phone:server:banking:send', function(src, payload) return actions.send(src, payload) end)
+lib.callback.register('sd-phone:server:banking:setCardStyle', function(src, payload) return actions.setCardStyle(src, payload) end)
 
 ---Public export: exports['sd-phone']:addBankTransaction(citizenid, data). Appends a transaction
 ---to a character's Wallet list (log-only); `amount` is signed and `notify` pops a banner.

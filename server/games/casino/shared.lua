@@ -2,11 +2,31 @@
 local player = require 'bridge.server.player'
 ---@type table Shared server helpers (server.util): finite-number guard for client-supplied wagers.
 local util   = require 'server.util'
+---@type table sd-phone config root (configs/config.lua): which games the casino offers.
+local config = require 'configs.config'
 
 ---@type table Casino helpers; the table returned at end of file. Shared by the house games
 ---(slots, roulette) so the identity lookup, the wager sanitiser and the stats verdict are written
 ---once: every one of them sits in front of a chip debit, so they must not drift per game.
 local shared = {}
+
+---@type table Per-game switches (config.Casino.Games). A game missing from the table counts as on,
+---so a config written before the switches existed keeps every game.
+local GAMES = ((config.Casino or {}).Games) or {}
+
+---Whether a casino game is switched on for this server.
+---@param game 'blackjack'|'holdem'|'crash'|'baccarat'|'roulette'|'slots'
+---@return boolean
+function shared.enabled(game)
+    return GAMES[game] ~= false
+end
+
+---The refusal a switched-off game answers with, so a tampered page gets a straight answer rather
+---than a callback that never returns.
+---@return table envelope
+function shared.shut()
+    return util.fail('games.gameClosedServer', 'That game is closed on this server')
+end
 
 ---@param src integer player server id
 ---@return string|nil citizenid for a server-trusted src (nil when offline)

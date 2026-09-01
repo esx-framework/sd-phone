@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 const ANIM = {
     x: {
@@ -12,18 +12,24 @@ const ANIM = {
         exit:   'ios-sheet-down 0.26s cubic-bezier(0.32,0,0.68,1) forwards',
         exitMs: 260,
     },
+    soft: {
+        enter:  'swipe-in-soft 0.45s cubic-bezier(0.22,1,0.36,1)',
+        exit:   'swipe-out-soft 0.34s cubic-bezier(0.22,1,0.36,1) forwards',
+        exitMs: 340,
+    },
 } as const;
 
 interface SlideOverProps {
     onClose:    () => void;
     animateIn?: boolean;
-    direction?: 'x' | 'y';
+    direction?: 'x' | 'y' | 'soft';
     className?: string;
+    style?:     CSSProperties;
     zIndex?:    number;
     children:   (close: (after?: () => void) => void) => ReactNode;
 }
 
-export function SlideOver({ onClose, animateIn = true, direction = 'x', className = '', zIndex = 30, children }: SlideOverProps) {
+export function SlideOver({ onClose, animateIn = true, direction = 'x', className = '', style, zIndex = 30, children }: SlideOverProps) {
     const [exiting, setExiting] = useState(false);
     const exit = useRef<() => void>(onClose);
     const finished = useRef(false);
@@ -54,6 +60,7 @@ export function SlideOver({ onClose, animateIn = true, direction = 'x', classNam
                 zIndex,
                 animation:  exiting ? anim.exit : animateIn ? anim.enter : undefined,
                 willChange: 'transform',
+                ...style,
             }}
             onAnimationEnd={e => { if (exiting && e.target === e.currentTarget) finish(); }}
         >

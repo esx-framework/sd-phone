@@ -85,11 +85,15 @@ function M.run(ctx)
         end
     end
 
+    if ctx.report then ctx.report(1, 3) end
+
     local inbox, logins = {}, {}
     for _, a in ipairs(kept) do
         inbox[a.email] = {}
         logins[a.email] = {}
     end
+
+    if ctx.report then ctx.report(2, 3) end
 
     if store.lbSource('mail_messages') then
         for _, m in ipairs(store.lbMailMessages()) do
@@ -118,6 +122,8 @@ function M.run(ctx)
             end
         end
     end
+
+    if ctx.report then ctx.report(3, 3) end
 
     local grants = {}
     if store.lbSource('logged_in_accounts') then
@@ -151,14 +157,23 @@ function M.run(ctx)
     -- The accounts engine copies mail accounts across at boot, which has already happened by the
     -- time the import runs. Insert them here too, or these accounts have no engine row for the
     -- login grant below to attach a password to, and no recovery path at all until a restart.
-    local engineRows = {}
+    -- lb's own bcrypt hash comes across with the account. lb never recorded who owns a mailbox, so
+    -- for all but the handful that were signed in there is nobody to hand a fresh password to;
+    -- carrying the hash is what lets the owner in on the password they already use. The accounts
+    -- engine rewrites it to scrypt the first time it accepts one.
+    local engineRows, adoptRows = {}, {}
     for _, a in ipairs(kept) do
-        engineRows[#engineRows + 1] = { 'mail', a.email:sub(1, 64), localPart(a.raw):sub(1, 50), '' }
+        local hash = tostring(a.password or ''):sub(1, 255)
+        engineRows[#engineRows + 1] = { 'mail', a.email:sub(1, 64), localPart(a.raw):sub(1, 50), hash }
+        if hash ~= '' then adoptRows[#adoptRows + 1] = { 'mail', a.email:sub(1, 64), hash } end
     end
 
     if not ctx.dryRun then
         store.insertMailAccounts(rows)
         store.insertPgAccounts(engineRows)
+        -- Fills the hash in on mailboxes an earlier import created before this was carried across.
+        -- Only ever fills a blank, so a mailbox whose owner has since set their own password keeps it.
+        out.adopted = store.adoptLegacyHashes(adoptRows)
         -- The session index is derived from logged_in_citizens and is normally rebuilt at boot,
         -- which has already happened by the time the import runs. Rebuild it now so migrated
         -- players are signed into mail immediately rather than after the next restart.

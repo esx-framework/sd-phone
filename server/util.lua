@@ -25,11 +25,20 @@ end
 ---@return { success: true, data?: any }
 function util.ok(data) return { success = true, data = data } end
 
----Failure response envelope - the shape every callback/action returns when it refuses. `message`
----is the already-localised, user-facing reason the UI shows.
----@param message string user-facing failure reason
----@return { success: false, message: string }
-function util.fail(message) return { success = false, message = message } end
+---Failure response envelope - the shape every callback/action returns when it refuses. The server
+---has no per-player language, so it sends both halves: `messageKey` is the catalogue key the NUI
+---resolves against the player's own locale, and `message` is the English text it falls back to.
+---Called with one argument the message is passed through unkeyed and stays English.
+---`vars` fills {placeholder} spans in both halves, so a message carrying a number stays one
+---catalogue entry: fail('contacts.atMost', 'You can store at most {n} contacts', { n = 50 }).
+---@param key string catalogue key, e.g. 'banking.insufficientFunds'
+---@param message? string English text the NUI shows when the key is not in the player's catalogue
+---@param vars? table<string, any> {placeholder} replacements applied by the NUI
+---@return { success: false, messageKey?: string, message: string, messageVars?: table }
+function util.fail(key, message, vars)
+    if message == nil then return { success = false, message = key } end
+    return { success = false, messageKey = key, message = message, messageVars = vars }
+end
 
 ---@type string Alphabet for generated row ids (base-36, lowercase) - matches the frontend's id shape.
 local ID_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -103,6 +112,33 @@ local LENGTH = math.floor(tonumber(NUMBER.Length) or 10)
 if LENGTH < 3 then LENGTH = 3 end
 if LENGTH > 15 then LENGTH = 15 end
 
+---@type integer Random digits a generated number keeps however long the prefix is. Four leaves ten
+---thousand numbers behind each prefix, which the twenty-attempt uniqueness retry in
+---server.sim.store can still find a free slot in.
+local MIN_RANDOM = 4
+
+---@type string Digits every new number starts with, from config.Phone.Number.Prefix. An unusable
+---prefix is refused outright rather than half-applied, and says so on boot: silently handing out
+---numbers in a shape the server owner did not ask for is worse than ignoring the setting.
+local PREFIX = (function()
+    local raw = (tostring(NUMBER.Prefix or ''):gsub('%D', ''))
+    if raw == '' then return '' end
+
+    local lead = raw:sub(1, 1)
+    if lead == '0' or lead == '1' then
+        print(('^3[sd-phone]^0 Number.Prefix "%s" ignored: it cannot start with 0 or 1, because a leading zero is lost the first time the number passes through tonumber.'):format(raw))
+        return ''
+    end
+    if #raw > LENGTH - MIN_RANDOM then
+        print(('^3[sd-phone]^0 Number.Prefix "%s" ignored: it leaves fewer than %d random digits at Length %d, so numbers would collide.'):format(raw, MIN_RANDOM, LENGTH))
+        return ''
+    end
+    return raw
+end)()
+
+---@type string The configured prefix as it is actually being applied, empty when there is none.
+util.numberPrefix = PREFIX
+
 ---Renders digits into a display pattern: every X takes the next digit, every other character is
 ---literal. Digits past the pattern's last X are appended so nothing is ever silently dropped.
 ---@param pattern string
@@ -135,13 +171,14 @@ function util.formatNumber(number)
     return applyPattern(pattern, d)
 end
 
----A random phone number as bare digits, at the configured length. The leading digit avoids 0 and
----1 so numbers still read like real ones (and so the digit count never shrinks through a
----tonumber round-trip somewhere downstream).
+---A random phone number as bare digits, at the configured length. Without a prefix the leading
+---digit avoids 0 and 1 so numbers still read like real ones (and so the digit count never shrinks
+---through a tonumber round-trip somewhere downstream). With one, the prefix leads and is already
+---held to the same rule.
 ---@return string number bare digits, `config.Phone.Number.Length` of them
 function util.randomNumber()
-    local out = { tostring(math.random(2, 9)) }
-    for i = 2, LENGTH do out[i] = tostring(math.random(0, 9)) end
+    local out = { PREFIX ~= '' and PREFIX or tostring(math.random(2, 9)) }
+    for _ = #out[1] + 1, LENGTH do out[#out + 1] = tostring(math.random(0, 9)) end
     return table.concat(out)
 end
 
@@ -728,6 +765,55 @@ function util.pushMany(event, targets, ...)
     for i = 1, #targets do
         TriggerClientEvent(event, targets[i], ...)
     end
+end
+
+---@type string base64url alphabet, matching b64urlEncode in web/src/lib/waypointCode.ts.
+local WP_B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+
+---@type table<string, boolean> Pin glyphs decodeWaypoint accepts; anything else falls back to MapPin.
+local WP_ICONS = {
+    MapPin = true, Home = true, Star = true, Flag = true, Skull = true, DollarSign = true,
+    Car = true, Crosshair = true, Heart = true, Wrench = true, ShoppingCart = true, Fuel = true,
+}
+
+---base64url encode, unpadded.
+---@param data string
+---@return string
+local function b64url(data)
+    local out = {}
+    for i = 1, #data, 3 do
+        local a, b, c = data:byte(i, i + 2)
+        local n = a * 65536 + (b or 0) * 256 + (c or 0)
+        out[#out + 1] = table.concat({
+            WP_B64:sub((n >> 18) + 1, (n >> 18) + 1),
+            WP_B64:sub(((n >> 12) & 63) + 1, ((n >> 12) & 63) + 1),
+            b and WP_B64:sub(((n >> 6) & 63) + 1, ((n >> 6) & 63) + 1) or '',
+            c and WP_B64:sub((n & 63) + 1, (n & 63) + 1) or '',
+        })
+    end
+    return table.concat(out)
+end
+
+---Builds the shared-waypoint code a location message carries in its `wpCode` meta field. Mirrors
+---encodeWaypoint in web/src/lib/waypointCode.ts: an `SDW1:` prefix over base64url of { l,x,y,i,c }.
+---@param x number world x
+---@param y number world y
+---@param label string|nil pin label, capped at 40 chars by the decoder
+---@param icon string|nil one of WP_ICONS, default MapPin
+---@param color string|nil hex colour, default #5c6cf3
+---@return string|nil code nil when the position is not finite
+function util.waypointCode(x, y, label, icon, color)
+    x, y = tonumber(x), tonumber(y)
+    if not util.finite(x) or not util.finite(y) then return nil end
+
+    local text = util.trim(label)
+    return 'SDW1:' .. b64url(json.encode({
+        l = text ~= '' and text:sub(1, 40) or 'Shared location',
+        x = math.floor(x + 0.5),
+        y = math.floor(y + 0.5),
+        i = WP_ICONS[icon] and icon or 'MapPin',
+        c = type(color) == 'string' and color:match('^#%x%x%x+$') or '#5c6cf3',
+    }))
 end
 
 return util

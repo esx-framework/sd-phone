@@ -5,6 +5,18 @@
 -- value there is invisible until it is expensive. Blackjack keeps its own limits in
 -- server/games/blackjack.lua.
 return {
+    -- Which games the Casino app offers. A game switched off here is hidden from the lobby and
+    -- its server callbacks refuse, so it cannot be reached by a tampered page either. Omitting a
+    -- game from this table leaves it on, so an older config keeps every game.
+    Games = {
+        blackjack = true,
+        holdem    = true,
+        crash     = true,
+        baccarat  = true,
+        roulette  = true,
+        slots     = true,
+    },
+
     Slots = {
         MinLineBet   = 5,
         MaxLineBet   = 5000,   -- x5 lines, so 25,000 chips is the biggest slots stake

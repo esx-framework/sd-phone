@@ -1,3 +1,9 @@
+---@type fun(nuiAction: string, serverEvent: string) NUI->server pass-through registrar (client.nui).
+local proxyCallback = require 'client.nui'
+
+proxyCallback('sd-phone:health:summary',     'sd-phone:server:health:summary')
+proxyCallback('sd-phone:health:leaderboard', 'sd-phone:server:health:leaderboard')
+
 ---Resolves the player's current activity state; the most-intense match wins.
 ---@param ped number
 ---@return 'dead'|'vehicle'|'sprinting'|'running'|'walking'|'idle'
@@ -56,6 +62,35 @@ local stats = {
     state     = 'idle',
 }
 
+---@type table Banked-since-last-flush amounts. The server takes deltas rather than totals so a
+---relog cannot re-bank a whole session, and it caps each one against the time it had to happen in.
+local pending = {
+    steps     = 0,
+    distanceM = 0,
+    activeMs  = 0,
+    peakHr    = 0,
+}
+
+---@type integer Seconds between flushes while the player is connected.
+local FLUSH_SECONDS <const> = 60
+
+---Hands the accumulated deltas to the server and starts a fresh window. An empty flush is dropped
+---rather than sent.
+local function flush()
+    if pending.steps < 1 and pending.distanceM < 1 and pending.activeMs < 1 and pending.peakHr < 1 then
+        return
+    end
+
+    TriggerServerEvent('sd-phone:server:health:flush', {
+        steps     = math.floor(pending.steps),
+        distanceM = math.floor(pending.distanceM),
+        activeMs  = math.floor(pending.activeMs),
+        heartRate = math.floor(pending.peakHr),
+    })
+
+    pending.steps, pending.distanceM, pending.activeMs, pending.peakHr = 0, 0, 0, 0
+end
+
 ---Per-tick sampler: classifies the ped, accumulates steps + on-foot distance, and smooths heart
 ---rate toward the per-state target. Runs for the lifetime of the resource.
 CreateThread(function()
@@ -75,13 +110,19 @@ CreateThread(function()
             local state = detectState(ped)
             stats.state = state
 
-            stats.steps = stats.steps + (CADENCE[state] * dt)
+            local tickSteps = CADENCE[state] * dt
+            stats.steps   = stats.steps + tickSteps
+            pending.steps = pending.steps + tickSteps
+
+            local onFoot = state == 'walking' or state == 'running' or state == 'sprinting'
+            if onFoot then pending.activeMs = pending.activeMs + (dt * 1000.0) end
 
             local pos = GetEntityCoords(ped)
-            if lastPos and (state == 'walking' or state == 'running' or state == 'sprinting') then
+            if lastPos and onFoot then
                 local delta = #(pos - lastPos)
                 if delta < MAX_TICK_DISTANCE_M then
-                    stats.distanceM = stats.distanceM + delta
+                    stats.distanceM   = stats.distanceM + delta
+                    pending.distanceM = pending.distanceM + delta
                 end
             end
             lastPos = pos
@@ -92,6 +133,7 @@ CreateThread(function()
                 local effective = math.min(1.0, baseA * (dt / (TICK_MS / 1000.0)))
                 stats.heartRate = stats.heartRate + (target - stats.heartRate) * effective
                 stats.heartRate = stats.heartRate + (math.random() - 0.5) * HR_JITTER * 2
+                if stats.heartRate > pending.peakHr then pending.peakHr = stats.heartRate end
             else
                 stats.heartRate = 0
             end
@@ -102,7 +144,8 @@ end)
 ---@type boolean True while the phone is on screen (gates the NUI pump below).
 local phoneOpen = false
 
----Pushes the current stats snapshot into the NUI; steps floor, heart rate rounds.
+---Pushes the current stats snapshot into the NUI; steps floor, heart rate rounds. Carries the
+---unflushed amounts too, which the app adds to the server's daily total.
 local function pushSnapshot()
     SendNUIMessage({
         action = 'sd-phone:health',
@@ -111,6 +154,11 @@ local function pushSnapshot()
             distanceM = stats.distanceM,
             heartRate = lib.math.round(stats.heartRate),
             state     = stats.state,
+            pending   = {
+                steps     = math.floor(pending.steps),
+                distanceM = math.floor(pending.distanceM),
+                activeMs  = math.floor(pending.activeMs),
+            },
         },
     })
 end
@@ -130,4 +178,20 @@ CreateThread(function()
         Wait(1000)
         if phoneOpen then pushSnapshot() end
     end
+end)
+
+-- 60s flush pump. Runs whether or not the phone is on screen.
+CreateThread(function()
+    if not APP_ENABLED then return end
+
+    while true do
+        Wait(FLUSH_SECONDS * 1000)
+        flush()
+    end
+end)
+
+-- Final flush on resource stop.
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    if APP_ENABLED then flush() end
 end)

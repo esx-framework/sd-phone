@@ -4,7 +4,7 @@ import { Mic, MicOff, Orbit, Phone, ScanFace, SwitchCamera, Video } from 'lucide
 import { useNuiEvent } from '@/hooks/useNuiEvent';
 import {
     fetchIceConfig, setVideoCamera, setVideoCursor, setVideoZoom, stopVideo,
-    toggleVideoFaceCam, toggleVideoLock, VideoPeer,
+    toggleVideoFaceCam, toggleVideoLock, CallPeer,
     VIDEO_CAPTURE_FPS, VIDEO_CAPTURE_WIDTH, type Signal,
 } from './webrtc';
 import { getGameRender, PORTRAIT_CROP, type GameRender } from '@/render';
@@ -55,11 +55,12 @@ export function VideoCall({ peerName, initiator, muted, canMute, onToggleMute, o
 }) {
     const localCanvas = useRef<HTMLCanvasElement>(null);
     const remoteVideo = useRef<HTMLVideoElement>(null);
-    const peerRef     = useRef<VideoPeer | null>(null);
+    const peerRef     = useRef<CallPeer | null>(null);
     const renderRef   = useRef<GameRender | null>(null);
     const pending     = useRef<Signal[]>([]);
     const [front, setFront]   = useState(true);
     const [hasRemote, setHasRemote] = useState(false);
+    const [linkFailed, setLinkFailed] = useState(false);
     const [walkable, setWalkable]   = useState(false);
     const [hintCfg,  setHintCfg]    = useState<HintConfig>(HINT_DEFAULTS);
     const [angleLocked, setAngleLocked] = useState(false);
@@ -111,11 +112,12 @@ export function VideoCall({ peerName, initiator, muted, canMute, onToggleMute, o
 
             const cfg  = await fetchIceConfig();
             if (dead) return;
-            const peer = new VideoPeer(cfg, initiator);
+            const peer = new CallPeer(cfg, initiator);
             peer.onRemote = (stream) => {
-                setHasRemote(true);
                 if (remoteVideo.current) remoteVideo.current.srcObject = stream;
             };
+            peer.onRemoteLive = () => { setHasRemote(true); setLinkFailed(false); };
+            peer.onFailed = () => setLinkFailed(true);
             await peer.start(local);
             if (dead) { peer.close(); return; }
             peerRef.current = peer;
@@ -137,6 +139,7 @@ export function VideoCall({ peerName, initiator, muted, canMute, onToggleMute, o
     }, [initiator]);
 
     useNuiEvent('sd-phone:video:signal', useCallback((data) => {
+        if (data?.slot === 'record') return;
         if (peerRef.current) void peerRef.current.handle(data);
         else pending.current.push(data);
     }, []));
@@ -218,9 +221,16 @@ export function VideoCall({ peerName, initiator, muted, canMute, onToggleMute, o
                 className="absolute inset-0 h-full w-full object-cover"
             />
             {!hasRemote && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#101015] text-white/70">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#101015] px-8 text-center text-white/70">
                     <Video className="h-10 w-10" strokeWidth={1.6} />
-                    <span className="text-[16px]">{t('phone.connectingVideo','Connecting video…')}</span>
+                    {linkFailed ? (
+                        <>
+                            <span className="text-[16px] font-semibold text-white/85">{t('phone.videoLinkFailed', "Couldn't connect video")}</span>
+                            <span className="text-[14px] leading-snug text-white/55">{t('phone.videoLinkFailedHint', 'The call audio is still connected.')}</span>
+                        </>
+                    ) : (
+                        <span className="text-[16px]">{t('phone.connectingVideo','Connecting video…')}</span>
+                    )}
                 </div>
             )}
 

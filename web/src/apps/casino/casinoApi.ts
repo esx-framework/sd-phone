@@ -9,6 +9,23 @@ export interface CasinoGameProps {
 
 export const CASINO_TAG = 'casino';
 
+const ALL_GAMES: CasinoGame[] = ['blackjack', 'holdem', 'crash', 'baccarat', 'roulette', 'slots'];
+
+let offered: CasinoGame[] = [...ALL_GAMES];
+
+export function setCasinoGames(games: string[] | undefined): void {
+    if (!Array.isArray(games)) {
+        offered = [...ALL_GAMES];
+        return;
+    }
+    const wanted = new Set(games);
+    offered = ALL_GAMES.filter(game => wanted.has(game));
+}
+
+export function casinoGames(): CasinoGame[] {
+    return offered;
+}
+
 export const GAME_ACCENT: Record<CasinoGame, string> = {
     blackjack: '#1C8A4E',
     holdem:    '#5A3488',
