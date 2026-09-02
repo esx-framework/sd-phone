@@ -19,7 +19,7 @@ export function ControlCenter({ open, onClose, onOpenApp, onWifi }: {
     onOpenApp: (id: string) => void;
     onWifi?: (on: boolean) => void;
 }) {
-    const { theme, setTheme, brightness, setBrightness, ringtoneVol, setRingtoneVol, airplaneMode, setAirplaneMode } = useTheme('theme', 'setTheme', 'brightness', 'setBrightness', 'ringtoneVol', 'setRingtoneVol', 'airplaneMode', 'setAirplaneMode');
+    const { theme, setTheme, brightness, setBrightness, ringtoneVol, setRingtoneVol, airplaneMode, setAirplaneMode, focus, setFocus, lowPower, setLowPower, rotationLock, setRotationLock } = useTheme('theme', 'setTheme', 'brightness', 'setBrightness', 'ringtoneVol', 'setRingtoneVol', 'airplaneMode', 'setAirplaneMode', 'focus', 'setFocus', 'lowPower', 'setLowPower', 'rotationLock', 'setRotationLock');
     const music = useMusic();
 
     const [flash, setFlash]       = useState(false);
@@ -29,9 +29,6 @@ export function ControlCenter({ open, onClose, onOpenApp, onWifi }: {
         const id = window.setTimeout(() => setFrosted(false), 420);
         return () => window.clearTimeout(id);
     }, [open]);
-    const [rotation, setRotation] = useState(false);
-    const [focus, setFocus]       = useState(false);
-    const [lowPower, setLowPower] = useState(false);
 
     useEffect(() => {
         if (open && isFiveM) void fetchNui<{ on: boolean }>('sd-phone:flashlight:state').then(r => setFlash(!!r?.on));
@@ -92,14 +89,14 @@ export function ControlCenter({ open, onClose, onOpenApp, onWifi }: {
 
                     <div className="rounded-[36px] bg-white/[0.10] p-[22px]">
                         <div className="grid grid-cols-4 justify-items-center gap-y-[22px]">
-                            <Circle icon={Plane}      on={airplaneMode}    onClick={toggleAirplane}                color="#ff9f0a"                 label={t('shell.airplaneMode','Airplane Mode')} />
-                            <Circle icon={Video}                            onClick={() => launch('camera', { mode: 'VIDEO' })}                    label={t('shell.record','Record')} />
-                            <Circle icon={Flashlight} on={flash}           onClick={toggleFlash}                   color="#ffffff" glyph="#1c1c1e" label={t('shell.flashlight','Flashlight')} />
-                            <Circle icon={Moon}       on={focus}           onClick={() => setFocus(v => !v)}       color="#5e5ce6"                 label={t('shell.focus','Focus')} />
-                            <Circle icon={Camera}                           onClick={() => launch('camera', { mode: 'PHOTO' })}                    label={t('shell.camera','Camera')} />
-                            <Circle icon={BatteryLow} on={lowPower}        onClick={() => setLowPower(v => !v)}    color="#ffd60a" glyph="#1c1c1e" label={t('shell.lowPowerMode','Low Power Mode')} />
-                            <Circle icon={Contrast}   on={theme === 'dark'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} color="#5e5ce6" label={t('shell.darkMode','Dark Mode')} />
-                            <Circle icon={Smartphone} on={rotation}        onClick={() => setRotation(v => !v)}    color="#ff453a"                 label={t('shell.rotationLock','Rotation Lock')} />
+                            <Circle icon={Plane}      on={airplaneMode}     onClick={toggleAirplane}                                   color="#ff9f0a"                 label={t('shell.airplaneMode','Airplane Mode')} />
+                            <Circle icon={Video}                            onClick={() => launch('camera', { mode: 'VIDEO' })}                                         label={t('shell.record','Record')} />
+                            <Circle icon={Flashlight} on={flash}            onClick={toggleFlash}                                      color="#ffffff" glyph="#1c1c1e" label={t('shell.flashlight','Flashlight')} />
+                            <Circle icon={Moon}       on={focus}            onClick={() => setFocus(!focus)}                           color="#5e5ce6"                 label={t('shell.focus','Focus')} />
+                            <Circle icon={Camera}                           onClick={() => launch('camera', { mode: 'PHOTO' })}                                         label={t('shell.camera','Camera')} />
+                            <Circle icon={BatteryLow} on={lowPower}         onClick={() => setLowPower(!lowPower)}                     color="#ffd60a" glyph="#1c1c1e" label={t('shell.lowPowerMode','Low Power Mode')} />
+                            <Circle icon={Contrast}   on={theme === 'dark'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} color="#5e5ce6"               label={t('shell.darkMode','Dark Mode')} />
+                            <Circle icon={Smartphone} on={rotationLock}     onClick={() => setRotationLock(!rotationLock)}             color="#ff453a"                 label={t('shell.rotationLock','Rotation Lock')} />
                         </div>
                     </div>
                 </div>

@@ -151,6 +151,11 @@ export function markReadApi(conversation: string): void {
     void fetchNui('sd-phone:messages:markRead', { conversation });
 }
 
+export function typingApi(conversation: string, on: boolean): void {
+    if (!isFiveM) return;
+    void fetchNui('sd-phone:messages:typing', { conversation, on });
+}
+
 export function deleteConversationApi(conversation: string): void {
     if (!isFiveM) return;
     void fetchNui('sd-phone:messages:delete', { conversation });
@@ -232,6 +237,15 @@ export function patchThreadMessage<M extends { id: string }, T extends { id: str
 ): T[] {
     return threads.map(t => (
         t.id === threadId ? { ...t, messages: t.messages.map(m => (m.id === msgId ? fn(m) : m)) } : t
+    ));
+}
+
+export function applySeen(list: Conversation[], conversationId: string, seenAt: number): Conversation[] {
+    if (!conversationId || !seenAt) return list;
+    return list.map(c => (
+        c.id === conversationId
+            ? { ...c, messages: c.messages.map(m => (m.from === 'me' && !m.seenAt ? { ...m, seenAt } : m)) }
+            : c
     ));
 }
 

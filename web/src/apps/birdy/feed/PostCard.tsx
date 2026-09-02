@@ -3,18 +3,20 @@ import { Heart, MessageCircle, Repeat2 } from 'lucide-react';
 
 import { t } from '@/i18n';
 import { AlertDialog } from '@/ui/AlertDialog';
-import { LIKE, META, REPOST, relativeTime, type BirdyPost } from '../data';
+import { LIKE, META, REPOST, relativeTime, type BirdyPoll, type BirdyPost } from '../data';
 import { compactCount } from '../polish/format';
 import { HeartBurst } from '../polish/HeartBurst';
+import { PollBlock } from './PollBlock';
 import { Avatar, PostImages, RichText, VerifiedBadge } from '../ui';
 
-export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, onOpenAuthor }: {
+export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, onOpenAuthor, onPollVoted }: {
     post:          BirdyPost;
     isOwn:         boolean;
     onToggleLike:  () => void;
     onToggleRepost?: () => void;
     onOpen?:       () => void;
     onOpenAuthor?: (handle: string) => void;
+    onPollVoted?:  (poll: BirdyPoll) => void;
 }) {
     const openAuthor = (e: React.MouseEvent) => {
         if (!onOpenAuthor) return;
@@ -75,6 +77,8 @@ export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, on
                         <RichText text={post.body} />
                     </p>
                 )}
+
+                {post.poll && <PollBlock postId={post.id} poll={post.poll} onVoted={onPollVoted} />}
 
                 <PostImages images={post.images} />
 

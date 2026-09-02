@@ -51,6 +51,7 @@ function store.ensureSchema()
             is_read       TINYINT(1)   NOT NULL DEFAULT 0,
             withheld      TINYINT(1)   NOT NULL DEFAULT 0,
             created_at    BIGINT       NOT NULL,
+            seen_at       BIGINT       NULL,
             PRIMARY KEY (id),
             INDEX idx_phone_messages_thread (citizenid, conversation, created_at),
             INDEX idx_phone_messages_mid (mid)
@@ -119,6 +120,7 @@ function store.ensureSchema()
         is_read      = 'is_read TINYINT(1) NOT NULL DEFAULT 0',
         withheld     = 'withheld TINYINT(1) NOT NULL DEFAULT 0',
         created_at   = 'created_at BIGINT NOT NULL DEFAULT 0',
+        seen_at      = 'seen_at BIGINT NULL',
     })
     util.ensureIndex('phone_messages', 'idx_phone_messages_mid', '(mid)')
     util.ensureIndex('phone_messages', 'idx_phone_messages_thread', '(citizenid, conversation, created_at)')
@@ -170,11 +172,11 @@ local THREADS_CAP <const> = 200
 ---its last line meant a query per conversation (550 of them on a migrated mailbox) before the
 ---app could paint. Withheld rows are excluded. Read-only.
 ---@param citizenid string
----@return { conversation: string, id: string, mid: string, sender: string, direction: string, kind: string, body: string, meta: string, is_read: any, created_at: number, unread: number }[]
+---@return { conversation: string, id: string, mid: string, sender: string, direction: string, kind: string, body: string, meta: string, is_read: any, seen_at: number|nil, created_at: number, unread: number }[]
 function store.threadPreviews(citizenid)
     return MySQL.query.await(([[
         SELECT m.conversation, m.id, m.mid, m.sender, m.direction, m.kind, m.body, m.meta,
-               m.is_read, m.created_at, u.unread
+               m.is_read, m.seen_at, m.created_at, u.unread
         FROM phone_messages m
         INNER JOIN (
             SELECT conversation,
@@ -225,7 +227,7 @@ function store.threadMessages(citizenid, conversation, limit)
     local n = math.floor(tonumber(limit) or 200)
     if n < 1 then n = 1 end
     local rows = MySQL.query.await(([[
-        SELECT id, mid, sender, direction, kind, body, meta, is_read, created_at
+        SELECT id, mid, sender, direction, kind, body, meta, is_read, seen_at, created_at
         FROM phone_messages
         WHERE citizenid = ? AND conversation = ? AND withheld = 0
         ORDER BY created_at DESC
@@ -333,6 +335,22 @@ function store.markThreadRead(citizenid, conversation)
         SET is_read = 1
         WHERE citizenid = ? AND conversation = ? AND direction = 'incoming' AND is_read = 0
     ]], { citizenid, conversation })
+end
+
+---Stamps a sender's own outgoing copies of one thread with the moment the peer read them, so
+---their thread can swap the Delivered caption for a Read one. Only rows carrying no stamp yet
+---are touched, so the first read is the one that sticks and a repeat call costs nothing.
+---@param senderCid string the sender's mailbox, whose outgoing copies get stamped
+---@param conversation string the sender's thread key, i.e. the reader's number
+---@param seenAt number unix epoch
+---@return integer stamped row count
+function store.markOutgoingSeen(senderCid, conversation, seenAt)
+    local affected = MySQL.update.await([[
+        UPDATE phone_messages
+        SET seen_at = ?
+        WHERE citizenid = ? AND conversation = ? AND direction = 'outgoing' AND seen_at IS NULL
+    ]], { seenAt, senderCid, conversation })
+    return tonumber(affected) or 0
 end
 
 ---Counts unread inbound messages across every thread an owner has, excluding withheld rows.

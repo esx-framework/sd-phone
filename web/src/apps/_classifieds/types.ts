@@ -13,6 +13,7 @@ export interface ClassifiedItem {
     email?: string;
     date?:  string;
     mine?:  boolean;
+    publishAt?: number;
 }
 
 export interface ClassifiedDraft {
@@ -23,6 +24,7 @@ export interface ClassifiedDraft {
     images?: string[];
     number: string;
     email?: string;
+    publishAt?: number;
 }
 
 export function fmtPrice(n: number): string {

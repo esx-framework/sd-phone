@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Users } from 'lucide-react';
 
+import { isFiveM } from '@/core/nui';
 import { useTheme } from '@/stores/themeStore';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useSessionState } from '@/hooks/useSessionState';
+import { useDeckActive } from '@/shell/deckActive';
+import { Spinner } from '@/ui/Spinner';
+import { calendarDelete, calendarList, calendarSave } from './calendarApi';
 import {
-    addMonths, dayKey, formatLongDate, formatTime, loadState, saveState,
+    addMonths, clearLegacyEvents, dayKey, formatLongDate, formatTime, isShared, loadDayNotes, readLegacyEvents, saveDayNotes, sortEvents,
 } from './data';
-import type { CalEvent, CalState } from './data';
+import type { CalEvent, CalEventDraft } from './data';
 import { EventEditor } from './EventEditor';
 import { MonthGrid } from './MonthGrid';
 import { t } from '@/i18n';
@@ -19,8 +25,41 @@ export function Calendar({ onClose }: { onClose: () => void }) {
 
     const today = useMemo(() => new Date(), []);
     const [selected, setSelected] = useSessionState<Date>('calendar:selectedDate', today);
-    const [state, setState]       = useState<CalState>(() => loadState());
+    const [events, setEvents]     = useState<CalEvent[]>([]);
+    const [dayNotes, setDayNotes] = useState<Record<string, string>>(() => loadDayNotes());
     const [editing, setEditing]   = useState<CalEvent | 'new' | null>(null);
+
+    const { settled, refetch } = useAsyncData(calendarList, [], { onData: setEvents });
+
+    const importedLegacy = useRef(false);
+    useEffect(() => {
+        if (!settled || importedLegacy.current || !isFiveM) return;
+        importedLegacy.current = true;
+        const legacy = readLegacyEvents();
+        if (legacy.length === 0) return;
+        void (async () => {
+            let allSaved = true;
+            for (const draft of legacy) {
+                const res = await calendarSave(draft);
+                if (res.error) allSaved = false;
+            }
+            if (allSaved) clearLegacyEvents();
+            refetch();
+        })();
+    }, [settled, refetch]);
+
+    useNuiEvent('sd-phone:calendar:refresh', refetch);
+    useNuiEvent('sd-phone:calendar:invited', refetch);
+
+    const deckActive = useDeckActive();
+    const wasActive  = useRef(deckActive);
+    useEffect(() => {
+        const rising = deckActive && !wasActive.current;
+        wasActive.current = deckActive;
+        if (!rising) return;
+        const id = window.setTimeout(refetch, 420);
+        return () => window.clearTimeout(id);
+    }, [deckActive, refetch]);
 
     const months = useMemo(() => {
         const out: Date[] = [];
@@ -34,41 +73,40 @@ export function Calendar({ onClose }: { onClose: () => void }) {
         todayMonthRef.current?.scrollIntoView({ block: 'start' });
     }, []);
 
-    const selectedKey   = dayKey(selected);
-    const selectedEvts  = useMemo(
-        () => state.events
-            .filter(e => e.dayKey === selectedKey)
-            .sort((a, b) => {
-                if (a.allDay && !b.allDay) return -1;
-                if (b.allDay && !a.allDay) return 1;
-                return (a.start ?? '').localeCompare(b.start ?? '');
-            }),
-        [state.events, selectedKey],
+    const selectedKey  = dayKey(selected);
+    const selectedEvts = useMemo(
+        () => sortEvents(events.filter(e => e.dayKey === selectedKey)),
+        [events, selectedKey],
     );
-    const selectedNote  = state.dayNotes[selectedKey] ?? '';
+    const selectedNote = dayNotes[selectedKey] ?? '';
 
-    function updateState(next: CalState) {
-        setState(next);
-        saveState(next);
-    }
+    const applyEvent = useCallback((ev: CalEvent) => {
+        setEvents(prev => {
+            const gone = !ev.mine && ev.myStatus === 'declined';
+            if (gone) return prev.filter(e => e.id !== ev.id);
+            return prev.some(e => e.id === ev.id)
+                ? prev.map(e => e.id === ev.id ? ev : e)
+                : [...prev, ev];
+        });
+    }, []);
 
-    function upsertEvent(ev: CalEvent) {
-        const idx = state.events.findIndex(e => e.id === ev.id);
-        const events = idx === -1
-            ? [...state.events, ev]
-            : state.events.map(e => e.id === ev.id ? ev : e);
-        updateState({ ...state, events });
-    }
+    const saveEvent = useCallback(async (draft: CalEventDraft) => {
+        const res = await calendarSave(draft);
+        if (res.event) applyEvent(res.event);
+        return res;
+    }, [applyEvent]);
 
-    function deleteEvent(id: string) {
-        updateState({ ...state, events: state.events.filter(e => e.id !== id) });
-    }
+    const deleteEvent = useCallback((id: string) => {
+        setEvents(prev => prev.filter(e => e.id !== id));
+        void calendarDelete(id).then(done => { if (!done) refetch(); });
+    }, [refetch]);
 
     function setNote(value: string) {
-        const dayNotes = { ...state.dayNotes };
-        if (value.trim()) dayNotes[selectedKey] = value;
-        else delete dayNotes[selectedKey];
-        updateState({ ...state, dayNotes });
+        const next = { ...dayNotes };
+        if (value.trim()) next[selectedKey] = value;
+        else delete next[selectedKey];
+        setDayNotes(next);
+        saveDayNotes(next);
     }
 
     const dividerC  = 'rgb(var(--control))';
@@ -117,7 +155,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                                 month={m}
                                 today={today}
                                 selected={selected}
-                                events={state.events}
+                                events={events}
                                 onPick={setSelected}
                             />
                             <div style={{ height: 0.5, background: dividerC, margin: '0 16px' }} />
@@ -144,8 +182,8 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                 </div>
 
                 {selectedEvts.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-[15px] text-ios-gray">
-                        {t('calendar.noEvents', 'No Events')}
+                    <div className="flex items-center justify-center px-4 py-6 text-center text-[15px] text-ios-gray">
+                        {settled ? t('calendar.noEvents', 'No Events') : <Spinner size={22} />}
                     </div>
                 ) : (
                     <div className="mx-4 mb-6 overflow-hidden rounded-[10px]" style={{ background: panelBg }}>
@@ -159,11 +197,23 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                                 <span className="w-1.5 shrink-0" style={{ background: ev.color }} />
                                 <div className="flex-1 px-3.5 py-3">
                                     <div className="flex items-baseline justify-between gap-2">
-                                        <span className="text-[17px] font-medium">{ev.title}</span>
+                                        <span className="flex min-w-0 items-center gap-1.5">
+                                            {isShared(ev) && (
+                                                <Users className="h-[13px] w-[13px] shrink-0 text-ios-gray" strokeWidth={2.4} />
+                                            )}
+                                            <span className="truncate text-[17px] font-medium">{ev.title}</span>
+                                        </span>
                                         <span className="shrink-0 text-[14px] text-ios-gray">
                                             {ev.allDay ? t('calendar.allDayShort', 'all-day') : ev.start ? formatTime(ev.start) : ''}
                                         </span>
                                     </div>
+                                    {!ev.mine && (
+                                        <div className="text-[14px] text-ios-gray">
+                                            {ev.myStatus === 'accepted'
+                                                ? t('calendar.goingFrom', 'Going · {name}', { name: ev.organizerName })
+                                                : t('calendar.invitedBy', 'Invited by {name}', { name: ev.organizerName })}
+                                        </div>
+                                    )}
                                     {ev.location && (
                                         <div className="text-[14px] text-ios-gray">{ev.location}</div>
                                     )}
@@ -185,7 +235,8 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                     dayKey={selectedKey}
                     dayDate={selected}
                     existing={editing === 'new' ? undefined : editing}
-                    onSave={ev => { upsertEvent(ev); setEditing(null); }}
+                    onSave={saveEvent}
+                    onEventChange={applyEvent}
                     onDelete={editing === 'new' ? undefined : () => deleteEvent(editing.id)}
                     onClose={() => setEditing(null)}
                 />

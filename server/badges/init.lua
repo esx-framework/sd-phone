@@ -4,6 +4,8 @@ local player         = require 'bridge.server.player'
 local messageStore   = require 'server.messages.store'
 ---@type table Contacts/calls persistence layer (server.contacts.store): missed-call counts.
 local contactStore   = require 'server.contacts.store'
+---@type table Voicemail persistence layer (server.voicemail.store): unlistened-message counts.
+local voicemailStore = require 'server.voicemail.store'
 ---@type table Mail persistence layer (server.mail.store): inbox unread counts.
 local mailStore      = require 'server.mail.store'
 ---@type table Groups persistence layer (server.groups.store): pending-invite counts.
@@ -57,7 +59,7 @@ end
 ---disagree about which apps carry a badge.
 local counters = {
     messages  = function(cid) return messageStore.unreadCount(cid) end,
-    phone     = function(cid) return contactStore.unreadMissedCount(cid) end,
+    phone     = function(cid) return contactStore.unreadMissedCount(cid) + voicemailStore.unlistenedCount(cid) end,
     mail      = function(cid) return mailStore.unreadCount(cid) end,
     groups    = function(cid) return groupStore.pendingInviteCount(cid) end,
     photogram = photogramCount,

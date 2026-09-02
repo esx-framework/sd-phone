@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 /** Twitter-style compact counts: 999 stays literal, 1.2K / 345.6K / 3.4M above, with a single
  *  decimal that drops when zero. Floors toward zero so a count never reads higher than it is. */
 export function compactCount(n: number): string {
@@ -7,6 +9,22 @@ export function compactCount(n: number): string {
     const scaled = Math.floor((n / base) * 10) / 10;
     const text = scaled >= 100 || Number.isInteger(scaled) ? String(Math.floor(scaled * 10) / 10) : scaled.toFixed(1);
     return `${trimZero(text)}${unit}`;
+}
+
+export function pollTimeLeft(endsAt: number, now: number = Date.now()): string {
+    const secs = Math.floor((endsAt - now) / 1000);
+    if (secs <= 0) return t('squawk.pollFinalResults', 'Final results');
+
+    const days = Math.floor(secs / 86400);
+    if (days === 1) return t('squawk.pollOneDayLeft', '1 day left');
+    if (days > 1) return t('squawk.pollDaysLeft', '{n} days left', { n: days });
+    const hours = Math.floor(secs / 3600);
+    if (hours === 1) return t('squawk.pollOneHourLeft', '1 hour left');
+    if (hours > 1) return t('squawk.pollHoursLeft', '{n} hours left', { n: hours });
+    const mins = Math.floor(secs / 60);
+    if (mins === 1) return t('squawk.pollOneMinuteLeft', '1 minute left');
+    if (mins > 1) return t('squawk.pollMinutesLeft', '{n} minutes left', { n: mins });
+    return t('squawk.pollLastMinute', 'Less than a minute left');
 }
 
 function trimZero(s: string): string {

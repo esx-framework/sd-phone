@@ -393,6 +393,37 @@ lib.callback.register('sd-phone:server:settings:setAirplane', function(source, p
     return { success = true }
 end)
 
+---Toggles the caller's Focus (Do Not Disturb) mode. Held server-side because incoming calls are
+---refused against it, so a patched client cannot ring a phone whose owner silenced it.
+lib.callback.register('sd-phone:server:settings:setFocus', function(source, payload)
+    local cid = player.getIdentifier(source)
+    if not cid then return { success = false, messageKey = 'settings.playerNotFound', message = 'Player not found' } end
+    if not writeAllowed(cid, 'focus') then return BUSY end
+    payload = type(payload) == 'table' and payload or {}
+    store.setDnd(cid, payload.on == true, deviceOf(payload))
+    return { success = true }
+end)
+
+---Persists the caller's Low Power Mode flag, which halves the cosmetic battery drain.
+lib.callback.register('sd-phone:server:settings:setLowPower', function(source, payload)
+    local cid = player.getIdentifier(source)
+    if not cid then return { success = false, messageKey = 'settings.playerNotFound', message = 'Player not found' } end
+    if not writeAllowed(cid, 'lowPower') then return BUSY end
+    payload = type(payload) == 'table' and payload or {}
+    store.setLowPower(cid, payload.on == true, deviceOf(payload))
+    return { success = true }
+end)
+
+---Persists the caller's Rotation Lock flag, which keeps the shell portrait.
+lib.callback.register('sd-phone:server:settings:setRotationLock', function(source, payload)
+    local cid = player.getIdentifier(source)
+    if not cid then return { success = false, messageKey = 'settings.playerNotFound', message = 'Player not found' } end
+    if not writeAllowed(cid, 'rotationLock') then return BUSY end
+    payload = type(payload) == 'table' and payload or {}
+    store.setRotationLock(cid, payload.on == true, deviceOf(payload))
+    return { success = true }
+end)
+
 ---Persists the caller's 24-hour time preference, coerced to a strict boolean.
 lib.callback.register('sd-phone:server:settings:setHour24', function(source, payload)
     local cid = player.getIdentifier(source)

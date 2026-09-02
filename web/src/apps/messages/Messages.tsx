@@ -17,8 +17,9 @@ import {
     removeGroupMemberApi, markReadApi,
     upsertConversation, appendMessage, replaceMessage, markConversationRead,
     deleteConversationApi, contactFromNumber, reactMessageApi, toggleReactionLocal,
-    applyReaction, resolveConvParticipant, type SendInput,
+    applyReaction, applySeen, resolveConvParticipant, typingApi, type SendInput,
 } from '@/shared/chat/messagesApi';
+import { useTypingPeers } from '@/shared/chat/useTypingPeers';
 import type { Reaction } from '@/shared/chat/data';
 import { useContacts, useContactsStore } from '@/stores/contactsStore';
 import { digits } from '@/lib/format';
@@ -331,6 +332,13 @@ export function Messages({ onClose }: { onClose: () => void }) {
         })();
     }, []);
 
+    useNuiEvent('sd-phone:messages:seen', useCallback((data: { conversation: string; seenAt: number }) => {
+        if (!data?.conversation) return;
+        setConversations(prev => applySeen(prev, data.conversation, data.seenAt));
+    }, []));
+
+    const typingPeers = useTypingPeers();
+
     useNuiEvent('sd-phone:messages:removed', useCallback((data: { conversation: string }) => {
         if (!data?.conversation) return;
         setConversations(prev => prev.filter(c => c.id !== data.conversation));
@@ -371,6 +379,7 @@ export function Messages({ onClose }: { onClose: () => void }) {
             {resolved && (
                 <ConversationList
                     conversations={resolvedConversations}
+                    typingPeers={typingPeers}
                     onOpen={openConversation}
                     onCompose={() => setComposing(true)}
                     onMarkRead={markRead}
@@ -395,6 +404,8 @@ export function Messages({ onClose }: { onClose: () => void }) {
                     onUpdateGroup={(name, avatar) => updateGroup(conv.id, name, avatar)}
                     onRemoveMember={member => removeGroupMember(conv.id, member)}
                     onSaveContact={c => saveContactForThread(conv.id, c)}
+                    onTyping={on => typingApi(conv.id, on)}
+                    typingFrom={typingPeers[conv.id]}
                 />
             )}
 

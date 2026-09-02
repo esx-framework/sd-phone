@@ -46,6 +46,9 @@ local COLUMNS = {
         device            = "device VARCHAR(16) NOT NULL DEFAULT 'phone'",
         home_density      = 'home_density VARCHAR(12) NULL',
         home_icon_scale   = 'home_icon_scale SMALLINT NULL',
+        dnd               = 'dnd TINYINT(1) NOT NULL DEFAULT 0',
+        low_power         = 'low_power TINYINT(1) NOT NULL DEFAULT 0',
+        rotation_lock     = 'rotation_lock TINYINT(1) NOT NULL DEFAULT 0',
     },
 
     -- Verification tier shown next to a handle: blue (individual), gold (business), grey
@@ -87,8 +90,19 @@ local COLUMNS = {
         images = '`images` TEXT NULL AFTER `image`',
     },
 
+    -- Scheduled publishing: a row waits at status 'scheduled' carrying its publish_at stamp until
+    -- the due sweep flips it live. Every row written before this existed is already live, which is
+    -- exactly what the 'published' default states.
     pages_posts = {
-        images = '`images` TEXT NULL AFTER `image`',
+        images     = '`images` TEXT NULL AFTER `image`',
+        status     = "`status` VARCHAR(12) NOT NULL DEFAULT 'published'",
+        publish_at = '`publish_at` BIGINT NULL',
+    },
+
+    -- The same scheduled-publishing pair on the newsroom's articles.
+    phone_weazel_articles = {
+        status     = "`status` VARCHAR(12) NOT NULL DEFAULT 'published'",
+        publish_at = '`publish_at` BIGINT NULL',
     },
 
     phone_sim_cards = {

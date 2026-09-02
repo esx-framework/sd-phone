@@ -14,6 +14,7 @@ import { ListingDetail } from '@/apps/_classifieds/ListingDetail';
 import { useClassifiedsFeed } from '@/apps/_classifieds/useClassifiedsFeed';
 import { useContactActions } from '@/apps/_classifieds/useContactActions';
 import { PagesTabBar, type PagesTab } from './PagesTabBar';
+import { SchedulePickerSheet } from '@/shared/SchedulePickerSheet';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 export function Pages({ onClose: _onClose }: { onClose: () => void }) {
@@ -21,6 +22,7 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
     const [creating, setCreating] = useSessionState('pages:creating', false);
     const [editing,  setEditing]  = useSessionState<Post | null>('pages:editing', null);
     const [confirmDelete, setConfirmDelete] = useState<Post | null>(null);
+    const [retiming, setRetiming] = useState<Post | null>(null);
     const [openId,   setOpenId]   = useSessionState<string | null>('pages:openPost', null);
     const [posts,    setPosts]    = useClassifiedsFeed<Post>(
         'sd-phone:pages:list', 'sd-phone:pages:feed', 'sd-phone:pages:watch', 'posts', isFiveM ? [] : POSTS,
@@ -45,6 +47,7 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
                 number: draft.number || '0000000000',
                 email:  draft.email,
                 mine:   true,
+                publishAt: draft.publishAt,
             };
             setPosts(prev => [post, ...prev]);
             return;
@@ -55,6 +58,7 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
     }
 
     function updatePost(id: string, draft: PostDraft) {
+        const wasScheduled = posts.some(p => p.id === id && p.publishAt != null);
         setEditing(null);
         setPosts(prev => prev.map(p => p.id === id ? {
             ...p,
@@ -65,9 +69,26 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
             images: draft.images,
             number: draft.number || p.number,
             email:  draft.email,
+            publishAt: wasScheduled ? draft.publishAt : p.publishAt,
         } : p));
         if (!isFiveM) return;
         apiData<{ post: Post }>('sd-phone:pages:update', { id, ...draft })
+            .then(data => { if (data) setPosts(prev => prev.map(p => p.id === id ? data.post : p)); })
+            .catch(() => {});
+    }
+
+    function reschedulePost(id: string, at: number) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, publishAt: at } : p));
+        if (!isFiveM) return;
+        apiData<{ post: Post }>('sd-phone:pages:reschedule', { id, publishAt: at })
+            .then(data => { if (data) setPosts(prev => prev.map(p => p.id === id ? data.post : p)); })
+            .catch(() => {});
+    }
+
+    function publishPostNow(id: string) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, publishAt: undefined } : p));
+        if (!isFiveM) return;
+        apiData<{ post: Post }>('sd-phone:pages:publishNow', { id })
             .then(data => { if (data) setPosts(prev => prev.map(p => p.id === id ? data.post : p)); })
             .catch(() => {});
     }
@@ -95,7 +116,8 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
                 <div key={tab} className="flex min-h-0 flex-1 flex-col animate-swipe-in-left">
                     {tab === 'browse'
                         ? <PagesListTab posts={posts} onCreate={() => setCreating(true)} onOpen={p => setOpenId(p.id)} onMessage={messagePoster} onCall={callPoster} onEmail={emailPoster} onDelete={setConfirmDelete} />
-                        : <YourPostsTab posts={posts} onCreate={() => setCreating(true)} onOpen={p => setOpenId(p.id)} onDelete={setConfirmDelete} />}
+                        : <YourPostsTab posts={posts} onCreate={() => setCreating(true)} onOpen={p => setOpenId(p.id)} onDelete={setConfirmDelete}
+                            onEdit={setEditing} onRetime={setRetiming} onPublishNow={p => publishPostNow(p.id)} />}
                 </div>
             </div>
 
@@ -103,7 +125,7 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
 
             {creating && (
                 <CreateEntryPage pageTitle={t('pages.newPost','New Post')} backLabel={t('pages.pages','Pages')} bodyPlaceholder={t('pages.bodyPlaceholder',"What's your post about?")} showPrice={false}
-                    draftKey="pages:createDraft" animateIn={animateNav}
+                    allowSchedule draftKey="pages:createDraft" animateIn={animateNav}
                     onCancel={() => setCreating(false)} onCreate={addPost} />
             )}
 
@@ -125,17 +147,32 @@ export function Pages({ onClose: _onClose }: { onClose: () => void }) {
             {editing && (
                 <CreateEntryPage pageTitle={t('pages.editPost','Edit Post')} submitLabel={t('pages.save','Save')} backLabel={t('pages.post','Post')} showPrice={false}
                     bodyPlaceholder={t('pages.bodyPlaceholder',"What's your post about?")} initial={editing}
+                    allowSchedule={editing.publishAt != null}
                     draftKey="pages:editDraft" animateIn={animateNav}
                     onCancel={() => setEditing(null)} onCreate={draft => updatePost(editing.id, draft)} />
+            )}
+
+            {retiming && (
+                <SchedulePickerSheet
+                    at={retiming.publishAt ?? null}
+                    onPick={at => reschedulePost(retiming.id, at)}
+                    onClose={() => setRetiming(null)}
+                />
             )}
 
             {contact.dialog}
 
             {confirmDelete && (
                 <AlertDialog
-                    title={t('pages.removePostTitle','Remove Post?')}
-                    message={t('pages.removePostMessage','This will permanently remove your post.')}
-                    confirmLabel={t('pages.remove','Remove')}
+                    title={confirmDelete.publishAt != null
+                        ? t('pages.cancelPostTitle','Cancel Post?')
+                        : t('pages.removePostTitle','Remove Post?')}
+                    message={confirmDelete.publishAt != null
+                        ? t('pages.cancelPostMessage','This will discard the post, and it will never go live.')
+                        : t('pages.removePostMessage','This will permanently remove your post.')}
+                    confirmLabel={confirmDelete.publishAt != null
+                        ? t('pages.discard','Discard')
+                        : t('pages.remove','Remove')}
                     destructive
                     onCancel={() => setConfirmDelete(null)}
                     onConfirm={() => { deletePost(confirmDelete.id); setConfirmDelete(null); }}

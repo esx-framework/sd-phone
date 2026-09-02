@@ -1,9 +1,9 @@
-import { AudioLines, Clock, Grid3x3, Star, UserRound } from 'lucide-react';
+import { AudioLines, Clock, Grid3x3, Star, UserRound, Voicemail } from 'lucide-react';
 
 import { TabBar, type TabBarItem } from '@/ui/TabBar';
 import { t } from '@/i18n';
 
-export type PhoneTab = 'favorites' | 'recents' | 'contacts' | 'keypad' | 'recordings';
+export type PhoneTab = 'favorites' | 'recents' | 'contacts' | 'keypad' | 'recordings' | 'voicemail';
 
 export function PhoneTabBar({ tab, onChange, showRecordings }: { tab: PhoneTab; onChange: (t: PhoneTab) => void; showRecordings?: boolean }) {
     const tabs: TabBarItem<PhoneTab>[] = [
@@ -15,5 +15,6 @@ export function PhoneTabBar({ tab, onChange, showRecordings }: { tab: PhoneTab; 
     if (showRecordings) {
         tabs.push({ id: 'recordings', label: t('phone.recordings','Recordings'), icon: a => <AudioLines className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} /> });
     }
+    tabs.push({ id: 'voicemail', label: t('phone.voicemail','Voicemail'), icon: a => <Voicemail className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} /> });
     return <TabBar tabs={tabs} active={tab} onChange={onChange} />;
 }

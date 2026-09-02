@@ -8,6 +8,7 @@ import {
     type Contact, type Conversation,
 } from '@/shared/chat/data';
 import { ContactAvatar, GroupAvatar } from '@/shared/ContactAvatar';
+import type { TypingPeers } from '@/shared/chat/useTypingPeers';
 import { useSessionState } from '@/hooks/useSessionState';
 import { SearchBar } from '@/ui/SearchBar';
 import { AlertDialog } from '@/ui/AlertDialog';
@@ -17,6 +18,7 @@ import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
 interface ConversationListProps {
     conversations: Conversation[];
+    typingPeers:   TypingPeers;
     onOpen:        (id: string) => void;
     onCompose:     () => void;
     onMarkRead:    (ids: string[]) => void;
@@ -24,7 +26,7 @@ interface ConversationListProps {
     onCreateGroup: (members: Contact[], name: string) => void;
 }
 
-export function ConversationList({ conversations, onOpen, onCompose, onMarkRead, onDelete, onCreateGroup }: ConversationListProps) {
+export function ConversationList({ conversations, typingPeers, onOpen, onCompose, onMarkRead, onDelete, onCreateGroup }: ConversationListProps) {
     const [query,    setQuery]    = useSessionState('messages:listQuery', '');
     const [editing,  setEditing]  = useState(false);
     const [barExiting, setBarExiting] = useState(false);
@@ -123,6 +125,7 @@ export function ConversationList({ conversations, onOpen, onCompose, onMarkRead,
                                 <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100px' }}>
                                     <ConvRow
                                         conv={c}
+                                        typingFrom={typingPeers[c.id]}
                                         editing={editing}
                                         selected={selected.has(c.id)}
                                         onOpen={onOpen}
@@ -208,18 +211,27 @@ export function ConversationList({ conversations, onOpen, onCompose, onMarkRead,
     );
 }
 
-function ConvRow({ conv, editing, selected, onOpen, onToggleSelect }: {
+function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }: {
     conv:           Conversation;
+    typingFrom?:    string;
     editing:        boolean;
     selected:       boolean;
     onOpen:         (id: string) => void;
     onToggleSelect: (id: string) => void;
 }) {
     const name    = convName(conv);
-    const preview = convPreview(conv);
     const last    = conv.messages[conv.messages.length - 1];
     const time    = last ? fmtConvTime(last.ts) : '';
     const unread  = hasUnread(conv);
+
+    const typingName = typingFrom && conv.groupName
+        ? conv.participants.find(p => p.id === typingFrom || p.phone === typingFrom)?.name.split(' ')[0]
+        : undefined;
+    const preview = typingFrom
+        ? (typingName
+            ? t('messages.nameIsTyping', '{name} is typing...', { name: typingName })
+            : t('messages.typing', 'typing...'))
+        : convPreview(conv);
 
     return (
         <button

@@ -10,6 +10,7 @@ import { t } from '@/i18n';
 import { TabBar, type TabBarItem } from '@/ui/TabBar';
 import { apiLeaderboard, apiSummary } from './healthApi';
 import { LeaderboardTab } from './LeaderboardTab';
+import { MedicalIdPage } from './MedicalIdPage';
 import { Summary } from './Summary';
 
 const SB_H = 61;
@@ -39,6 +40,7 @@ const TAB_ORDER: HealthTab[] = ['summary', 'board'];
 export function Health({ onClose }: { onClose: () => void }) {
     const [tab, setTab] = useSessionState<HealthTab>('health:tab', 'summary');
     const [tabDir, setTabDir] = useState<'left' | 'right'>('right');
+    const [medicalOpen, setMedicalOpen] = useSessionState('health:medical', false);
 
     function goTab(next: HealthTab) {
         if (next === tab) return;
@@ -107,6 +109,7 @@ export function Health({ onClose }: { onClose: () => void }) {
                             pendingActiveMs={activeMs}
                             hr={hr}
                             awakeMs={Math.max(0, now - (storeStart ?? fallbackStart))}
+                            onOpenMedicalId={() => setMedicalOpen(true)}
                         />
                     ) : (
                         <LeaderboardTab board={board} />
@@ -122,6 +125,8 @@ export function Health({ onClose }: { onClose: () => void }) {
                 aria-label={t('health.closeHealth', 'Close Health')}
                 className="absolute inset-x-0 bottom-0 z-50 h-5 cursor-default"
             />
+
+            {medicalOpen && <MedicalIdPage onBack={() => setMedicalOpen(false)} />}
         </div>
     );
 }

@@ -830,6 +830,22 @@ input[type='number'] {
     background: var(--imsg-bg);
     border-bottom-right-radius: 9px;
 }
+
+.imsg-typing {
+    animation: imsg-typing-in 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+    transform-origin: bottom left;
+}
+.imsg-typing-dot {
+    animation: imsg-typing-dot 1.15s ease-in-out infinite;
+}
+@keyframes imsg-typing-in {
+    from { opacity: 0; transform: scale(0.72); }
+    to   { opacity: 1; transform: scale(1);    }
+}
+@keyframes imsg-typing-dot {
+    0%, 60%, 100% { opacity: 0.35; transform: translateY(0);     }
+    30%           { opacity: 1;    transform: translateY(-3px);  }
+}
 @keyframes cookie-pop {
     0%   { opacity: 0; transform: translate(-50%, 0)      scale(0.6); }
     18%  { opacity: 1; transform: translate(-50%, -8px)   scale(1.1); }

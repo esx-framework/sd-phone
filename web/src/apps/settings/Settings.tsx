@@ -20,6 +20,7 @@ import { SettingsGroup } from './SettingsGroup';
 import { PushLayer } from './SettingsSubPage';
 import { WallpaperPage } from './appearance/WallpaperPage';
 import { SimBackupPage } from './sim/SimBackupPage';
+import { FindMyPage } from './findmy/FindMyPage';
 import { useSimStore } from '@/stores/simStore';
 import { BluetoothPage } from './bluetooth/BluetoothPage';
 import { WifiPage } from './wifi/WifiPage';
@@ -29,7 +30,7 @@ import { shellFor } from '@/shell/shells';
 import { useTheme } from '@/stores/themeStore';
 import { useBluetoothConfigured } from '@/stores/bluetoothStore';
 
-type SubPage = 'general' | 'accessibility' | 'display' | 'island-pet' | 'wallpaper' | 'app-icons' | 'home-density' | 'notifications' | 'sound-haptics' | 'face-unlock' | 'phone' | 'streamer' | 'sim' | 'wifi' | 'bluetooth' | null;
+type SubPage = 'general' | 'accessibility' | 'display' | 'island-pet' | 'wallpaper' | 'app-icons' | 'home-density' | 'notifications' | 'sound-haptics' | 'face-unlock' | 'phone' | 'streamer' | 'sim' | 'find-my' | 'wifi' | 'bluetooth' | null;
 
 export function Settings({ onClose }: { onClose: () => void }) {
     const [subPage, setSubPage] = useSessionState<SubPage>('settings:subPage', null);
@@ -96,6 +97,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
         if (id === 'phone')         setSubPage('phone');
         if (id === 'streamer')      setSubPage('streamer');
         if (id === 'sim')           setSubPage('sim');
+        if (id === 'find-my')       setSubPage('find-my');
         if (id === 'wifi')          setSubPage('wifi');
         if (id === 'bluetooth')     setSubPage('bluetooth');
     }
@@ -114,6 +116,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
         : subPage === 'phone'         ? <PhoneSettingsPage     onBack={handleBack} />
         : subPage === 'streamer'      ? <StreamerModePage      onBack={handleBack} />
         : subPage === 'sim'           ? <SimBackupPage         onBack={handleBack} />
+        : subPage === 'find-my'       ? <FindMyPage            onBack={handleBack} />
         : subPage === 'wifi'          ? <WifiPage              onBack={handleBack} />
         : subPage === 'bluetooth'     ? <BluetoothPage         onBack={handleBack} />
         : null;

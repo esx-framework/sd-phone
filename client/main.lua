@@ -136,6 +136,7 @@ local gameclock = require 'client.gameclock'
 -- server proxies.
 require 'client.apps.groups'
 require 'client.apps.health'
+require 'client.apps.medical'
 require 'client.apps.mail'
 require 'client.apps.messages'
 require 'client.apps.camera'
@@ -155,16 +156,19 @@ require 'client.apps.banking'
 require 'client.apps.services'
 require 'client.apps.voicememos'
 require 'client.apps.callrec'
+require 'client.apps.voicemail'
 require 'client.apps.music'
 require 'client.lockscreenwidgets'
 require 'client.apps.share'
 require 'client.apps.notifications'
 require 'client.apps.notes'
+require 'client.apps.calendar'
 require 'client.apps.documents'
 require 'client.apps.homes'
 require 'client.apps.maps'
 require 'client.apps.compass'
 require 'client.apps.findfriends'
+require 'client.apps.findmy'
 require 'client.apps.cherry'
 require 'client.apps.photogram'
 require 'client.apps.vibez'
@@ -190,11 +194,13 @@ require 'client.payphone'
 require 'client.celltowerblips'
 require 'client.media'
 
----@type table Phone visibility state: open/locked flags + cosmetic battery percentage.
+---@type table Phone visibility state: open/locked flags, cosmetic battery percentage and the
+---Low Power Mode flag that halves its drain.
 local phoneState = {
     open       = false,  -- true while the NUI is focused on the phone
     locked     = true,   -- true while the lockscreen is shown
     battery    = config.StatusBar.BatteryStart, -- cosmetic, ticks down while open
+    lowPower   = false,  -- true while Low Power Mode halves the drain
 }
 
 ---@type boolean True while another resource has disabled the phone.
@@ -862,15 +868,32 @@ end)
 
 gameclock.start(phoneState.isOpen)
 
+---Mirrors the phone's Low Power Mode flag onto the client, which is where the drain lives. The
+---UI sends it on hydrate and on every toggle, so a relog with the mode already on still halves
+---the drain from the first tick.
+---@param data { on: boolean }|nil
+---@param cb fun(result: table) NUI response
+RegisterNUICallback('sd-phone:battery:lowPower', function(data, cb)
+    phoneState.lowPower = type(data) == 'table' and data.on == true
+    cb({ success = true })
+end)
+
 -- Cosmetic battery drain: one percent every 30s while the phone is open, pushed to the React app.
+-- Low Power Mode halves that by skipping every other tick rather than lengthening the wait, so
+-- toggling it mid-session takes effect without restarting the timer.
 CreateThread(function()
+    ---@type integer Drain ticks elapsed while the phone was open, so the skip alternates.
+    local ticks = 0
     while true do
         Wait(30000)
         if phoneState.open and phoneState.battery > 0 then
-            phoneState.battery = phoneState.battery - 1
-            SendNUIMessage({ action = 'sd-phone:battery', data = phoneState.battery })
-            ---First-party client event: the cosmetic battery percentage moved.
-            TriggerEvent('sd-phone:client:battery', phoneState.battery)
+            ticks = ticks + 1
+            if not phoneState.lowPower or ticks % 2 == 0 then
+                phoneState.battery = phoneState.battery - 1
+                SendNUIMessage({ action = 'sd-phone:battery', data = phoneState.battery })
+                ---First-party client event: the cosmetic battery percentage moved.
+                TriggerEvent('sd-phone:client:battery', phoneState.battery)
+            end
         end
     end
 end)

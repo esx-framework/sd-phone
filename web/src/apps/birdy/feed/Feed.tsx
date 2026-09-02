@@ -5,7 +5,7 @@ import { BirdyBird } from '../BirdyBird';
 
 import { t } from '@/i18n';
 import { EmptyState } from '@/ui/EmptyState';
-import { BLUE, META, postKey, type BirdyAuthor, type BirdyPost} from '../data';
+import { BLUE, META, postKey, type BirdyAuthor, type BirdyPoll, type BirdyPost} from '../data';
 import { FeedSkeleton } from '../polish/Skeleton';
 import { usePullToRefresh } from '../polish/usePullToRefresh';
 import { PostCard } from './PostCard';
@@ -13,7 +13,7 @@ import { Avatar } from '../ui';
 
 type FeedKind = 'all' | 'following';
 
-export function Feed({ posts, me, feed, onFeedChange, onRefresh, onToggleLike, onToggleRepost, onOpenPost, onOpenProfile, onOpenAuthor }: {
+export function Feed({ posts, me, feed, onFeedChange, onRefresh, onToggleLike, onToggleRepost, onOpenPost, onOpenProfile, onOpenAuthor, onPollVoted }: {
     posts:         BirdyPost[] | null;
     me:            BirdyAuthor;
     feed:          FeedKind;
@@ -24,6 +24,7 @@ export function Feed({ posts, me, feed, onFeedChange, onRefresh, onToggleLike, o
     onOpenPost:    (id: string) => void;
     onOpenProfile: () => void;
     onOpenAuthor?: (handle: string) => void;
+    onPollVoted:   (id: string, poll: BirdyPoll) => void;
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const { pull, refreshing, armed } = usePullToRefresh(scrollRef, onRefresh);
@@ -135,6 +136,7 @@ export function Feed({ posts, me, feed, onFeedChange, onRefresh, onToggleLike, o
                                 onToggleRepost={() => onToggleRepost(p.id)}
                                 onOpen={() => onOpenPost(p.id)}
                                 onOpenAuthor={onOpenAuthor}
+                                onPollVoted={poll => onPollVoted(p.id, poll)}
                             />
                         ))
                     )}

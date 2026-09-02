@@ -8,7 +8,7 @@ export type IconName =
     | 'ShoppingBag' | 'CreditCard' | 'Gamepad2' | 'Lock' | 'Mail'
     | 'User' | 'Calendar' | 'StickyNote' | 'ListTodo' | 'Mic'
     | 'Phone' | 'MessageCircle' | 'Video' | 'Compass' | 'Newspaper'
-    | 'Languages' | 'MapPin' | 'Zap' | 'PawPrint' | 'Grid2x2';
+    | 'Languages' | 'MapPin' | 'Zap' | 'PawPrint' | 'Grid2x2' | 'BatteryLow' | 'Radar';
 
 export interface SettingsRowDef {
     id:        string;
@@ -38,6 +38,8 @@ export function getSettingsGroups(): SettingsGroup[] {
             id: 'toggles',
             rows: [
                 { id: 'airplane', icon: 'Plane',  iconBg: '#ff9f0a', label: t('settings.airplaneMode', 'Airplane Mode'),  subtitle: t('settings.airplaneModeSub', 'Turn off calls, data and connectivity') },
+                { id: 'focus',    icon: 'Moon',   iconBg: '#5e5ce6', label: t('settings.focus', 'Focus'),                subtitle: t('settings.focusSub', 'Silence calls and alerts') },
+                { id: 'low-power', icon: 'BatteryLow', iconBg: '#ffd60a', label: t('settings.lowPowerMode', 'Low Power Mode'), subtitle: t('settings.lowPowerModeSub', 'Slow the battery drain') },
                 { id: 'streamer', icon: 'Video',  iconBg: '#5e5ce6', label: t('settings.streamerMode', 'Streamer Mode'),  subtitle: t('settings.streamerModeSub', 'Hide details on stream') },
                 { id: 'wifi',     icon: 'Wifi',   iconBg: '#0a84ff', label: t('settings.wifi', 'Wi-Fi'),                subtitle: t('settings.wifiSub', 'Join nearby networks') },
                 { id: 'bluetooth', icon: 'Bluetooth', iconBg: '#0a84ff', label: t('settings.bluetooth', 'Bluetooth'),   subtitle: t('settings.bluetoothSub', 'Pair with nearby devices') },
@@ -68,6 +70,7 @@ export function getSettingsGroups(): SettingsGroup[] {
             rows: [
                 { id: 'phone', icon: 'Phone', iconBg: '#34c759', label: t('settings.phone', 'Phone'), subtitle: t('settings.phoneSub', 'Caller ID, blocking and call privacy') },
                 { id: 'sim',   icon: 'Antenna', iconBg: '#0a84ff', label: t('settings.simBackup', 'SIM & Backup'), subtitle: t('settings.simBackupSub', 'SIM card, number and cloud backup') },
+                { id: 'find-my', icon: 'Radar', iconBg: '#30d158', label: t('settings.findMy', 'Find My'), subtitle: t('settings.findMySub', 'Locate your devices and turn on Lost Mode') },
             ],
         },
     ];

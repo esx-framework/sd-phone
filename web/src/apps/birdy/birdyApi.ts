@@ -13,7 +13,7 @@ import devPfp4 from '@/assets/photos/background11.webp';
 import devPfp5 from '@/assets/photos/background16.webp';
 import {
     MARCUS, CURRENT_USER, TOMMY, newId, SEED_CONVERSATIONS, SEED_NOTIFICATIONS, SEED_POSTS,
-    type BirdyAuthor, type BirdyConversation, type BirdyFollowUser, type BirdyMessage, type BirdyNotification, type BirdyPost, type BirdyProfile,
+    type BirdyAuthor, type BirdyConversation, type BirdyFollowUser, type BirdyMessage, type BirdyNotification, type BirdyPoll, type BirdyPost, type BirdyProfile, type PollDuration,
 } from './data';
 import { postHasTag, trendingFromBodies, type TrendingTag } from './hashtags';
 
@@ -21,6 +21,20 @@ import { postHasTag, trendingFromBodies, type TrendingTag } from './hashtags';
 
 function clock(): string {
     return formatClockTime(new Date(), true);
+}
+
+function normalizePoll(poll: BirdyPoll): BirdyPoll {
+    return { ...poll, options: poll.options ?? [], myVote: poll.myVote ?? null };
+}
+
+function normalizePost(post: BirdyPost): BirdyPost {
+    const thread = post.thread ? post.thread.map(normalizePost) : undefined;
+    if (!post.poll) return thread ? { ...post, thread } : post;
+    return { ...post, poll: normalizePoll(post.poll), ...(thread ? { thread } : {}) };
+}
+
+function normalizePosts(posts: BirdyPost[]): BirdyPost[] {
+    return posts.map(normalizePost);
 }
 
 let devLoggedIn = useMocks;
@@ -55,19 +69,36 @@ export function apiWatch(on: boolean): void {
 export async function apiFeed(following: boolean): Promise<BirdyPost[]> {
     // Dev seed: treat other authors as followed so the tab is not empty.
     if (!isFiveM) return following ? SEED_POSTS.filter(p => p.author.handle !== 'you') : SEED_POSTS;
-    return (await call<{ posts: BirdyPost[] }>('sd-phone:birdy:feed', { following }))?.posts ?? [];
+    return normalizePosts((await call<{ posts: BirdyPost[] }>('sd-phone:birdy:feed', { following }))?.posts ?? []);
 }
 
 export async function apiPostDetail(id: string): Promise<BirdyPost | null> {
     if (!isFiveM) return SEED_POSTS.find(p => p.id === id) ?? null;
-    return (await call<{ post: BirdyPost }>('sd-phone:birdy:post', { id }))?.post ?? null;
+    const post = (await call<{ post: BirdyPost }>('sd-phone:birdy:post', { id }))?.post;
+    return post ? normalizePost(post) : null;
 }
 
-export async function apiCreate(body: string, images?: string[]): Promise<BirdyPost | null> {
+export interface PollDraft { options: string[]; duration: PollDuration }
+
+export async function apiCreate(body: string, images?: string[], poll?: PollDraft): Promise<BirdyPost | null> {
     if (!isFiveM) {
-        return { id: newId('post'), author: CURRENT_USER, body, images, createdAt: Date.now(), replies: 0, reposts: 0, likes: 0, liked: false, views: 0 };
+        const devPoll: BirdyPoll | undefined = poll && {
+            options: poll.options.map((label, idx) => ({ idx, label, votes: 0 })),
+            total:   0,
+            endsAt:  Date.now() + poll.duration * 1000,
+            ended:   false,
+            myVote:  null,
+        };
+        return { id: newId('post'), author: CURRENT_USER, body, images, poll: devPoll, createdAt: Date.now(), replies: 0, reposts: 0, likes: 0, liked: false, views: 0 };
     }
-    return (await call<{ post: BirdyPost }>('sd-phone:birdy:create', { body, images }))?.post ?? null;
+    const post = (await call<{ post: BirdyPost }>('sd-phone:birdy:create', { body, images, poll }))?.post;
+    return post ? normalizePost(post) : null;
+}
+
+export async function apiVote(id: string, idx: number): Promise<BirdyPoll | null> {
+    if (!isFiveM) return null;
+    const poll = (await call<{ poll: BirdyPoll }>('sd-phone:birdy:vote', { id, idx }))?.poll;
+    return poll ? normalizePoll(poll) : null;
 }
 
 export async function apiReply(parentId: string, body: string, images?: string[]): Promise<BirdyPost | null> {
@@ -196,7 +227,7 @@ export async function apiProfilePosts(kind: 'posts' | 'replies' | 'media' | 'lik
         if (kind === 'likes')  return who === CURRENT_USER.handle ? SEED_POSTS.filter(p => p.liked) : [];
         return [];
     }
-    return (await call<{ posts: BirdyPost[] }>('sd-phone:birdy:profilePosts', { kind, handle }))?.posts ?? [];
+    return normalizePosts((await call<{ posts: BirdyPost[] }>('sd-phone:birdy:profilePosts', { kind, handle }))?.posts ?? []);
 }
 
 export async function apiSearch(query: string): Promise<BirdyAuthor[]> {
@@ -215,7 +246,7 @@ export async function apiTrending(): Promise<TrendingTag[]> {
 
 export async function apiHashtagPosts(tag: string): Promise<BirdyPost[]> {
     if (!isFiveM) return SEED_POSTS.filter(p => postHasTag(p.body, tag));
-    return (await call<{ posts: BirdyPost[] }>('sd-phone:birdy:hashtag', { tag }))?.posts ?? [];
+    return normalizePosts((await call<{ posts: BirdyPost[] }>('sd-phone:birdy:hashtag', { tag }))?.posts ?? []);
 }
 
 export async function apiToggleFollow(handle: string): Promise<boolean> {

@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Activity, Footprints, Heart, MoonStar, Route } from 'lucide-react';
+import { Activity, Footprints, Heart, MoonStar, Route, Stethoscope } from 'lucide-react';
 
 import { getLocaleTag, t } from '@/i18n';
+import { GroupCard, ListRow } from '@/ui/ListGroup';
 import type { HealthDay, HealthSummary } from './healthApi';
 
 const M_PER_MILE = 1609.34;
@@ -17,13 +18,14 @@ const ACCENT = {
     active:   '#34C759',
 } as const;
 
-export function Summary({ summary, pendingSteps, pendingDistanceM, pendingActiveMs, hr, awakeMs }: {
+export function Summary({ summary, pendingSteps, pendingDistanceM, pendingActiveMs, hr, awakeMs, onOpenMedicalId }: {
     summary:          HealthSummary | null;
     pendingSteps:     number;
     pendingDistanceM: number;
     pendingActiveMs:  number;
     hr:               number;
     awakeMs:          number;
+    onOpenMedicalId:  () => void;
 }) {
     const goal    = summary?.goal ?? 10000;
     const peakRef = useRef({ steps: 0, metres: 0, active: 0 });
@@ -82,6 +84,16 @@ export function Summary({ summary, pendingSteps, pendingDistanceM, pendingActive
                     unit=""
                 />
             </div>
+
+            <GroupCard radius={16} className="mt-2">
+                <ListRow
+                    label={t('medical.title', 'Medical ID')}
+                    sub={t('medical.rowSub', 'Blood type, allergies, emergency contact')}
+                    chevron
+                    left={<Stethoscope className="h-[19px] w-[19px] text-ios-red" strokeWidth={2.3} />}
+                    onPress={onOpenMedicalId}
+                />
+            </GroupCard>
         </div>
     );
 }

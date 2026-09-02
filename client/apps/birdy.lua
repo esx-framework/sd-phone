@@ -25,6 +25,7 @@ proxyCallback('sd-phone:birdy:toggleLike',    'sd-phone:server:birdy:toggleLike'
 proxyCallback('sd-phone:birdy:deletePost',    'sd-phone:server:birdy:deletePost')
 proxyCallback('sd-phone:birdy:toggleFollow',  'sd-phone:server:birdy:toggleFollow')
 proxyCallback('sd-phone:birdy:toggleRepost', 'sd-phone:server:birdy:toggleRepost')
+proxyCallback('sd-phone:birdy:vote',          'sd-phone:server:birdy:vote')
 proxyCallback('sd-phone:birdy:followList',    'sd-phone:server:birdy:followList')
 proxyCallback('sd-phone:birdy:notifications', 'sd-phone:server:birdy:notifications')
 proxyCallback('sd-phone:birdy:notificationCount', 'sd-phone:server:birdy:notificationCount')
@@ -53,8 +54,9 @@ RegisterNetEvent('sd-phone:client:birdy:notification', function(data)
     SendNUIMessage({ action = 'sd-phone:birdy:notification', data = data })
 end)
 
----Server push: somebody posted, so any open feed is now stale.
----@param data table empty payload from server/birdy/actions.lua
+---Server push: somebody posted, reposted or voted, so any open feed is now stale. A vote carries
+---{ postId, poll } so the timeline patches that one card; anything else is empty and refetches.
+---@param data table patch or empty payload from server/birdy/actions.lua
 RegisterNetEvent('sd-phone:client:birdy:feedChanged', function(data)
     SendNUIMessage({ action = 'sd-phone:birdy:feedChanged', data = data or {} })
 end)

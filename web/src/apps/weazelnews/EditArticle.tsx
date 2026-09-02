@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { ImagePlus, Link2, X } from 'lucide-react';
+import { Clock, ImagePlus, Link2, X } from 'lucide-react';
 
 import { t } from '@/i18n';
 import { useIosPush } from '@/hooks/useIosPush';
 import { Scroller } from '@/ui/Scroller';
 import { MediaPickerSheet } from '@/shared/MediaPickerSheet';
+import { SchedulePickerSheet, scheduleLabel } from '@/shared/SchedulePickerSheet';
+import { SegmentedControl } from '@/ui/SegmentedControl';
 import { Toggle } from '@/ui/Toggle';
 import { CATEGORIES, categoryLabel, type Article as ArticleT, type ArticleDraft, type Category, WEAZEL_RED } from './data';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
+
+type Timing = 'now' | 'later';
 
 export function EditArticle({ initial, dark, onClose, onSave }: {
     initial:  ArticleT | null;
@@ -26,9 +30,21 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
     const [picking,  setPicking]  = useState(false);
     const [urlMode,  setUrlMode]  = useState(false);
     const [busy,     setBusy]     = useState(false);
+    const [timing,   setTiming]   = useState<Timing>(initial?.publishAt ? 'later' : 'now');
+    const [publishAt, setPublishAt] = useState<number | null>(initial?.publishAt ?? null);
+    const [timePicker, setTimePicker] = useState(false);
+
+    const queued = !initial || !!initial.publishAt;
 
     const paragraphs = body.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
-    const canSubmit = headline.trim().length > 0 && paragraphs.length > 0 && !busy;
+    const scheduling = queued && timing === 'later';
+    const canSubmit = headline.trim().length > 0 && paragraphs.length > 0 && !busy
+        && (!scheduling || publishAt !== null);
+
+    function chooseTiming(next: Timing) {
+        setTiming(next);
+        if (next === 'later' && publishAt === null) setTimePicker(true);
+    }
 
     async function submit() {
         if (!canSubmit) return;
@@ -41,10 +57,17 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
             body: paragraphs,
             image: image?.trim() || undefined,
             featured,
+            publishAt: scheduling && publishAt !== null ? publishAt : undefined,
         });
         setBusy(false);
         if (ok) goBack();
     }
+
+    const submitLabel = scheduling
+        ? t('weazelnews.schedule', 'Schedule')
+        : initial && !initial.publishAt
+            ? t('weazelnews.save', 'Save')
+            : t('weazelnews.publish', 'Publish');
 
     const card  = dark ? 'bg-surface text-white placeholder:text-white/90' : 'bg-surface text-black placeholder:text-black/75';
     const sheet = dark ? 'bg-black' : 'bg-[#d4d4d4]';
@@ -65,7 +88,7 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                     className="text-[16px] font-semibold disabled:opacity-40"
                     style={{ color: WEAZEL_RED }}
                 >
-                    {initial ? t('weazelnews.save', 'Save') : t('weazelnews.publish', 'Publish')}
+                    {submitLabel}
                 </button>
             </div>
 
@@ -176,6 +199,42 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                     </span>
                     <Toggle on={featured} onChange={setFeatured} />
                 </div>
+
+                {queued && (
+                    <>
+                        <Label dark={dark}>{t('weazelnews.publishing', 'Publishing')}</Label>
+                        <SegmentedControl<Timing>
+                            value={timing}
+                            onChange={chooseTiming}
+                            options={[
+                                { value: 'now',   label: t('weazelnews.publishNowOption', 'Publish now') },
+                                { value: 'later', label: t('weazelnews.scheduleOption', 'Schedule') },
+                            ]}
+                            slide
+                        />
+                        {timing === 'later' && (
+                            <button
+                                type="button"
+                                onClick={() => setTimePicker(true)}
+                                className={`mt-3 flex w-full items-center gap-3 rounded-2xl p-4 text-left active:opacity-80 ${card}`}
+                            >
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ background: WEAZEL_RED }}>
+                                    <Clock className="h-[19px] w-[19px]" strokeWidth={2.3} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-[16px] font-semibold">
+                                        {publishAt !== null
+                                            ? scheduleLabel(publishAt)
+                                            : t('weazelnews.pickPublishTime', 'Pick a publish time')}
+                                    </span>
+                                    <span className="mt-0.5 block text-[14px] font-medium text-ios-gray">
+                                        {t('weazelnews.scheduleHint', 'Hidden from readers until then.')}
+                                    </span>
+                                </span>
+                            </button>
+                        )}
+                    </>
+                )}
             </Scroller>
 
             {picking && (
@@ -183,6 +242,16 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                     forceDark={dark}
                     onSelect={p => { setImage(p.url); setPicking(false); }}
                     onClose={() => setPicking(false)}
+                />
+            )}
+
+            {timePicker && (
+                <SchedulePickerSheet
+                    at={publishAt}
+                    accent={WEAZEL_RED}
+                    forceDark={dark}
+                    onPick={setPublishAt}
+                    onClose={() => setTimePicker(false)}
                 />
             )}
         </div>

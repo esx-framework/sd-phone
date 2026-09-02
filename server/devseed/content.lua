@@ -133,6 +133,10 @@ local MINE = {
     notes      = 'Seeder note',
     documents  = 'Yard camera quote',
     voicememos = 'Seeded memo',
+    -- The two queued rows: one scheduled Pages post and one scheduled Weazel story, both bylined
+    -- to the caller so they show up in the Scheduled sections only the author can see.
+    pagesQueued  = 'Yard sale, Saturday morning',
+    weazelQueued = 'Council votes tonight on the harbour redevelopment',
 }
 
 content.seed = {}
@@ -660,7 +664,7 @@ content.seed.voicememos = function(ctx)
     return result(rows, live, note)
 end
 
-content.seed.weazelnews = function()
+content.seed.weazelnews = function(ctx)
     ---@type table[] Category, headline, dek, body, author index, featured.
     local articles = {
         { 'City', 'Great Ocean Highway tunnel stays shut with no date given',
@@ -690,6 +694,26 @@ content.seed.weazelnews = function()
         })
         rows = rows + 1
     end
+
+    -- One queued story bylined to the caller, so the newsroom's Scheduled section has something in
+    -- it the moment a reporter opens the cogwheel. Re-seeding replaces it rather than stacking.
+    MySQL.update.await('DELETE FROM phone_weazel_articles WHERE author_cid = ? AND headline = ?',
+        { ctx.cid, MINE.weazelQueued })
+    local queuedAt = os.time()
+    weazelStore.insertArticle({
+        category = 'Politics', headline = MINE.weazelQueued,
+        dek = 'The chamber sits at eight, and both sides say they have the numbers.',
+        body = 'Councillors return to the chamber this evening for a vote that has been deferred ' ..
+               'twice, with the harbour redevelopment package back on the order paper in more or ' ..
+               'less the form that stalled it in the spring.\n\nSupporters point to the jobs ' ..
+               'figures attached to the plan. Opponents want the public slipway written into the ' ..
+               'deal before anyone signs anything.',
+        author = ctx.name, author_cid = ctx.cid, image = img('wzqueued'),
+        featured = 0, status = 'scheduled', publish_at = queuedAt + 5400,
+        created_at = queuedAt, updated_at = queuedAt,
+    })
+    rows = rows + 1
+
     return result(rows, false, 'publishing needs a newsroom job, so these go in as rows')
 end
 
@@ -736,7 +760,7 @@ content.seed.gallery = function(ctx)
     return result(rows, false, 'the camera writes these, so there is no action to call')
 end
 
-content.seed.classifieds = function()
+content.seed.classifieds = function(ctx)
     local rows = 0
 
     ---@type table[] Title, body, price, image, owner index.
@@ -768,6 +792,16 @@ content.seed.classifieds = function()
         pagesStore.insert(member.id, p[1], p[2], nil, nil, nil, member.number, nil, p[2] == BAIT.pages and baited(6) or ago(i * 3, 2))
         rows = rows + 1
     end
+
+    -- One queued post on the caller's own character, so the Scheduled section in Your Posts has
+    -- something in it. Re-seeding replaces it rather than stacking.
+    MySQL.update.await('DELETE FROM pages_posts WHERE citizenid = ? AND title = ?',
+        { ctx.cid, MINE.pagesQueued })
+    pagesStore.insert(ctx.cid, MINE.pagesQueued,
+        'Tools, garden furniture, a chest freezer that works and two that do not. Cash only and ' ..
+        'bring your own bags. First come, first served from eight.',
+        nil, nil, nil, ctx.number, nil, os.time(), os.time() + 7200)
+    rows = rows + 1
 
     return result(rows, false, 'covered separately by /seedclassifieds for your own character')
 end
@@ -812,6 +846,8 @@ local function clearMine(cid)
     wipeMine('DELETE FROM phone_documents WHERE citizenid = ? AND name = ?', MINE.documents)
     wipeMine('DELETE FROM phone_notes WHERE citizenid = ? AND body LIKE CONCAT(?, \'%\')', MINE.notes)
     wipeMine('DELETE FROM phone_voice_memos WHERE citizenid = ? AND name = ?', MINE.voicememos)
+    wipeMine('DELETE FROM pages_posts WHERE citizenid = ? AND title = ?', MINE.pagesQueued)
+    wipeMine('DELETE FROM phone_weazel_articles WHERE author_cid = ? AND headline = ?', MINE.weazelQueued)
 
     local numbers, marks = {}, {}
     for i = 1, #cast.members do

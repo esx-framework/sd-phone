@@ -9,6 +9,8 @@ export interface StatusBarProps {
     wifiBars?: number | null;
     battery: number;
     airplane?: boolean;
+    focus?: boolean;
+    lowPower?: boolean;
     noSim?: boolean;
     noService?: boolean;
     light?: boolean;
@@ -16,7 +18,7 @@ export interface StatusBarProps {
     editing?: boolean;
 }
 
-export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, airplane = false, noSim = false, noService = false, light = true, controlHint = false, editing = false }: StatusBarProps) {
+export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, airplane = false, focus = false, lowPower = false, noSim = false, noService = false, light = true, controlHint = false, editing = false }: StatusBarProps) {
     const time  = formatClockTime(useDisplayClock(), use24h);
     const color = light ? '#ffffff' : '#000000';
 
@@ -47,7 +49,8 @@ export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, 
                         <WifiGlyph bars={wifiBars} showWifi={showWifi} />
                     </>
                 )}
-                <Battery size={28} pct={battery} />
+                {focus && <Moon size={17} />}
+                <Battery size={28} pct={battery} lowPower={lowPower} />
 
                 {controlHint && (
                     <span
@@ -116,10 +119,18 @@ function Airplane({ size }: { size: number }) {
     );
 }
 
-function Battery({ size, pct }: { size: number; pct: number }) {
+function Moon({ size }: { size: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 512 512" fill="currentColor" aria-hidden>
+            <path d="M264 480A232 232 0 0132.86 213.44 231.63 231.63 0 01166.28 33.7a16 16 0 0121.11 20.51A184.15 184.15 0 00376.4 297.34a16 16 0 0119.71 19.71A232.66 232.66 0 01264 480z" />
+        </svg>
+    );
+}
+
+function Battery({ size, pct, lowPower = false }: { size: number; pct: number; lowPower?: boolean }) {
     const value = Math.max(0, Math.min(100, Math.round(pct)));
     const fillW = (292.63 * value) / 100;
-    const fill  = value <= 20 ? '#ff453a' : 'currentColor';
+    const fill  = value <= 20 ? '#ff453a' : lowPower ? '#ffd60a' : 'currentColor';
     return (
         <svg width={size} height={size} viewBox="0 0 512 512" fill="none" aria-hidden>
             <rect x="32" y="144" width="400" height="224" rx="45.7" ry="45.7" stroke="currentColor" strokeLinecap="square" strokeMiterlimit="10" strokeWidth="32" />

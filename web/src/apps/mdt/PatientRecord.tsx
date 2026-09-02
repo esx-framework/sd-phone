@@ -10,6 +10,7 @@ import { Pill } from '@/ui/Pill';
 import { Scroller } from '@/ui/Scroller';
 import { useAsyncData } from '@/hooks/useAsyncData';
 
+import { apiMedicalLookup, type MedicalId } from '@/apps/health/medicalApi';
 import { mdtPatient, mdtSaveMedical } from './mdtApi';
 import { useMdtSession, useViewEnter } from './useMdtSession';
 import {
@@ -27,6 +28,42 @@ function Field({ label, value }: { label: string; value: string }) {
                 {value || t('mdt.nothingOnFile', 'Nothing on file')}
             </div>
         </div>
+    );
+}
+
+function MedicalIdSection({ citizenid }: { citizenid: string }) {
+    const { data } = useAsyncData(() => apiMedicalLookup(citizenid), [citizenid]);
+    if (!data) return null;
+
+    const card: MedicalId = data;
+    const contact = card.contactName
+        ? `${card.contactName}  ·  ${card.contactNumber}`
+        : t('mdt.nothingOnFile', 'Nothing on file');
+
+    return (
+        <>
+            <div className={`mt-6 ${mdtSectionHeader}`}>{t('mdt.patientMedicalId', 'Medical ID')}</div>
+            <MdtCard className="mt-2 p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Pill tone="red">{card.bloodType || t('mdt.bloodUnknown', 'Blood unknown')}</Pill>
+                    {card.organDonor && <Pill tone="green">{t('mdt.organDonor', 'Organ donor')}</Pill>}
+                </div>
+                <div className="mt-4 grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                    <Field label={t('mdt.allergies', 'Allergies')} value={card.allergies} />
+                    <Field label={t('mdt.conditions', 'Conditions')} value={card.conditions} />
+                    <Field label={t('mdt.medications', 'Medications')} value={card.medications} />
+                    <Field label={t('mdt.emergencyContact', 'Emergency contact')} value={contact} />
+                </div>
+                <div className="mt-4">
+                    <Field label={t('mdt.medicalNotes', 'Notes')} value={card.notes} />
+                </div>
+                <div className={`mt-4 ${mdtRowMeta}`}>
+                    {card.updatedAt > 0
+                        ? t('mdt.medicalIdFiledBy', 'Filed by the patient  ·  {date}', { date: formatMediumDate(card.updatedAt) })
+                        : t('mdt.medicalIdFiled', 'Filed by the patient')}
+                </div>
+            </MdtCard>
+        </>
     );
 }
 
@@ -238,6 +275,8 @@ export function PatientRecord({ citizenid }: { citizenid: string }) {
                     </div>
                 )}
             </MdtCard>
+
+            <MedicalIdSection citizenid={patient.citizenid} />
 
             <div className={`mt-6 ${mdtSectionHeader}`}>{t('mdt.patientPaperwork', 'Incidents')}</div>
             <MdtCard className="mt-2 overflow-hidden">

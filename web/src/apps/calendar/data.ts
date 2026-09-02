@@ -4,39 +4,110 @@ import { format12h } from '@/lib/time';
 
 const STORAGE_KEY = 'sd-phone:calendar:v1';
 
+export type RsvpStatus = 'pending' | 'accepted' | 'declined';
+
+export interface CalAttendee {
+    citizenid: string;
+    name:      string;
+    status:    RsvpStatus;
+    number:    string | null;
+}
+
 export interface CalEvent {
+    id:            string;
+    dayKey:        string;
+    title:         string;
+    allDay:        boolean;
+    start:         string | null;
+    end:           string | null;
+    location:      string;
+    notes:         string;
+    color:         string;
+    organizer:     string;
+    organizerName: string;
+    mine:          boolean;
+    myStatus:      RsvpStatus | null;
+    attendees:     CalAttendee[];
+}
+
+export interface CalEventDraft {
     id:       string;
     dayKey:   string;
     title:    string;
     allDay:   boolean;
-    start?:   string;
-    end?:     string;
+    start:    string | null;
+    end:      string | null;
     location: string;
     notes:    string;
     color:    string;
 }
 
-export interface CalState {
-    events:   CalEvent[];
-    dayNotes: Record<string, string>;
+export function loadDayNotes(): Record<string, string> {
+    const raw = readJson<{ dayNotes?: unknown }>(STORAGE_KEY);
+    const notes = raw?.dayNotes;
+    return notes && typeof notes === 'object' ? notes as Record<string, string> : {};
 }
 
-const empty: CalState = { events: [], dayNotes: {} };
-
-export function loadState(): CalState {
-    const raw = readJson<Partial<CalState>>(STORAGE_KEY);
-    return raw
-        ? {
-            events:   Array.isArray(raw.events) ? raw.events : [],
-            dayNotes: raw.dayNotes && typeof raw.dayNotes === 'object' ? raw.dayNotes : {},
-        }
-        : empty;
+export function saveDayNotes(dayNotes: Record<string, string>): void {
+    const raw = readJson<Record<string, unknown>>(STORAGE_KEY) ?? {};
+    writeJson(STORAGE_KEY, { ...raw, dayNotes });
 }
 
-export function saveState(s: CalState): void {
-    writeJson(STORAGE_KEY, s);
+interface LegacyEvent {
+    id?:       unknown;
+    dayKey?:   unknown;
+    title?:    unknown;
+    allDay?:   unknown;
+    start?:    unknown;
+    end?:      unknown;
+    location?: unknown;
+    notes?:    unknown;
+    color?:    unknown;
 }
 
+export function readLegacyEvents(): CalEventDraft[] {
+    const raw = readJson<{ events?: unknown }>(STORAGE_KEY);
+    const list = Array.isArray(raw?.events) ? raw.events as LegacyEvent[] : [];
+    return list
+        .filter(e => e && typeof e.id === 'string' && typeof e.dayKey === 'string' && typeof e.title === 'string')
+        .map(e => ({
+            id:       String(e.id),
+            dayKey:   String(e.dayKey),
+            title:    String(e.title),
+            allDay:   e.allDay === true,
+            start:    typeof e.start === 'string' ? e.start : null,
+            end:      typeof e.end === 'string' ? e.end : null,
+            location: typeof e.location === 'string' ? e.location : '',
+            notes:    typeof e.notes === 'string' ? e.notes : '',
+            color:    typeof e.color === 'string' ? e.color : '',
+        }));
+}
+
+export function clearLegacyEvents(): void {
+    const raw = readJson<Record<string, unknown>>(STORAGE_KEY);
+    if (!raw || !('events' in raw)) return;
+    const rest: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(raw)) if (k !== 'events') rest[k] = v;
+    writeJson(STORAGE_KEY, rest);
+}
+
+export const STATUS_DOT: Record<RsvpStatus, string> = {
+    pending:  'bg-ios-gray',
+    accepted: 'bg-ios-green',
+    declined: 'bg-ios-red',
+};
+
+export function isShared(ev: CalEvent): boolean {
+    return ev.attendees.length > 0 || !ev.mine;
+}
+
+export function sortEvents(events: CalEvent[]): CalEvent[] {
+    return [...events].sort((a, b) => {
+        if (a.allDay && !b.allDay) return -1;
+        if (b.allDay && !a.allDay) return 1;
+        return (a.start ?? '').localeCompare(b.start ?? '');
+    });
+}
 
 export function dayKey(d: Date): string {
     const y = d.getFullYear();
@@ -93,11 +164,11 @@ export function formatTime(hhmm: string): string {
 export { newId } from '@/lib/format';
 
 export const EVENT_COLORS = [
-    '#ff453a', // red
-    '#ff9f0a', // orange
-    '#ffd60a', // yellow
-    '#34c759', // green
-    '#0a84ff', // blue
-    '#5e5ce6', // indigo
-    '#bf5af2', // purple
+    '#ff453a',
+    '#ff9f0a',
+    '#ffd60a',
+    '#34c759',
+    '#0a84ff',
+    '#5e5ce6',
+    '#bf5af2',
 ];

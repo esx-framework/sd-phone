@@ -6,6 +6,7 @@ import { KeypadTab } from './keypad/KeypadTab';
 import { FavoritesTab } from './contacts/FavoritesTab';
 import { PhoneTabBar, type PhoneTab } from './PhoneTabBar';
 import { RecordingsTab } from './recordings/RecordingsTab';
+import { VoicemailTab } from './voicemail/VoicemailTab';
 import { recordingEnabled } from './callrecApi';
 import { AlertDialog } from '@/ui/AlertDialog';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
@@ -17,6 +18,7 @@ import {
 } from './contactsApi';
 import { dialCall } from './callsApi';
 import { useContacts, useContactsStore, saveNewContact } from '@/stores/contactsStore';
+import { useCallStore } from '@/stores/callStore';
 import { t } from '@/i18n';
 import { failText } from '@/core/api';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
@@ -92,7 +94,15 @@ export function Phone({ onClose: _onClose }: { onClose: () => void }) {
     async function placeCall(target: CallTarget) {
         if (!target.number) return;
         const res = await dialCall(target.number, target.name, target.video === true);
-        if (!res.success) setDialError(failText(res, t('phone.unableToPlaceCall','Unable to place call')));
+        if (res.success) return;
+        if (res.voicemail?.number) {
+            useCallStore.getState().offerVoicemail({
+                number: res.voicemail.number,
+                name:   res.voicemail.name ?? target.name,
+            });
+            return;
+        }
+        setDialError(failText(res, t('phone.unableToPlaceCall','Unable to place call')));
     }
 
     useNuiEvent('sd-phone:call:ended', useCallback(() => {
@@ -134,6 +144,8 @@ export function Phone({ onClose: _onClose }: { onClose: () => void }) {
                         />
                     ) : tab === 'recordings' ? (
                         <RecordingsTab />
+                    ) : tab === 'voicemail' ? (
+                        <VoicemailTab contacts={contacts} onRequestCall={setCallTarget} />
                     ) : tab === 'keypad' ? (
                         <KeypadTab onAddContact={addContact} onCall={placeCall} />
                     ) : (

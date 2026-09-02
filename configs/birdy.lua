@@ -23,6 +23,16 @@ return {
     -- Max length of a direct message.
     MaxDmLength = 500,
 
+    -- Polls. A post carries either a poll or media, never both, and the post
+    -- body is the question. Options are 2 to MaxPollOptions choices.
+    MaxPollOptions      = 4,
+    MaxPollOptionLength = 40,
+
+    -- Durations the composer offers, in seconds. The server accepts only
+    -- these exact values, so add a duration here and to the React composer
+    -- together (web/src/apps/birdy/data.ts).
+    PollDurations = { 3600, 86400, 259200, 604800 },
+
     -- Posts returned per feed load (newest first).
     FeedLimit = 50,
 

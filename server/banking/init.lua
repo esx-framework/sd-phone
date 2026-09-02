@@ -7,6 +7,9 @@ local config = require 'configs.config'
 local store = require 'server.banking.store'
 ---@type table Authoritative banking handlers (server.banking.actions): overview/send/addExternal.
 local actions = require 'server.banking.actions'
+---@type table Standing-order handlers (server.banking.standing): the CRUD callbacks plus the
+---scheduler pass that puts due orders through the transfer path.
+local standing = require 'server.banking.standing'
 ---@type table Shared server helpers (server.util): finite-number guard for the export boundary.
 local util = require 'server.util'
 ---@type table Banking bridge (bridge.server.banking): expected-echo consumption for the logger.
@@ -54,6 +57,23 @@ end)
 lib.callback.register('sd-phone:server:banking:overview', function(src) return actions.overview(src) end)
 lib.callback.register('sd-phone:server:banking:send', function(src, payload) return actions.send(src, payload) end)
 lib.callback.register('sd-phone:server:banking:setCardStyle', function(src, payload) return actions.setCardStyle(src, payload) end)
+
+-- Standing orders: every write answers with the caller's whole list, so the page never has to
+-- reconcile a patch against what it is already showing.
+lib.callback.register('sd-phone:server:banking:standing:list',   function(src) return standing.list(src) end)
+lib.callback.register('sd-phone:server:banking:standing:create', function(src, payload) return standing.create(src, payload) end)
+lib.callback.register('sd-phone:server:banking:standing:update', function(src, payload) return standing.update(src, payload) end)
+lib.callback.register('sd-phone:server:banking:standing:delete', function(src, payload) return standing.delete(src, payload) end)
+
+-- Standing-order scheduler. One pass a minute is far finer than the shortest interval on offer,
+-- and each pass is scoped to connected payers, so an empty server does no work at all.
+CreateThread(function()
+    while true do
+        Wait(60000)
+        local passed, err = pcall(standing.tick)
+        if not passed then print(('^1[sd-phone:banking]^0 standing order pass failed: %s'):format(err)) end
+    end
+end)
 
 ---Public export: exports['sd-phone']:addBankTransaction(citizenid, data). Appends a transaction
 ---to a character's Wallet list (log-only); `amount` is signed and `notify` pops a banner.

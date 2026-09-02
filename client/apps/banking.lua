@@ -6,6 +6,12 @@ proxy('sd-phone:banking:overview', 'sd-phone:server:banking:overview')
 proxy('sd-phone:banking:send',     'sd-phone:server:banking:send')
 proxy('sd-phone:banking:setCardStyle', 'sd-phone:server:banking:setCardStyle')
 
+-- Standing orders (server/banking/standing.lua).
+proxy('sd-phone:banking:standing:list',   'sd-phone:server:banking:standing:list')
+proxy('sd-phone:banking:standing:create', 'sd-phone:server:banking:standing:create')
+proxy('sd-phone:banking:standing:update', 'sd-phone:server:banking:standing:update')
+proxy('sd-phone:banking:standing:delete', 'sd-phone:server:banking:standing:delete')
+
 -- Person-to-person invoicing (server/services/invoices.lua personal handlers).
 proxy('sd-phone:banking:invoices:create', 'sd-phone:server:banking:invoices:create')
 proxy('sd-phone:banking:invoices:sent',   'sd-phone:server:banking:invoices:sent')

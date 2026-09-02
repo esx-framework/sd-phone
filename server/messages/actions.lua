@@ -4,6 +4,8 @@ local config        = require 'configs.config'
 local player        = require 'bridge.server.player'
 ---@type table Settings persistence (server.settings.store): number registry + airplane-mode flag.
 local settings      = require 'server.settings.store'
+---@type table Find My handlers (server.findmy.actions): the Lost Mode flag an outgoing text reads.
+local findmy        = require 'server.findmy.actions'
 ---@type table Contacts persistence (server.contacts.store): saved-contact rows + the block list.
 local contactsStore = require 'server.contacts.store'
 ---@type table Banking actions (server.banking.actions): validated transfers with refund-on-failure.
@@ -40,7 +42,7 @@ local ok, fail, digits, trim, initialsFor, formatNumber = util.ok, util.fail, ut
 ---@param conversation string thread key
 local function trimThread(cid, conversation)
     if store.threadCount(cid, conversation) > cfg.MessagesPerThread then
-        trimThread(cid, conversation)
+        store.pruneThread(cid, conversation, cfg.MessagesPerThread)
     end
 end
 
@@ -178,6 +180,9 @@ local function serializeMessage(row, viewerNumber, viewerCid, reactionsByMid)
     if meta.wpSub    then msg.wpSub    = meta.wpSub end
     if meta.requested     then msg.requested     = true end
     if meta.requestStatus then msg.requestStatus = meta.requestStatus end
+
+    local seenAt = tonumber(row.seen_at)
+    if seenAt and seenAt > 0 then msg.seenAt = seenAt * 1000 end
 
     if reactionsByMid and row.mid then
         local rrows = reactionsByMid[row.mid]
@@ -761,6 +766,7 @@ function actions.send(source, payload)
         return fail('messages.slowDown', 'Slow down')
     end
     if settings.isAirplane(cid) then return fail('messages.airplaneMode', 'Airplane Mode is on') end
+    if findmy.isLost(cid) then return fail('messages.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'text') then return fail('messages.noService', 'No Service') end
     local muted = moderation.guard(cid, 'sms'); if muted then return muted end
 
@@ -1090,6 +1096,33 @@ function actions.removeGroupMember(source, payload)
     return ok(buildConversation(cid, myNumber, key, {}, contactMap))
 end
 
+---Stamps the peer's own outgoing copies of a 1:1 thread with the moment we read them, and tells
+---them so their thread updates live. Groups carry no read receipts, and a thread whose key no
+---identity holds resolves to nobody. Idempotent: only unstamped rows are touched, so a reopened
+---thread neither rewrites the stamp nor re-pushes.
+---@param cid string reader's citizenid
+---@param conversation string the reader's thread key, i.e. the peer's number on a 1:1
+local function pushSeen(cid, conversation)
+    if lib.string.startsWith(conversation, 'g-') then return end
+
+    local peerCid = settings.getCitizenByNumber(digits(conversation))
+    if not peerCid or peerCid == cid then return end
+
+    local myNumber = digits(settings.getPhoneNumber(cid) or '')
+    if myNumber == '' then return end
+
+    local seenAt = os.time()
+    if store.markOutgoingSeen(peerCid, myNumber, seenAt) == 0 then return end
+
+    local peerSrc = player.getSourceByIdentifier(peerCid)
+    if not peerSrc then return end
+
+    TriggerClientEvent('sd-phone:client:messages:seen', peerSrc, {
+        conversation = myNumber,
+        seenAt       = seenAt * 1000,
+    })
+end
+
 ---Marks a thread's inbound messages as read for the caller, then refreshes their badge.
 ---Idempotent.
 ---@param source number
@@ -1104,7 +1137,78 @@ function actions.markRead(source, payload)
     if conversation == '' then return fail('messages.noConversation', 'No conversation') end
 
     store.markThreadRead(cid, conversation)
+    pushSeen(cid, conversation)
     badges.push(source)
+    return ok({ conversation = conversation })
+end
+
+---@type integer Rolling window for typing pings, and the number accepted inside it. A composer
+---emits at most one on plus one off every three seconds, so a real typist never reaches this
+---while a script driving the callback in a loop is capped.
+local TYPING_WINDOW_MS, TYPING_PER_WINDOW = 10000, 12
+
+---Relays a live typing indicator to the other side of a thread. Nothing is stored: the receiver
+---drops it on the matching off ping and, failing that, on its own after a few seconds of
+---silence. A group fans out to its online members, a 1:1 goes to the peer's number.
+---@param source number
+---@param payload { conversation?: string, on?: boolean }
+---@return table
+function actions.typing(source, payload)
+    payload = type(payload) == 'table' and payload or {}
+    local cid = player.getIdentifier(source)
+    if not cid then return fail('messages.playerNotFound', 'Player not found') end
+    if not util.rateLimit(cid, 'messages:typing', TYPING_WINDOW_MS, TYPING_PER_WINDOW) then
+        return fail('messages.slowDown', 'Slow down')
+    end
+
+    local conversation = tostring(payload.conversation or '')
+    if conversation == '' then return fail('messages.noConversation', 'No conversation') end
+
+    local myNumber = digits(settings.getPhoneNumber(cid) or '')
+    -- A player with no number, in airplane mode or out of coverage simply broadcasts nothing:
+    -- the indicator is cosmetic, so a silent drop beats a refusal the composer would ignore.
+    if myNumber == '' or settings.isAirplane(cid) or not service.allows(source, 'text') then
+        return ok({ conversation = conversation })
+    end
+
+    local on = payload.on == true
+
+    if lib.string.startsWith(conversation, 'g-') then
+        local groupId = conversation:sub(3)
+        if not store.isGroupMember(groupId, cid) then
+            return fail('messages.notConversation', 'You are not in this conversation')
+        end
+
+        local activeSrcs = player.activeCidMap()
+        for _, m in ipairs(store.groupMembers(groupId)) do
+            local targetSrc = m.citizenid ~= cid and activeSrcs[m.citizenid] or nil
+            if targetSrc and not settings.isAirplane(m.citizenid) then
+                TriggerClientEvent('sd-phone:client:messages:typing', targetSrc, {
+                    conversation = conversation,
+                    from         = myNumber,
+                    on           = on,
+                })
+            end
+        end
+        return ok({ conversation = conversation })
+    end
+
+    local target = digits(conversation)
+    local targetCid = target ~= '' and target ~= myNumber and settings.getCitizenByNumber(target) or nil
+    if not targetCid or targetCid == cid then return ok({ conversation = conversation }) end
+    if contactsStore.isBlocked(targetCid, myNumber) or settings.isAirplane(targetCid) then
+        return ok({ conversation = conversation })
+    end
+
+    local targetSrc = player.getSourceByIdentifier(targetCid)
+    if targetSrc and service.allows(targetSrc, 'text') then
+        -- Their key for this thread is our number, not theirs.
+        TriggerClientEvent('sd-phone:client:messages:typing', targetSrc, {
+            conversation = myNumber,
+            from         = myNumber,
+            on           = on,
+        })
+    end
     return ok({ conversation = conversation })
 end
 

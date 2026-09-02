@@ -158,6 +158,10 @@ function saveSecurityLocal(s: Security) {
 const HYDRATE_RETRY_MS = 1500;
 const HYDRATE_MAX_RETRIES = 20;
 
+function pushDrainRate(on: boolean) {
+    if (isFiveM) void fetchNui('sd-phone:battery:lowPower', { on }).catch(() => {});
+}
+
 export type WallpaperTarget = 'lock' | 'home' | 'both';
 
 const WALLPAPER_KEY = 'sd-phone:wallpaper';
@@ -393,6 +397,12 @@ interface ThemeState {
     setCallVol:        (v: number) => void;
     airplaneMode:      boolean;
     setAirplaneMode:   (on: boolean) => void;
+    focus:             boolean;
+    setFocus:          (on: boolean) => void;
+    lowPower:          boolean;
+    setLowPower:       (on: boolean) => void;
+    rotationLock:      boolean;
+    setRotationLock:   (on: boolean) => void;
     hour24:            boolean;
     setHour24:         (on: boolean) => void;
     callerId:          boolean;
@@ -521,6 +531,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     ringtoneVol: 40,
     callVol: 60,
     airplaneMode: false,
+    focus: false,
+    lowPower: false,
+    rotationLock: false,
     hour24: false,
     callerId: true,
     streamerMode: false,
@@ -776,6 +789,22 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         void fetchNui('sd-phone:settings:setAirplane', { on }).catch(() => {});
     },
 
+    setFocus: (on) => {
+        set({ focus: on });
+        void fetchNui('sd-phone:settings:setFocus', { on }).catch(() => {});
+    },
+
+    setLowPower: (on) => {
+        set({ lowPower: on });
+        void fetchNui('sd-phone:settings:setLowPower', { on }).catch(() => {});
+        pushDrainRate(on);
+    },
+
+    setRotationLock: (on) => {
+        set({ rotationLock: on });
+        void fetchNui('sd-phone:settings:setRotationLock', { on }).catch(() => {});
+    },
+
     setCallerId: (on) => {
         set({ callerId: on });
         void fetchNui('sd-phone:settings:setCallerId', { on }).catch(() => {});
@@ -892,6 +921,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
             ringtoneVol: 40,
             callVol: 60,
             airplaneMode: false,
+            focus: false,
+            lowPower: false,
+            rotationLock: false,
             hour24: false,
             callerId: true,
             streamerMode: false,
@@ -959,7 +991,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
             }
         };
         const keyAtRequest = wallpaperProfileKey;
-        void fetchNui<{ data?: { ringtone?: string; notificationTone?: string; customRingtones?: CustomTone[]; customNotificationTones?: CustomTone[]; airplaneMode?: boolean; hour24?: boolean; callerId?: boolean; streamerMode?: boolean; streamerHide?: unknown; gameTime?: boolean; reopenApp?: boolean; setupDone?: boolean; lockClock?: Partial<LockClock>; passcode?: string | null; faceId?: boolean; wallpaper?: string; wallpaperHome?: string; blurLock?: boolean; blurHome?: boolean; islandPet?: string; customWallpapers?: string[]; chatTextScale?: number; motion?: number; boldText?: boolean; textScale?: number; homeDensity?: string; homeIconScale?: number; appLabels?: Record<string, string>; phoneScale?: number; brightness?: number; phoneAlign?: string; phoneTilt?: { turn?: number; lean?: number }; dockStyle?: string; openAnim?: string; wallpaperParallax?: boolean; ringtoneVol?: number; callVol?: number; theme?: string; darkTheme?: string; lightTheme?: string; accent?: string; shell?: string; shellChoice?: boolean; shellsAllowed?: unknown[]; customPalettes?: unknown; iconTheme?: string; showAppNames?: boolean; customIconThemes?: unknown } }>('sd-phone:settings:get')
+        void fetchNui<{ data?: { ringtone?: string; notificationTone?: string; customRingtones?: CustomTone[]; customNotificationTones?: CustomTone[]; airplaneMode?: boolean; focus?: boolean; lowPower?: boolean; rotationLock?: boolean; hour24?: boolean; callerId?: boolean; streamerMode?: boolean; streamerHide?: unknown; gameTime?: boolean; reopenApp?: boolean; setupDone?: boolean; lockClock?: Partial<LockClock>; passcode?: string | null; faceId?: boolean; wallpaper?: string; wallpaperHome?: string; blurLock?: boolean; blurHome?: boolean; islandPet?: string; customWallpapers?: string[]; chatTextScale?: number; motion?: number; boldText?: boolean; textScale?: number; homeDensity?: string; homeIconScale?: number; appLabels?: Record<string, string>; phoneScale?: number; brightness?: number; phoneAlign?: string; phoneTilt?: { turn?: number; lean?: number }; dockStyle?: string; openAnim?: string; wallpaperParallax?: boolean; ringtoneVol?: number; callVol?: number; theme?: string; darkTheme?: string; lightTheme?: string; accent?: string; shell?: string; shellChoice?: boolean; shellsAllowed?: unknown[]; customPalettes?: unknown; iconTheme?: string; showAppNames?: boolean; customIconThemes?: unknown } }>('sd-phone:settings:get')
             .then(res => {
                 if (!res?.data) { retry(); return; }
                 const d = res.data;
@@ -981,6 +1013,10 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
                 if (d.ringtone)         patch.ringtone = d.ringtone;
                 if (d.notificationTone) patch.notificationTone = d.notificationTone;
                 if (typeof d.airplaneMode === 'boolean') patch.airplaneMode = d.airplaneMode;
+                patch.focus        = d.focus === true;
+                patch.lowPower     = d.lowPower === true;
+                patch.rotationLock = d.rotationLock === true;
+                pushDrainRate(patch.lowPower);
                 if (typeof d.hour24 === 'boolean') patch.hour24 = d.hour24;
                 if (typeof d.callerId === 'boolean') patch.callerId = d.callerId;
                 if (typeof d.streamerMode === 'boolean') patch.streamerMode = d.streamerMode;

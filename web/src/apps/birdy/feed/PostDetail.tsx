@@ -6,13 +6,14 @@ import { AlertDialog } from '@/ui/AlertDialog';
 import { EmptyState } from '@/ui/EmptyState';
 import { MediaPickerSheet } from '@/shared/MediaPickerSheet';
 import { GifPickerSheet } from '@/shared/chat/GifPickerSheet';
-import { absoluteTime, BG, BLUE, LIKE, MAX_POST_LENGTH, META, PILL, REPOST, type BirdyAuthor, type BirdyPost } from '../data';
+import { absoluteTime, BG, BLUE, LIKE, MAX_POST_LENGTH, META, PILL, REPOST, type BirdyAuthor, type BirdyPoll, type BirdyPost } from '../data';
 import { compactCount } from '../polish/format';
 import { HeartBurst } from '../polish/HeartBurst';
+import { PollBlock } from './PollBlock';
 import { PostCard } from './PostCard';
 import { Avatar, PostImages, RichText, VerifiedBadge } from '../ui';
 
-export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onToggleReplyLike, onOpenAuthor, onReply, onDelete }: {
+export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onToggleReplyLike, onOpenAuthor, onReply, onDelete, onPollVoted }: {
     post:              BirdyPost;
     me:                BirdyAuthor;
     onBack:            () => void;
@@ -22,6 +23,7 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
     onOpenAuthor?:     (handle: string) => void;
     onReply?:          (body: string, images: string[]) => void;
     onDelete?:         () => void;
+    onPollVoted?:      (poll: BirdyPoll) => void;
 }) {
     const [reply, setReply] = useState('');
     const [media, setMedia] = useState<string[]>([]);
@@ -84,6 +86,8 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
                             <RichText text={post.body} />
                         </p>
                     )}
+
+                    {post.poll && <PollBlock postId={post.id} poll={post.poll} onVoted={onPollVoted} />}
 
                     <PostImages images={post.images} />
 

@@ -11,6 +11,7 @@ proxyCallback('sd-phone:messages:addGroupMember', 'sd-phone:server:messages:addG
 proxyCallback('sd-phone:messages:updateGroup', 'sd-phone:server:messages:updateGroup')
 proxyCallback('sd-phone:messages:removeGroupMember', 'sd-phone:server:messages:removeGroupMember')
 proxyCallback('sd-phone:messages:markRead',    'sd-phone:server:messages:markRead')
+proxyCallback('sd-phone:messages:typing',      'sd-phone:server:messages:typing')
 proxyCallback('sd-phone:messages:delete',      'sd-phone:server:messages:delete')
 proxyCallback('sd-phone:messages:react',       'sd-phone:server:messages:react')
 
@@ -36,4 +37,16 @@ end)
 ---@param payload table meta patch from server/messages
 RegisterNetEvent('sd-phone:client:messages:meta', function(payload)
     SendNUIMessage({ action = 'sd-phone:messages:meta', data = payload })
+end)
+
+---Server push: relays a peer's live typing indicator for one thread.
+---@param payload table typing notice from server/messages
+RegisterNetEvent('sd-phone:client:messages:typing', function(payload)
+    SendNUIMessage({ action = 'sd-phone:messages:typing', data = payload })
+end)
+
+---Server push: relays the moment a peer read our side of a 1:1 thread.
+---@param payload table read receipt from server/messages
+RegisterNetEvent('sd-phone:client:messages:seen', function(payload)
+    SendNUIMessage({ action = 'sd-phone:messages:seen', data = payload })
 end)

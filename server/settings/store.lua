@@ -60,6 +60,9 @@ function store.ensureSchema()
             ringtone           VARCHAR(64) NULL,
             notification_tone  VARCHAR(64) NULL,
             airplane_mode      TINYINT(1)  NOT NULL DEFAULT 0,
+            dnd                TINYINT(1)  NOT NULL DEFAULT 0,
+            low_power          TINYINT(1)  NOT NULL DEFAULT 0,
+            rotation_lock      TINYINT(1)  NOT NULL DEFAULT 0,
             card_name          VARCHAR(64)  NULL,
             card_avatar        VARCHAR(512) NULL,
             card_email         VARCHAR(128) NULL,
@@ -500,6 +503,7 @@ function store.resetSettings(citizenid, device, scope)
     })
 
     store.forgetAirplane(citizenid, device)
+    store.forgetDnd(citizenid, device)
 end
 
 ---Reads a player's phone number, or nil if not yet assigned. Read-only.
@@ -1377,12 +1381,16 @@ end
 ---@type table<string, boolean> Cached airplane-mode flag per citizenid.
 local airplaneCache = {}
 
----Cache key for one device's airplane flag. Keyed by citizenid AND device because the column is
+-- In-memory Do Not Disturb cache, keyed the same way; every incoming call reads it.
+---@type table<string, boolean> Cached Do Not Disturb flag per citizenid.
+local dndCache = {}
+
+---Cache key for one device's radio flags. Keyed by citizenid AND device because the columns are
 ---per-device: a shared key would let the tablet answer with the phone's radio state.
 ---@param citizenid string framework per-character id
 ---@param device string device id
 ---@return string key
-local function airplaneKey(citizenid, device)
+local function deviceKey(citizenid, device)
     return citizenid .. '\0' .. device
 end
 
@@ -1393,11 +1401,11 @@ end
 function store.isAirplane(citizenid, device)
     device = device or 'phone'
     if not citizenid or citizenid == '' then return false end
-    local cached = airplaneCache[airplaneKey(citizenid, device)]
+    local cached = airplaneCache[deviceKey(citizenid, device)]
     if cached ~= nil then return cached end
     local row = MySQL.single.await('SELECT airplane_mode FROM phone_settings WHERE citizenid = ? AND device = ?', { citizenid, device })
     local on = row ~= nil and isTruthy(row.airplane_mode)
-    airplaneCache[airplaneKey(citizenid, device)] = on
+    airplaneCache[deviceKey(citizenid, device)] = on
     return on
 end
 
@@ -1408,7 +1416,7 @@ function store.setAirplane(citizenid, on, device)
     device = device or 'phone'
     if not citizenid or citizenid == '' then return end
     on = on == true
-    airplaneCache[airplaneKey(citizenid, device)] = on
+    airplaneCache[deviceKey(citizenid, device)] = on
     MySQL.update.await([[
         INSERT INTO phone_settings (citizenid, device, airplane_mode) VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE airplane_mode = VALUES(airplane_mode)
@@ -1423,7 +1431,74 @@ end
 ---@param device string|nil device key, defaults to 'phone'
 function store.forgetAirplane(citizenid, device)
     if not citizenid or citizenid == '' then return end
-    airplaneCache[airplaneKey(citizenid, device or 'phone')] = nil
+    airplaneCache[deviceKey(citizenid, device or 'phone')] = nil
+end
+
+---Returns true if a player currently has Do Not Disturb on, lazily warming the cache from the DB
+---on first read.
+---@param citizenid string framework per-character id
+---@param device string|nil device key, defaults to 'phone'
+---@return boolean on
+function store.isDnd(citizenid, device)
+    device = device or 'phone'
+    if not citizenid or citizenid == '' then return false end
+    local cached = dndCache[deviceKey(citizenid, device)]
+    if cached ~= nil then return cached end
+    local row = MySQL.single.await('SELECT dnd FROM phone_settings WHERE citizenid = ? AND device = ?', { citizenid, device })
+    local on = row ~= nil and isTruthy(row.dnd)
+    dndCache[deviceKey(citizenid, device)] = on
+    return on
+end
+
+---Sets a player's Do Not Disturb flag: cache first, then the DB write-through.
+---@param citizenid string framework per-character id
+---@param on boolean Do Not Disturb enabled
+---@param device string|nil device key, defaults to 'phone'
+function store.setDnd(citizenid, on, device)
+    device = device or 'phone'
+    if not citizenid or citizenid == '' then return end
+    on = on == true
+    dndCache[deviceKey(citizenid, device)] = on
+    MySQL.update.await([[
+        INSERT INTO phone_settings (citizenid, device, dnd) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE dnd = VALUES(dnd)
+    ]], { citizenid, device, on and 1 or 0 })
+end
+
+---Drops a character's cached Do Not Disturb state, so the next read reloads from the row. Needed
+---for the same reason forgetAirplane is: a settings reset rewrites the whole row without going
+---through setDnd, and the stale cache would keep refusing calls a player can no longer see why.
+---@param citizenid string framework per-character id
+---@param device string|nil device key, defaults to 'phone'
+function store.forgetDnd(citizenid, device)
+    if not citizenid or citizenid == '' then return end
+    dndCache[deviceKey(citizenid, device or 'phone')] = nil
+end
+
+---Sets a player's Low Power Mode flag. Read back through the snapshot only, so it needs no cache.
+---@param citizenid string framework per-character id
+---@param on boolean Low Power Mode enabled
+---@param device string|nil device key, defaults to 'phone'
+function store.setLowPower(citizenid, on, device)
+    device = device or 'phone'
+    if not citizenid or citizenid == '' then return end
+    MySQL.update.await([[
+        INSERT INTO phone_settings (citizenid, device, low_power) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE low_power = VALUES(low_power)
+    ]], { citizenid, device, on == true and 1 or 0 })
+end
+
+---Sets a player's Rotation Lock flag. Read back through the snapshot only, so it needs no cache.
+---@param citizenid string framework per-character id
+---@param on boolean Rotation Lock enabled
+---@param device string|nil device key, defaults to 'phone'
+function store.setRotationLock(citizenid, on, device)
+    device = device or 'phone'
+    if not citizenid or citizenid == '' then return end
+    MySQL.update.await([[
+        INSERT INTO phone_settings (citizenid, device, rotation_lock) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE rotation_lock = VALUES(rotation_lock)
+    ]], { citizenid, device, on == true and 1 or 0 })
 end
 
 ---Clears a character's per-app notification preferences, so every app goes back to its default
@@ -2434,10 +2509,16 @@ function store.snapshot(citizenid, device)
         shared = MySQL.single.await("SELECT custom_wallpapers, icon_custom, palette_custom FROM phone_settings WHERE citizenid = ? AND device = 'phone'", { citizenid })
     end
 
-    local airplane = airplaneCache[airplaneKey(citizenid, device)]
+    local airplane = airplaneCache[deviceKey(citizenid, device)]
     if airplane == nil then
         airplane = row ~= nil and isTruthy(row.airplane_mode) or false
-        airplaneCache[airplaneKey(citizenid, device)] = airplane
+        airplaneCache[deviceKey(citizenid, device)] = airplane
+    end
+
+    local dnd = dndCache[deviceKey(citizenid, device)]
+    if dnd == nil then
+        dnd = row ~= nil and isTruthy(row.dnd) or false
+        dndCache[deviceKey(citizenid, device)] = dnd
     end
 
     local pin = row and sanitizePin(row.passcode) or nil
@@ -2488,6 +2569,9 @@ function store.snapshot(citizenid, device)
         ringtone         = row and row.ringtone or nil,
         notificationTone = row and row.notification_tone or nil,
         airplaneMode     = airplane,
+        focus            = dnd,
+        lowPower         = row ~= nil and isTruthy(row.low_power) or false,
+        rotationLock     = row ~= nil and isTruthy(row.rotation_lock) or false,
         hour24           = hour24,
         callerId         = (row == nil or isTruthy(row.caller_id_unset)) and true or isTruthy(row.caller_id),
         streamerMode     = row ~= nil and isTruthy(row.streamer_mode) or false,

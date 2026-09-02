@@ -12,6 +12,16 @@ local job    = require 'bridge.server.job'
 ---@type table Weazel News config (configs/weazelnews.lua): staff gating + content caps.
 local WZ = config.WeazelNews
 
+---@type integer Shortest lead time a story may be queued for, in seconds.
+local SCHEDULE_MIN_AHEAD = 5 * 60
+---@type integer Longest lead time a story may be queued for, in seconds.
+local SCHEDULE_MAX_AHEAD = 30 * 86400
+---@type integer Queued stories listed in the newsroom.
+local SCHEDULED_LIMIT = 60
+---@type integer Due stories one sweep flips live, so a long-idle server catches up over several
+---passes instead of one blocking burst.
+local DUE_LIMIT = 20
+
 ---@type table Actions module; the table returned at end of file. Handlers return the phone's
 ---{ success, message?, data? } envelope. The feed is public; publishing is staff-only. Byline,
 ---author citizenid and timestamps are stamped server-side and every input is clamped.
@@ -63,6 +73,37 @@ local function canManage(src)
     return false
 end
 
+---True when `src` may edit or cancel a queued story: newsroom staff, or the byline that wrote it.
+---@param src integer player server id
+---@param row table article DB row
+---@return boolean allowed
+local function canEditRow(src, row)
+    if canManage(src) then return true end
+    local cid = cidOf(src)
+    return cid ~= nil and row.author_cid == cid
+end
+
+---Validates a client-supplied publish time: a whole unix second between five minutes and thirty
+---days from now. Anything else is refused rather than clamped, so a wrong time is never published.
+---@param v any client-supplied publish_at
+---@param now integer unix seconds
+---@return integer|nil publishAt validated stamp, nil when out of range or malformed
+---@return string? key catalogue key for the refusal
+---@return string? message English refusal text
+local function scheduleAt(v, now)
+    local n = tonumber(v)
+    if not n or n ~= n or n == math.huge or n ~= math.floor(n) then
+        return nil, 'weazelnews.badPublishTime', 'Pick a publish time'
+    end
+    if n < now + SCHEDULE_MIN_AHEAD then
+        return nil, 'weazelnews.publishTooSoon', 'Schedule at least 5 minutes ahead'
+    end
+    if n > now + SCHEDULE_MAX_AHEAD then
+        return nil, 'weazelnews.publishTooFar', 'Schedule at most 30 days ahead'
+    end
+    return n
+end
+
 ---Compact relative-time label from a unix timestamp: "now", "38m", "2h", "3d".
 ---@param ts integer|nil unix seconds the article was created
 ---@return string label
@@ -92,23 +133,44 @@ local function splitParas(text)
 end
 
 ---Public article shape sent to the app; omits author_cid. Handles oxmysql's TINYINT(1) reads
----arriving as either a Lua boolean or a number.
+---arriving as either a Lua boolean or a number. A queued story carries `publishAt`, which is the
+---only thing marking it as not-yet-live for the newsroom list.
 ---@param row table article DB row
 ---@return table article public article payload
 local function pubArticle(row)
     local body = splitParas(row.body)
     return {
-        id       = tostring(row.id),
-        category = row.category,
-        headline = row.headline,
-        dek      = row.dek,
-        body     = body,
-        author   = row.author,
-        time     = relTime(row.created_at),
-        views    = tonumber(row.views) or 0,
-        image    = (row.image and row.image ~= '') and row.image or nil,
-        featured = (tonumber(row.featured) == 1) or row.featured == true,
+        id        = tostring(row.id),
+        category  = row.category,
+        headline  = row.headline,
+        dek       = row.dek,
+        body      = body,
+        author    = row.author,
+        time      = relTime(row.created_at),
+        views     = tonumber(row.views) or 0,
+        image     = (row.image and row.image ~= '') and row.image or nil,
+        featured  = (tonumber(row.featured) == 1) or row.featured == true,
+        publishAt = row.status == 'scheduled' and tonumber(row.publish_at) or nil,
     }
+end
+
+---The one publish path: flips a queued story live and runs every side effect a manual publish
+---runs. Both the newsroom's "Publish now" and the due sweep call this, so a scheduled story lands
+---exactly the way a hand-published one does. The status-guarded UPDATE means a row racing two
+---callers only ever runs these once.
+---@param id integer article id
+---@param ts integer unix seconds stamped as the publish moment
+---@param exceptSrc integer|nil player who already has the change (the actor), skipped by the push
+---@return table|nil row the freshly published article row, nil when it was no longer scheduled
+local function publishRow(id, ts, exceptSrc)
+    if store.markPublished(id, ts) < 1 then return nil end
+
+    local row = store.articleById(id)
+    if not row then return nil end
+
+    if (tonumber(row.featured) == 1) or row.featured == true then store.clearFeatured(id) end
+    nudge(exceptSrc)
+    return row
 end
 
 ---Validates + clamps a client save payload into a row-ready table. Category is whitelist-checked
@@ -156,10 +218,11 @@ local function sanitize(payload)
     }
 end
 
----Public feed: the latest articles plus the breaking ticker, and whether the caller is news
----staff. Read-only.
+---Public feed: the latest live articles plus the breaking ticker, and whether the caller is news
+---staff. Queued stories ride along only for staff, who are the only ones with a newsroom to see
+---them in. Read-only.
 ---@param src integer player server id
----@return table result envelope with { articles, ticker, canManage }
+---@return table result envelope with { articles, ticker, canManage, scheduled }
 function actions.feed(src)
     local articles = {}
     for _, row in ipairs(store.articles(WZ.ArticlesPerFeed)) do
@@ -168,7 +231,15 @@ function actions.feed(src)
     local ticker = {}
     for _, row in ipairs(store.breaking()) do ticker[#ticker + 1] = row.text end
 
-    return { success = true, data = { articles = articles, ticker = ticker, canManage = canManage(src) } }
+    local manage = canManage(src)
+    local scheduled = {}
+    if manage then
+        for _, row in ipairs(store.scheduled(SCHEDULED_LIMIT)) do
+            scheduled[#scheduled + 1] = pubArticle(row)
+        end
+    end
+
+    return { success = true, data = { articles = articles, ticker = ticker, canManage = manage, scheduled = scheduled } }
 end
 
 ---@type integer Rolling window the article-read budget is measured over, in ms.
@@ -233,9 +304,12 @@ function actions.view(src, id)
 end
 
 ---Staff-only: creates a new article, or updates an existing one when `id` is set. Byline, author
----citizenid and created_at are stamped on first insert only; `featured` demotes every other story.
+---citizenid and created_at are stamped on first insert only; `featured` demotes every other live
+---story. A `publishAt` in the payload queues the story instead of publishing it: it stays out of
+---the feed, out of the ticker's way and off the featured slot until its time comes. Saving a
+---queued story with no `publishAt` publishes it there and then.
 ---@param src integer player server id
----@param payload any client-supplied article draft (sanitize documents the shape)
+---@param payload any client-supplied article draft (sanitize documents the shape) plus publishAt
 ---@return table result envelope with { article } on success
 function actions.save(src, payload)
     if not canManage(src) then return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan', message = 'Only Weazel News staff can publish' } end
@@ -252,16 +326,47 @@ function actions.save(src, payload)
         if not id then return { success = false, messageKey = 'weazelnews.articleNotFound', message = 'Article not found' } end
     end
 
+    local publishAt
+    if type(payload) == 'table' and payload.publishAt ~= nil then
+        local at, key, msg = scheduleAt(payload.publishAt, ts)
+        if not at then return { success = false, messageKey = key, message = msg } end
+        publishAt = at
+    end
+
     if id then
-        if not store.articleById(id) then return { success = false, messageKey = 'weazelnews.articleNotFound', message = 'Article not found' } end
+        local existing = store.articleById(id)
+        if not existing then return { success = false, messageKey = 'weazelnews.articleNotFound', message = 'Article not found' } end
+
+        local wasScheduled = existing.status == 'scheduled'
+        if publishAt and not wasScheduled then
+            return { success = false, messageKey = 'weazelnews.alreadyPublished', message = 'That story is already published' }
+        end
+
         row.updated_at = ts
         store.updateArticle(id, row)
+
+        if wasScheduled then
+            if publishAt then
+                store.reschedule(id, publishAt, ts)
+            else
+                publishRow(id, ts, src)
+            end
+            local queued = store.articleById(id)
+            return { success = true, data = { article = queued and pubArticle(queued) or nil } }
+        end
     else
         row.author     = player.getName(src) or 'Weazel Staff'
         row.author_cid = cid
         row.created_at = ts
         row.updated_at = ts
+        row.publish_at = publishAt
+        row.status     = publishAt and 'scheduled' or 'published'
         id = store.insertArticle(row)
+
+        if publishAt then
+            local queued = store.articleById(id)
+            return { success = true, data = { article = queued and pubArticle(queued) or nil } }
+        end
     end
 
     if row.featured == 1 then store.clearFeatured(id) end
@@ -271,16 +376,97 @@ function actions.save(src, payload)
     return { success = true, data = { article = saved and pubArticle(saved) or nil } }
 end
 
----Staff-only: deletes an article by id.
+---Moves a queued story to a new publish time. Staff or the byline that wrote it; a story already
+---live is refused rather than pulled back off the feed.
+---@param src integer player server id
+---@param payload any client-supplied { id, publishAt }
+---@return table result envelope with { article } on success
+function actions.reschedule(src, payload)
+    if type(payload) ~= 'table' then payload = {} end
+    local id = articleId(payload.id)
+    if not id then return { success = false, messageKey = 'weazelnews.badArticleId', message = 'Bad article id' } end
+
+    local row = store.articleById(id)
+    if not row then return { success = false, messageKey = 'weazelnews.articleNotFound', message = 'Article not found' } end
+    if not canEditRow(src, row) then return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan2', message = 'Only Weazel News staff can edit this' } end
+    if row.status ~= 'scheduled' then return { success = false, messageKey = 'weazelnews.alreadyPublished', message = 'That story is already published' } end
+
+    local ts = os.time()
+    local at, key, msg = scheduleAt(payload.publishAt, ts)
+    if not at then return { success = false, messageKey = key, message = msg } end
+
+    store.reschedule(id, at, ts)
+    local saved = store.articleById(id)
+    return { success = true, data = { article = saved and pubArticle(saved) or nil } }
+end
+
+---Publishes a queued story immediately, through the same path the due sweep uses.
+---@param src integer player server id
+---@param payload any client-supplied { id }
+---@return table result envelope with { article } on success
+function actions.publishNow(src, payload)
+    if type(payload) ~= 'table' then payload = {} end
+    local id = articleId(payload.id)
+    if not id then return { success = false, messageKey = 'weazelnews.badArticleId', message = 'Bad article id' } end
+
+    local row = store.articleById(id)
+    if not row then return { success = false, messageKey = 'weazelnews.articleNotFound', message = 'Article not found' } end
+    if not canEditRow(src, row) then return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan2', message = 'Only Weazel News staff can edit this' } end
+    if row.status ~= 'scheduled' then return { success = false, messageKey = 'weazelnews.alreadyPublished', message = 'That story is already published' } end
+
+    local published = publishRow(id, os.time(), src)
+    return { success = true, data = { article = published and pubArticle(published) or nil } }
+end
+
+---Flips every story whose publish time has passed, oldest first, and tells each byline their
+---story is live. Driven by the sweep timer in server/weazelnews/init.lua.
+---@return integer published how many stories went live this pass
+function actions.runDue()
+    local now  = os.time()
+    local due  = store.dueScheduled(now, DUE_LIMIT)
+    if #due == 0 then return 0 end
+
+    ---@type table Notification relay (server.notifications.init): offline-safe author receipts.
+    local notifications = require 'server.notifications.init'
+
+    local published = 0
+    for _, row in ipairs(due) do
+        if publishRow(row.id, now, nil) then
+            published = published + 1
+            notifications.notifyCid(row.author_cid, {
+                app      = 'Weazel News',
+                appId    = 'weazelnews',
+                image    = (row.image and row.image ~= '') and row.image or nil,
+                titleKey = 'weazelnews.notifPublishedTitle',
+                title    = 'Story published',
+                bodyKey  = 'weazelnews.notifPublishedBody',
+                body     = '{headline}',
+                bodyVars = { headline = row.headline },
+                time     = 'now',
+            })
+        end
+    end
+    return published
+end
+
+---Staff-only: deletes an article by id. This is also how a queued story is cancelled, so the push
+---is skipped when nobody could see the story in the first place.
 ---@param src integer player server id
 ---@param id any client-supplied article id
 ---@return table result envelope with { id } on success
 function actions.delete(src, id)
-    if not canManage(src) then return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan2', message = 'Only Weazel News staff can edit this' } end
     id = articleId(id)
     if not id then return { success = false, messageKey = 'weazelnews.badArticleId', message = 'Bad article id' } end
+
+    local row = store.articleById(id)
+    if row then
+        if not canEditRow(src, row) then return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan2', message = 'Only Weazel News staff can edit this' } end
+    elseif not canManage(src) then
+        return { success = false, messageKey = 'weazelnews.onlyWeazelNewsStaffCan2', message = 'Only Weazel News staff can edit this' }
+    end
+
     store.deleteArticle(id)
-    nudge(src)
+    if not row or row.status ~= 'scheduled' then nudge(src) end
     return { success = true, data = { id = tostring(id) } }
 end
 

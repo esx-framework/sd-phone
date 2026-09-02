@@ -19,6 +19,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { VideoCall } from './calls/VideoCall';
 import { acceptVideo, requestVideo, stopVideo } from './calls/webrtc';
 import { useCallStore } from '@/stores/callStore';
+import { VoicemailLayer } from './voicemail/VoicemailLayer';
 import { t } from '@/i18n';
 import { formatDuration } from '@/lib/time';
 import { failText } from '@/core/api';
@@ -215,7 +216,9 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
         />
     );
 
-    if (!phase || (hidden && phase === 'active')) return <>{dropNotice}{recNotice}</>;
+    const voicemail = <VoicemailLayer wallpaper={wallpaper} />;
+
+    if (!phase || (hidden && phase === 'active')) return <>{dropNotice}{recNotice}{voicemail}</>;
 
     const title    = name || phoneFmt(number) || t('phone.unknown','Unknown');
     const elapsed  = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;

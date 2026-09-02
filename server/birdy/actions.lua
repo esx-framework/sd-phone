@@ -51,6 +51,7 @@ local WRITE_BUDGET = {
     react    = { 250, 2000 },
     verify   = { 3000, 20 },
     deletePost = { 500, 300 },
+    pollVote = { 400, 1000 },
 }
 
 ---@type integer Rolling window the per-day half of WRITE_BUDGET is measured over (ms).
@@ -114,6 +115,38 @@ local function sanitizeImages(raw)
     end
     if #out == 0 then return nil end
     return out
+end
+
+---Cleans a client-supplied poll into `{ options = string[], duration = integer }`, or returns a
+---refusal envelope. nil for both means the post simply has no poll. Option labels are trimmed and
+---capped; the duration must be one of the offered values rather than any number the client sends.
+---@param raw any
+---@return table|nil poll, table|nil refusal
+local function sanitizePoll(raw)
+    if raw == nil then return nil, nil end
+    if type(raw) ~= 'table' then return nil, fail('birdy.pollInvalid', 'Poll is not valid') end
+
+    local labels = type(raw.options) == 'table' and raw.options or {}
+    local options = {}
+    for i = 1, #labels do
+        local label = trimmed(labels[i])
+        if label and label ~= '' then
+            options[#options + 1] = util.limitedString(label, birdyCfg.MaxPollOptionLength)
+        end
+    end
+    if #options < 2 then return nil, fail('birdy.pollNeedsTwoOptions', 'A poll needs at least two options') end
+    if #options > birdyCfg.MaxPollOptions then
+        return nil, fail('birdy.pollTooManyOptions', 'A poll can have at most four options')
+    end
+
+    local duration = tonumber(raw.duration)
+    local allowed = false
+    for i = 1, #birdyCfg.PollDurations do
+        if birdyCfg.PollDurations[i] == duration then allowed = true break end
+    end
+    if not allowed then return nil, fail('birdy.pollDurationInvalid', 'Choose a poll duration') end
+
+    return { options = options, duration = duration }, nil
 end
 
 ---Compact relative label ("now", "5m", "2h", "3d", "2w") for a ms timestamp.
@@ -226,6 +259,7 @@ local function serializePost(p)
         likes     = p.likes,
         liked     = p.liked,
         views     = p.views,
+        poll      = p.poll,
         repostedBy = p.repostedBy and { handle = p.repostedBy, name = p.repostedByName, avatar = p.repostedByAvatar } or nil,
     }
 end
@@ -619,11 +653,16 @@ function actions.create(source, payload)
     payload = tbl(payload)
     local body = trimmed(payload and payload.body) or ''
     local images = sanitizeImages(payload and payload.images)
+    local poll, pollRefusal = sanitizePoll(payload and payload.poll)
+    if pollRefusal then return pollRefusal end
+    if poll and images then return fail('birdy.pollNoMedia', 'A poll cannot also carry media') end
+    if poll and body == '' then return fail('birdy.pollNeedsQuestion', 'A poll needs a question') end
     if body == '' and not images then return fail('birdy.postCannotEmpty', 'Post cannot be empty') end
     if #body > birdyCfg.MaxPostLength then return fail('birdy.postTooLong', 'Post is too long') end
 
     local id = store.newId()
     if not store.insertPost(id, prof.handle, body, nil, images) then return fail('birdy.failedPost', 'Failed to post') end
+    if poll then store.insertPoll(id, poll.options, poll.duration) end
 
     -- First-party hook: one server-local event per created post; the citizenid is the character
     -- who posted, which is not necessarily the one that created the account.
@@ -798,6 +837,43 @@ function actions.toggleRepost(source, payload)
     watchers.push('sd-phone:client:birdy:feedChanged', {})
 
     return ok({ reposted = nowReposted, notify = notify })
+end
+
+---Casts the viewer's vote on a poll and returns the poll as they now see it. One vote per
+---account is enforced by the primary key rather than by this check, so a replay costs nothing and
+---simply reads the existing state back. Voting closes with the poll.
+---@param source number player server id
+---@param payload { id?: string, idx?: number }|nil
+---@return table envelope
+function actions.vote(source, payload)
+    local prof, cid = viewer(source); if not prof or not cid then return fail('birdy.playerNotFound', 'Player not found') end
+    payload = tbl(payload)
+    local id = payload and payload.id
+    if type(id) ~= 'string' or id == '' then return fail('birdy.missingPost', 'Missing post') end
+    local slow = throttle(cid, 'pollVote'); if slow then return slow end
+
+    local idx = tonumber(payload and payload.idx)
+    if not idx or idx % 1 ~= 0 or idx < 0 then return fail('birdy.pollOptionInvalid', 'Choose an option') end
+
+    local poll = store.pollOf(id, prof.handle)
+    if not poll then return fail('birdy.pollNotFound', 'This post has no poll') end
+    if poll.ended then return fail('birdy.pollEnded', 'This poll has ended') end
+    if idx >= #poll.options then return fail('birdy.pollOptionInvalid', 'Choose an option') end
+
+    if not poll.myVote then
+        store.addVote(id, prof.handle, idx)
+        poll = store.pollOf(id, prof.handle) or poll
+    end
+
+    -- The same post-changed push new posts and reposts use, carrying the new tally so an open
+    -- timeline patches the one card instead of refetching the whole feed. `myVote` is deliberately
+    -- left off: it belongs to the voter, and each viewer keeps their own.
+    watchers.push('sd-phone:client:birdy:feedChanged', {
+        postId = id,
+        poll = { options = poll.options, total = poll.total, endsAt = poll.endsAt, ended = poll.ended },
+    }, source)
+
+    return ok({ poll = poll })
 end
 
 ---Followers or following for a handle (defaulting to the viewer's own profile), shaped for the

@@ -19,10 +19,11 @@ import { toggleReactionLocal } from '@/shared/chat/messagesApi';
 import type { MessageDraft } from '@/shared/chat/ChatView';
 import {
     apiCreate, apiDeletePost, apiDmList, apiDmMarkRead, apiDmReact, apiDmResolve, apiDmSend, apiDmThread, apiFeed, apiLogin, apiMe, apiPostDetail, apiProfile, apiRegister, apiNotificationCount, apiReply, apiToggleFollow, apiToggleLike, apiToggleRepost, apiWatch,
+    type PollDraft,
 } from './birdyApi';
 import { ChatView } from './dms/ChatView';
 import { Composer } from './feed/Composer';
-import { BG, BLUE, CARD, CURRENT_USER, META, type BirdyAuthor, type BirdyConversation, type BirdyMessage, type BirdyPost, type BirdyProfile } from './data';
+import { BG, BLUE, CARD, CURRENT_USER, META, type BirdyAuthor, type BirdyConversation, type BirdyMessage, type BirdyPoll, type BirdyPollCounts, type BirdyPost, type BirdyProfile } from './data';
 import { EditProfile } from './profile/EditProfile';
 import { Feed } from './feed/Feed';
 import { MessagesList } from './dms/Messages';
@@ -61,7 +62,23 @@ export function Birdy({ onClose }: { onClose: () => void }) {
     const [feedNonce, setFeedNonce] = useState(0);
     const refreshFeed = useCallback(() => setFeedNonce(n => n + 1), []);
 
-    useNuiEvent('sd-phone:birdy:feedChanged', refreshFeed);
+    const patchPoll = useCallback((postId: string, next: (current: BirdyPoll) => BirdyPoll) => {
+        const patch = (p: BirdyPost): BirdyPost => (p.id === postId && p.poll ? { ...p, poll: next(p.poll) } : p);
+        setPosts(prev => (prev ? prev.map(patch) : prev));
+        setOpenPost(prev => (prev ? { ...patch(prev), thread: prev.thread?.map(patch) } : prev));
+    }, []);
+
+    const pollVoted = useCallback(
+        (postId: string, poll: BirdyPoll) => patchPoll(postId, () => poll),
+        [patchPoll],
+    );
+
+    useNuiEvent('sd-phone:birdy:feedChanged', useCallback((data: { postId?: string; poll?: BirdyPollCounts }) => {
+        const postId = data?.postId;
+        const counts = data?.poll;
+        if (!postId || !counts) { refreshFeed(); return; }
+        patchPoll(postId, current => ({ ...counts, myVote: current.myVote }));
+    }, [patchPoll, refreshFeed]));
 
     // Transition only; the mount fetch below already covers first open.
     const deckActive = useDeckActive();
@@ -195,8 +212,8 @@ export function Birdy({ onClose }: { onClose: () => void }) {
         void apiToggleRepost(id);
     }
 
-    async function addPost(body: string, images: string[]) {
-        const post = await apiCreate(body, images.length ? images : undefined);
+    async function addPost(body: string, images: string[], poll?: PollDraft) {
+        const post = await apiCreate(body, images.length ? images : undefined, poll);
         if (post) setPosts(prev => (prev ? [post, ...prev] : [post]));
         setComposing(false);
         setTab('home');
@@ -308,7 +325,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
 
     let content: React.ReactNode;
     if (tab === 'home') {
-        content = <Feed posts={posts} me={me} feed={feed} onFeedChange={switchFeed} onRefresh={refreshNow} onToggleLike={toggleLike} onToggleRepost={toggleRepost} onOpenPost={openPostById} onOpenProfile={openProfile} onOpenAuthor={openProfile} />;
+        content = <Feed posts={posts} me={me} feed={feed} onFeedChange={switchFeed} onRefresh={refreshNow} onToggleLike={toggleLike} onToggleRepost={toggleRepost} onOpenPost={openPostById} onOpenProfile={openProfile} onOpenAuthor={openProfile} onPollVoted={pollVoted} />;
     } else if (tab === 'search') {
         content = <Search me={me} onOpenProfile={openProfile} onOpenPost={openPostById} onToggleLike={toggleLike} onToggleRepost={toggleRepost} />;
     } else if (tab === 'notifications') {
@@ -335,6 +352,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
                                     onOpenAuthor={openProfile}
                                     onReply={(b, imgs) => addReply(openPost.id, b, imgs)}
                                     onDelete={() => deletePost(openPost.id)}
+                                    onPollVoted={poll => pollVoted(openPost.id, poll)}
                                 />
                             )
                             : <LoadingPane onBack={close} />}

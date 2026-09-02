@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, House, ReceiptText } from 'lucide-react';
+import { ChevronRight, House, ReceiptText, Repeat } from 'lucide-react';
 
 import { useDeckActive } from '@/shell/deckActive';
 
@@ -21,6 +21,8 @@ import { BankCardPicker } from './BankCardPicker';
 import { resolveStyle, type CardStyle } from './bankBrands';
 import { TxRows } from './TxRow';
 import { InvoicesTab } from './InvoicesTab';
+import { StandingOrders } from './StandingOrders';
+import { GroupCard, ListRow } from '@/ui/ListGroup';
 import { TabBar, type TabBarItem } from '@/ui/TabBar';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
@@ -47,6 +49,7 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
     const [tab,      setTab]      = useSessionState<BankingTab>('banking:tab', 'home');
     const [showAll,  setShowAll]  = useSessionState('banking:showAll', false);
     const [sending,  setSending]  = useSessionState('banking:sending', false);
+    const [standing, setStanding] = useSessionState('banking:standing', false);
     const [actionTx, setActionTx] = useState<BankTx | null>(null);
     const [pickingCard, setPickingCard] = useState(false);
     const [styleOverride, setStyleOverride] = useState<CardStyle | null>(null);
@@ -147,6 +150,14 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
                     </button>
                 </div>
 
+                <GroupCard className="mt-3" radius={16}>
+                    <ListRow
+                        label={t('banking.standingOrders', 'Standing Orders')}
+                        left={<Repeat className="h-[21px] w-[21px] text-ios-blue" strokeWidth={2.2} />}
+                        onPress={() => setStanding(true)}
+                    />
+                </GroupCard>
+
                 <div className="mb-3 mt-6 flex items-center justify-between">
                     <h2 className="text-[20px] font-bold tracking-tight">{t('banking.latestTransactions', 'Latest Transactions')}</h2>
                     {txs.length > 0 && (
@@ -173,6 +184,8 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
             <button type="button" onClick={_onClose} aria-label={t('banking.closeWallet', 'Close Wallet')} className="absolute inset-x-0 bottom-0 h-7 cursor-default" />
 
             {showAll && <AllTransactions transactions={txs} onBack={() => setShowAll(false)} onSelectTx={setActionTx} />}
+
+            {standing && <StandingOrders onBack={() => setStanding(false)} onChanged={refresh} />}
 
             {sending && (
                 <SendMoney

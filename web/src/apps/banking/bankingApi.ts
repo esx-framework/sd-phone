@@ -117,6 +117,111 @@ export async function cancelPersonalInvoice(id: string): Promise<SentInvoicesRes
         ?? { success: false, message: t('banking.noServerResponse', 'No response from server') };
 }
 
+export type StandingInterval = 'daily' | 'weekly' | 'monthly';
+export type StandingStatus   = 'ok' | 'insufficient' | 'failed';
+
+export interface StandingOrder {
+    id:             string;
+    recipient:      string;
+    recipientName:  string | null;
+    label:          string;
+    amount:         number;
+    interval:       StandingInterval;
+    nextRun:        number;
+    active:         boolean;
+    lastRun:        number | null;
+    lastStatus:     StandingStatus | null;
+}
+
+export interface StandingDraft {
+    number:    string;
+    name?:     string;
+    label:     string;
+    amount:    number;
+    interval:  StandingInterval;
+    firstRun?: number;
+}
+
+type RawStandingOrder = Omit<StandingOrder, 'recipientName' | 'lastRun' | 'lastStatus'> & {
+    recipientName?: string;
+    lastRun?:       number;
+    lastStatus?:    StandingStatus;
+};
+
+function normaliseOrders(rows: RawStandingOrder[] | undefined): StandingOrder[] {
+    if (!Array.isArray(rows)) return [];
+    return rows.map(row => ({
+        ...row,
+        recipientName: row.recipientName ?? null,
+        lastRun:       row.lastRun ?? null,
+        lastStatus:    row.lastStatus ?? null,
+    }));
+}
+
+const DEV_ORDERS: StandingOrder[] = [
+    {
+        id: 's1', recipient: '3105550199', recipientName: 'Maya Lopez', label: 'Apartment rent',
+        amount: 2_400, interval: 'monthly', nextRun: Math.floor(Date.now() / 1000) + 4 * 86_400,
+        active: true, lastRun: Math.floor(Date.now() / 1000) - 26 * 86_400, lastStatus: 'ok',
+    },
+    {
+        id: 's2', recipient: '3105550148', recipientName: 'Ryan Carter', label: 'Garage share',
+        amount: 150, interval: 'weekly', nextRun: Math.floor(Date.now() / 1000) + 2 * 86_400,
+        active: false, lastRun: Math.floor(Date.now() / 1000) - 5 * 86_400, lastStatus: 'insufficient',
+    },
+];
+
+export async function fetchStandingOrders(): Promise<StandingOrder[]> {
+    if (!isFiveM) return DEV_ORDERS.map(o => ({ ...o }));
+    return normaliseOrders((await apiData<{ orders: RawStandingOrder[] }>('sd-phone:banking:standing:list'))?.orders);
+}
+
+type StandingResult = Envelope<{ orders: StandingOrder[] }>;
+
+function devResult(): StandingResult {
+    return { success: true, data: { orders: DEV_ORDERS.map(o => ({ ...o })) } };
+}
+
+async function standingCall(event: string, payload: unknown): Promise<StandingResult> {
+    const res = await fetchNui<Envelope<{ orders: RawStandingOrder[] }>>(event, payload);
+    if (!res) return { success: false, message: t('banking.noServerResponse', 'No response from server') };
+    if (!res.success) return { success: false, message: res.message, messageKey: res.messageKey, messageVars: res.messageVars };
+    return { success: true, data: { orders: normaliseOrders(res.data?.orders) } };
+}
+
+export async function createStandingOrder(draft: StandingDraft): Promise<StandingResult> {
+    if (!isFiveM) {
+        DEV_ORDERS.push({
+            id: 's-' + Date.now(), recipient: draft.number, recipientName: draft.name ?? null,
+            label: draft.label, amount: draft.amount, interval: draft.interval,
+            nextRun: draft.firstRun ?? Math.floor(Date.now() / 1000) + 3_600,
+            active: true, lastRun: null, lastStatus: null,
+        });
+        return devResult();
+    }
+    return standingCall('sd-phone:banking:standing:create', draft);
+}
+
+export async function updateStandingOrder(id: string, patch: {
+    label: string; amount: number; interval: StandingInterval; active: boolean;
+}): Promise<StandingResult> {
+    if (!isFiveM) {
+        const order = DEV_ORDERS.find(o => o.id === id);
+        if (order) Object.assign(order, patch);
+        return devResult();
+    }
+    return standingCall('sd-phone:banking:standing:update', { id, ...patch });
+}
+
+export async function deleteStandingOrder(id: string): Promise<StandingResult> {
+    if (!isFiveM) {
+        const at = DEV_ORDERS.findIndex(o => o.id === id);
+        if (at >= 0) DEV_ORDERS.splice(at, 1);
+        return devResult();
+    }
+    return standingCall('sd-phone:banking:standing:delete', { id });
+}
+
 export interface BankDay { key: string; label: string; items: BankTx[] }
 
 export function groupTx(txs: BankTx[]): BankDay[] {

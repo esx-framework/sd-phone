@@ -20,6 +20,8 @@ import { fmtChatSeparator, type Contact, type Conversation, type Message } from 
 import { takeSharedMessages } from './sharedInbox';
 import { ContactAvatar, GroupAvatar } from '@/shared/ContactAvatar';
 import { MessageBubble } from './MessageBubble';
+import { TypingBubble } from './TypingBubble';
+import { format12h } from '@/lib/time';
 import { useAutoScrollToEnd } from './useAutoScrollToEnd';
 import { useTapbackDismiss } from './useTapbackDismiss';
 import { EmojiPanel }    from './EmojiPanel';
@@ -65,6 +67,8 @@ interface ChatViewProps {
     onUpdateGroup:(name: string, avatar?: string) => void;
     onRemoveMember:(member: Contact) => void;
     onSaveContact?:(c: PhoneContact) => Promise<string | null>;
+    onTyping?:    (on: boolean) => void;
+    typingFrom?:  string;
     animateIn?:   boolean;
 }
 
@@ -76,7 +80,12 @@ interface LocShareStatus {
     theyShare?: boolean;
 }
 
-export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend, onReact, onPayRequest, onLocationRespond, onAddMembers, onUpdateGroup, onRemoveMember, onSaveContact, animateIn = true }: ChatViewProps) {
+function readTime(ts: number): string {
+    const d = new Date(ts);
+    return format12h(d.getHours(), d.getMinutes());
+}
+
+export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend, onReact, onPayRequest, onLocationRespond, onAddMembers, onUpdateGroup, onRemoveMember, onSaveContact, onTyping, typingFrom, animateIn = true }: ChatViewProps) {
     const { theme } = useTheme('theme');
     const isDark    = theme === 'dark';
 
@@ -124,7 +133,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
 
     useEffect(() => { warmGifCategories(); warmPhotos(); }, []);
 
-    useAutoScrollToEnd(listRef, messages.length, panel !== 'money' && panel !== 'voice' && panel !== 'emoji');
+    useAutoScrollToEnd(listRef, `${messages.length}:${typingFrom ?? ''}`, panel !== 'money' && panel !== 'voice' && panel !== 'emoji');
 
     function togglePanel(p: Panel) {
         setPanel(prev => prev === p ? null : p);
@@ -262,6 +271,12 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
     }, [messages, conv.participants]);
 
     const lastSent = useMemo(() => [...messages].reverse().find(m => m.from === 'me'), [messages]);
+
+    const typingPeer = useMemo<Contact | null>(() => {
+        if (!typingFrom) return null;
+        return conv.participants.find(p => p.id === typingFrom || p.phone === typingFrom)
+            ?? { id: typingFrom, name: t('messages.someone', 'Someone'), initials: '', color: '#888' };
+    }, [typingFrom, conv.participants]);
 
     const receivedBg    = isDark ? 'rgb(var(--elevated))' : '#babac0';
     const sentBg        = '#0977e5';
@@ -411,12 +426,32 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                                 />
 
                                 {sent && isLast && msg === lastSent && msg.kind === 'text' && (
-                                    <span className="mt-1 mr-1 text-[11px] text-black/45 dark:text-white/45">{t('messages.delivered', 'Delivered')}</span>
+                                    <span className="mt-1 mr-1 text-[11px] text-black/45 dark:text-white/45">
+                                        {msg.seenAt
+                                            ? t('messages.readAt', 'Read {time}', { time: readTime(msg.seenAt) })
+                                            : t('messages.delivered', 'Delivered')}
+                                    </span>
                                 )}
                             </div>
                         </div>
                     );
                 })}
+
+                {typingPeer && (
+                    <div className="mb-3 flex items-end justify-start">
+                        <div className="flex max-w-[80%] flex-col items-start">
+                            {conv.groupName && (
+                                <span
+                                    className="mb-0.5 ml-1 text-[15px] font-semibold"
+                                    style={{ color: typingPeer.color ?? '#888' }}
+                                >
+                                    {typingPeer.name.split(' ')[0]}
+                                </span>
+                            )}
+                            <TypingBubble receivedBg={receivedBg} isDark={isDark} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="relative shrink-0">
@@ -469,6 +504,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                     borderColor={composerBdr}
                     onFocus={() => setPanel(null)}
                     onSendText={sendText}
+                    onTyping={onTyping}
                 />
 
                 <div

@@ -6,6 +6,8 @@ proxy('sd-phone:pages:list',   'sd-phone:server:pages:list')
 proxy('sd-phone:pages:create', 'sd-phone:server:pages:create')
 proxy('sd-phone:pages:update', 'sd-phone:server:pages:update')
 proxy('sd-phone:pages:delete', 'sd-phone:server:pages:delete')
+proxy('sd-phone:pages:reschedule', 'sd-phone:server:pages:reschedule')
+proxy('sd-phone:pages:publishNow', 'sd-phone:server:pages:publishNow')
 proxy('sd-phone:pages:watch',  'sd-phone:server:pages:watch')
 
 ---Server push (fan-out to the other phones with Pages open): another player posted / edited /

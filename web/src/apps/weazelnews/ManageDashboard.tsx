@@ -5,15 +5,18 @@ import { t } from '@/i18n';
 import { NavContext, NOOP_NAV, useIosPush } from '@/hooks/useIosPush';
 import { AlertDialog } from '@/ui/AlertDialog';
 import { EmptyState } from '@/ui/EmptyState';
+import { SchedulePickerSheet } from '@/shared/SchedulePickerSheet';
+import { ScheduledRow } from '@/shared/ScheduledRow';
 import { EditArticle } from './EditArticle';
 import { EditBreaking } from './EditBreaking';
 import { type Article as ArticleT, type ArticleDraft, WEAZEL_RED } from './data';
-import { weazelDelete, weazelSave, weazelSetBreaking } from './weazelnewsApi';
+import { weazelDelete, weazelPublishNow, weazelReschedule, weazelSave, weazelSetBreaking } from './weazelnewsApi';
 
 const SB_H = 54;
 
-export function ManageDashboard({ articles, ticker, dark, animateIn = true, onRefresh, onClose }: {
+export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn = true, onRefresh, onClose }: {
     articles:  ArticleT[];
+    scheduled: ArticleT[];
     ticker:    string[];
     dark:      boolean;
     animateIn?: boolean;
@@ -25,11 +28,20 @@ export function ManageDashboard({ articles, ticker, dark, animateIn = true, onRe
     const [editing, setEditing]   = useState<ArticleT | 'new' | null>(null);
     const [breaking, setBreaking] = useState(false);
     const [pendingDelete, setPendingDelete] = useState<ArticleT | null>(null);
+    const [retiming, setRetiming] = useState<ArticleT | null>(null);
 
     async function saveArticle(draft: ArticleDraft): Promise<boolean> {
         const saved = await weazelSave(draft);
         if (saved) await onRefresh();
         return !!saved;
+    }
+
+    async function pickTime(target: ArticleT, at: number) {
+        if (await weazelReschedule(target.id, at)) await onRefresh();
+    }
+
+    async function publishNow(article: ArticleT) {
+        if (await weazelPublishNow(article.id)) await onRefresh();
     }
 
     async function saveBreaking(lines: string[]): Promise<boolean> {
@@ -70,6 +82,27 @@ export function ManageDashboard({ articles, ticker, dark, animateIn = true, onRe
             </div>
 
             <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-8 pt-4">
+                {scheduled.length > 0 && (
+                    <div className="mb-6">
+                        <SectionLabel>{t('weazelnews.scheduled', 'Scheduled')}</SectionLabel>
+                        <div className="flex flex-col gap-2.5">
+                            {scheduled.map(a => (
+                                <ScheduledRow
+                                    key={a.id}
+                                    title={a.headline}
+                                    eyebrow={a.category}
+                                    publishAt={a.publishAt ?? 0}
+                                    accent={WEAZEL_RED}
+                                    onOpen={() => setEditing(a)}
+                                    onRetime={() => setRetiming(a)}
+                                    onPublishNow={() => void publishNow(a)}
+                                    onCancel={() => setPendingDelete(a)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <SectionLabel>{t('weazelnews.breakingTicker', 'Breaking ticker')}</SectionLabel>
                 <button
                     type="button"
@@ -172,11 +205,27 @@ export function ManageDashboard({ articles, ticker, dark, animateIn = true, onRe
                 </NavContext.Provider>
             )}
 
+            {retiming && (
+                <SchedulePickerSheet
+                    at={retiming.publishAt ?? null}
+                    accent={WEAZEL_RED}
+                    forceDark={dark}
+                    onPick={at => void pickTime(retiming, at)}
+                    onClose={() => setRetiming(null)}
+                />
+            )}
+
             {pendingDelete && (
                 <AlertDialog
-                    title={t('weazelnews.deleteStoryTitle', 'Delete story?')}
-                    message={t('weazelnews.deleteStoryMessage', '“{headline}” will be removed for everyone.', { headline: pendingDelete.headline })}
-                    confirmLabel={t('weazelnews.delete', 'Delete')}
+                    title={pendingDelete.publishAt
+                        ? t('weazelnews.cancelStoryTitle', 'Cancel story?')
+                        : t('weazelnews.deleteStoryTitle', 'Delete story?')}
+                    message={pendingDelete.publishAt
+                        ? t('weazelnews.cancelStoryMessage', '“{headline}” will be discarded and never published.', { headline: pendingDelete.headline })
+                        : t('weazelnews.deleteStoryMessage', '“{headline}” will be removed for everyone.', { headline: pendingDelete.headline })}
+                    confirmLabel={pendingDelete.publishAt
+                        ? t('weazelnews.discard', 'Discard')
+                        : t('weazelnews.delete', 'Delete')}
                     destructive
                     forceDark={dark}
                     onCancel={() => setPendingDelete(null)}

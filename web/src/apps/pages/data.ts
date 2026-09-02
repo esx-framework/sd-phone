@@ -10,6 +10,7 @@ export interface Post {
     email?: string;
     date?:  string;
     mine?:  boolean;
+    publishAt?: number;
 }
 
 export interface PostDraft {
@@ -20,9 +21,18 @@ export interface PostDraft {
     images?: string[];
     number: string;
     email?: string;
+    publishAt?: number;
 }
 
 export const POSTS: Post[] = [
+    {
+        id: 'p0',
+        title: 'Yard sale, Saturday morning',
+        body: 'Tools, garden furniture, a chest freezer that works and two that do not. Cash only and bring your own bags. First come, first served from eight.',
+        number: '2135550107',
+        mine: true,
+        publishAt: Math.floor(Date.now() / 1000) + 7200,
+    },
     {
         id: 'p1',
         title: 'Tiling and bathroom fitting',

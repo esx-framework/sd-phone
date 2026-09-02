@@ -45,7 +45,9 @@ export function useClassifiedsFeed<T extends ClassifiedItem>(
         const item = data.item as T | undefined;
         if (!item) return;
         if (data.type === 'added') {
-            setEntries(prev => (prev.some(e => e.id === item.id) ? prev : [item, ...prev]));
+            setEntries(prev => prev.some(e => e.id === item.id)
+                ? prev.map(e => (e.id === item.id ? { ...item, mine: e.mine } : e))
+                : [item, ...prev]);
         } else if (data.type === 'updated') {
             setEntries(prev => prev.some(e => e.id === item.id)
                 ? prev.map(e => (e.id === item.id ? { ...item, mine: e.mine } : e))

@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent, 
 import { Camera, Check, Delete, Flashlight, Lock, Music, Pause, Play, ScanFace, SkipForward } from 'lucide-react';
 
 import { formatClockTime, formatLongDate, useDisplayClock } from '@/hooks/useClock';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { useKeypadInput } from '@/hooks/useKeypadInput';
 import { fetchNui, isFiveM } from '@/core/nui';
 import { resolveWallpaper } from './wallpapers';
@@ -15,6 +16,11 @@ import { useLockscreenWidgets } from './LockscreenWidgetsContext';
 import { LockscreenWidgetFrame } from './LockscreenWidgetFrame';
 import { useMusic } from '@/apps/music/MusicContext';
 import { coverUrl } from '@/apps/music/data';
+import { apiMedicalId } from '@/apps/health/medicalApi';
+import { MedicalIdSheet } from '@/apps/health/MedicalIdSheet';
+import { useLostMode } from '@/stores/findMyStore';
+import { verifyLostPin } from '@/apps/settings/findmy/findMyApi';
+import { formatPhone } from '@/lib/phone';
 import { t } from '@/i18n';
 
 const NOW_PLAYING_H = 84;
@@ -43,9 +49,13 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
 
     const { lockClock, setLockClock, passcode, faceId, blurLock, wallpaperParallax } = useTheme('lockClock', 'setLockClock', 'passcode', 'faceId', 'blurLock', 'wallpaperParallax');
     const music = useMusic();
+    const lost = useLostMode();
     const lockscreenWidgets = useLockscreenWidgets();
     const [customizing, setCustomizing] = useState(false);
     const [authMode, setAuthMode] = useState<null | 'face' | 'passcode'>(null);
+    const [medicalOpen, setMedicalOpen] = useState(false);
+
+    const { data: medical } = useAsyncData(apiMedicalId, [], { enabled: passcode !== null });
 
     const lpTimer = useRef<number | null>(null);
     const lpStart = useRef({ x: 0, y: 0 });
@@ -81,6 +91,12 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
 
     function requestAuth(onSuccess: () => void) {
         if (exiting || authMode) return;
+        if (lost.lost) {
+            if (lost.unlock === 'blocked') return;
+            pendingSuccess.current = onSuccess;
+            setAuthMode(lost.unlock === 'face' ? 'face' : 'passcode');
+            return;
+        }
         if (!passcode) { onSuccess(); return; }
         pendingSuccess.current = onSuccess;
         if (faceId) {
@@ -163,16 +179,20 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
                     </div>
                 )}
 
-                {(lockscreenWidgets.length > 0 || notifications.length > 0) && (
+                {(lost.lost || lockscreenWidgets.length > 0 || notifications.length > 0) && (
                     <div
                         className="absolute inset-x-0 z-10 overflow-y-auto no-scrollbar px-4"
                         style={{ top: music.current ? 286 + NOW_PLAYING_H + 12 : 286, bottom: 130 }}
                     >
                         <div className="flex flex-col gap-2 pb-2">
                             {lockscreenWidgets.map(item => <LockscreenWidgetFrame key={item.key} item={item} />)}
-                            {notifications.map(n => (
-                                <LockNotifCard key={n.id} item={n} onOpen={() => requestOpenNotif(n)} onDismiss={() => onDismissNotif(n.id)} />
-                            ))}
+                            {lost.lost ? (
+                                <LostBanner message={lost.message} contact={lost.contact} blocked={lost.unlock === 'blocked'} />
+                            ) : (
+                                notifications.map(n => (
+                                    <LockNotifCard key={n.id} item={n} onOpen={() => requestOpenNotif(n)} onDismiss={() => onDismissNotif(n.id)} />
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
@@ -205,15 +225,30 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
             {authMode && (
                 <div className={`absolute inset-0 z-[80] ${exiting ? 'animate-faceid-veil-out' : ''}`}>
                     {authMode === 'face' && <FaceScan exiting={exiting} onSuccess={() => latest.current.runPending()} />}
-                    {authMode === 'passcode' && passcode && (
+                    {authMode === 'passcode' && lost.lost && (
+                        <PasscodeEntry
+                            wallpaper={wallpaper}
+                            length={lost.pinLength}
+                            verify={verifyLostPin}
+                            onSuccess={() => latest.current.runPending()}
+                            onCancel={() => setAuthMode(null)}
+                        />
+                    )}
+                    {authMode === 'passcode' && !lost.lost && passcode && (
                         <PasscodeEntry
                             wallpaper={wallpaper}
                             expected={passcode}
                             onSuccess={() => latest.current.runPending()}
                             onCancel={() => setAuthMode(null)}
+                            showMedicalId={medical?.showOnLock === true}
+                            onMedicalId={() => setMedicalOpen(true)}
                         />
                     )}
                 </div>
+            )}
+
+            {medicalOpen && medical && (
+                <MedicalIdSheet record={medical} onClose={() => setMedicalOpen(false)} />
             )}
         </div>
     );
@@ -283,13 +318,21 @@ const PASSCODE_KEYS: { d: string; l: string }[] = [
     { d: '7', l: 'P Q R S' }, { d: '8', l: 'T U V' }, { d: '9', l: 'W X Y Z' },
 ];
 
-function PasscodeEntry({ wallpaper, expected, onSuccess, onCancel }: {
-    wallpaper: string; expected: string; onSuccess: () => void; onCancel: () => void;
+function PasscodeEntry({ wallpaper, expected, length, verify, onSuccess, onCancel, showMedicalId = false, onMedicalId }: {
+    wallpaper:     string;
+    expected?:     string;
+    length?:       number;
+    verify?:       (pin: string) => Promise<boolean>;
+    onSuccess:     () => void;
+    onCancel:      () => void;
+    showMedicalId?: boolean;
+    onMedicalId?:   () => void;
 }) {
     const [pin, setPin]     = useState('');
     const [shake, setShake] = useState(false);
     const [exiting, setExiting] = useState(false);
-    const len = expected.length || 4;
+    const [checking, setChecking] = useState(false);
+    const len = length ?? (expected?.length || 4);
 
     function cancel() {
         if (exiting) return;
@@ -297,19 +340,29 @@ function PasscodeEntry({ wallpaper, expected, onSuccess, onCancel }: {
         window.setTimeout(onCancel, 300);
     }
 
+    async function settle(candidate: string) {
+        let good: boolean;
+        if (verify) {
+            setChecking(true);
+            good = await verify(candidate).catch(() => false);
+            setChecking(false);
+        } else {
+            good = candidate === expected;
+        }
+        if (good) {
+            onSuccess();
+            return;
+        }
+        setShake(true);
+        window.setTimeout(() => { setPin(''); setShake(false); }, 520);
+    }
+
     function press(d: string) {
-        if (pin.length >= len || shake || exiting) return;
+        if (pin.length >= len || shake || exiting || checking) return;
         const next = pin + d;
         setPin(next);
         if (next.length === len) {
-            window.setTimeout(() => {
-                if (next === expected) {
-                    onSuccess();
-                } else {
-                    setShake(true);
-                    window.setTimeout(() => { setPin(''); setShake(false); }, 520);
-                }
-            }, 130);
+            window.setTimeout(() => { void settle(next); }, 130);
         }
     }
     function del() { setPin(p => p.slice(0, -1)); }
@@ -317,8 +370,8 @@ function PasscodeEntry({ wallpaper, expected, onSuccess, onCancel }: {
     useKeypadInput({
         onPress: press,
         onDelete: del,
-        canDelete: pin.length > 0 && !shake && !exiting,
-        enabled: !exiting,
+        canDelete: pin.length > 0 && !shake && !exiting && !checking,
+        enabled: !exiting && !checking,
     });
 
     return (
@@ -349,7 +402,17 @@ function PasscodeEntry({ wallpaper, expected, onSuccess, onCancel }: {
 
                 <div className="grid grid-cols-3 gap-x-[24px] gap-y-[24px]" style={{ width: 330 }}>
                     {PASSCODE_KEYS.map(k => <Key key={k.d} digit={k.d} letters={k.l} onPress={() => press(k.d)} />)}
-                    <div />
+                    <div className="flex h-[94px] items-center justify-center">
+                        {showMedicalId && (
+                            <button
+                                type="button"
+                                onClick={onMedicalId}
+                                className="whitespace-nowrap text-[16px] font-normal text-white/90 active:opacity-60"
+                            >
+                                {t('medical.title', 'Medical ID')}
+                            </button>
+                        )}
+                    </div>
                     <Key digit="0" letters="" onPress={() => press('0')} />
                     <div className="flex h-[94px] items-center justify-center">
                         {pin.length > 0 ? (
@@ -522,6 +585,39 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
                 )}
             </div>
         </button>
+    );
+}
+
+function LostBanner({ message, contact, blocked }: { message: string | null; contact: string | null; blocked: boolean }) {
+    const { blurLock: frostedWallpaper } = useTheme('blurLock');
+    return (
+        <div
+            className={[
+                'flex w-full animate-notif-drop select-none items-start gap-3 rounded-[27px] px-[18px] py-4 text-left shadow-[0_6px_24px_rgba(0,0,0,0.16)]',
+                frostedWallpaper ? 'bg-white/70' : 'bg-white/55 backdrop-blur-2xl backdrop-saturate-150',
+                'ring-[1.5px] ring-inset ring-ios-red/75',
+            ].join(' ')}
+        >
+            <div className="mt-0.5 flex h-[47px] w-[47px] shrink-0 items-center justify-center rounded-[12px] bg-ios-red">
+                <Lock className="h-[25px] w-[25px] text-white" strokeWidth={2.3} />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+                <span className="block text-[13.5px] font-bold uppercase leading-[1.15] tracking-[0.09em] text-ios-red">
+                    {t('shell.lostModeTitle', 'Lost Phone')}
+                </span>
+                <p className="mt-[3px] text-[15.5px] leading-snug text-black/[0.78]">
+                    {message ?? t('shell.lostModeDefault', 'This phone has been lost. Please return it to its owner.')}
+                </p>
+                {contact && (
+                    <p className="mt-2 text-[17px] font-semibold text-black/90">{formatPhone(contact)}</p>
+                )}
+                {blocked && (
+                    <p className="mt-2 text-[13.5px] leading-snug text-black/55">
+                        {t('shell.lostModeBlocked', 'It cannot be unlocked until its owner turns Lost Mode off.')}
+                    </p>
+                )}
+            </div>
+        </div>
     );
 }
 

@@ -44,6 +44,31 @@ export interface BirdyFollowUser {
     isFollowing: boolean;
 }
 
+export interface BirdyPollOption {
+    idx:   number;
+    label: string;
+    votes: number;
+}
+
+export interface BirdyPoll {
+    options: BirdyPollOption[];
+    total:   number;
+    endsAt:  number;
+    ended:   boolean;
+    myVote:  number | null;
+}
+
+export type BirdyPollCounts = Omit<BirdyPoll, 'myVote'>;
+
+export const MAX_POLL_OPTIONS = 4;
+export const MAX_POLL_OPTION_LENGTH = 40;
+
+export const POLL_DURATIONS = { '1h': 3600, '1d': 86400, '3d': 259200, '7d': 604800 } as const;
+
+export type PollDurationKey = keyof typeof POLL_DURATIONS;
+
+export type PollDuration = typeof POLL_DURATIONS[PollDurationKey];
+
 export interface BirdyPost {
     id:        string;
     author:    BirdyAuthor;
@@ -55,6 +80,7 @@ export interface BirdyPost {
     likes:     number;
     liked:     boolean;
     images?:   string[];
+    poll?:     BirdyPoll;
     views?:    number;
     thread?:   BirdyPost[];
     repostedBy?: { handle: string; name: string; avatar?: string };
@@ -135,6 +161,51 @@ export const SEED_POSTS: BirdyPost[] = [
         thread:    [SHOP_REPLY, NEIGHBOUR_REPLY],
     },
     {
+        id:        'seed-poll-live',
+        author:    MARCUS,
+        body:      'Shop is open one extra night a week from next month. Which night do you actually want?',
+        createdAt: Date.now() - 4 * HOUR,
+        replies:   1,
+        reposts:   0,
+        likes:     7,
+        liked:     false,
+        views:     186,
+        poll: {
+            options: [
+                { idx: 0, label: 'Thursday', votes: 12 },
+                { idx: 1, label: 'Friday',   votes: 31 },
+                { idx: 2, label: 'Sunday',   votes: 9 },
+            ],
+            total:  52,
+            endsAt: Date.now() + 20 * HOUR,
+            ended:  false,
+            myVote: null,
+        },
+    },
+    {
+        id:        'seed-poll-ended',
+        author:    TOMMY,
+        body:      'Settled it then. Best late food in Del Perro?',
+        createdAt: Date.now() - 5 * 24 * HOUR,
+        replies:   0,
+        reposts:   3,
+        likes:     22,
+        liked:     true,
+        views:     914,
+        poll: {
+            options: [
+                { idx: 0, label: 'The pier taco cart', votes: 88 },
+                { idx: 1, label: 'Burger Shot',        votes: 41 },
+                { idx: 2, label: 'That noodle window', votes: 63 },
+                { idx: 3, label: 'Anything still open', votes: 17 },
+            ],
+            total:  209,
+            endsAt: Date.now() - 2 * 24 * HOUR,
+            ended:  true,
+            myVote: 2,
+        },
+    },
+    {
         id:        'seed-3',
         author:    MARCUS,
         body:      'Two tires and an alignment, out the door inside the hour. Corner of Innocence and Roy Lowenstein, cash or card. #LSTraffic',
@@ -169,7 +240,7 @@ export type BirdyNotification =
 export const SEED_NOTIFICATIONS: BirdyNotification[] = [
     { id: 'n1', kind: 'reply',  post: SHOP_REPLY },
     { id: 'n2', kind: 'like',   user: TOMMY,  text: 'liked your post',     post: SEED_POSTS[1] },
-    { id: 'n3', kind: 'repost', user: MARCUS, text: 'reposted your post',  post: SEED_POSTS[3] },
+    { id: 'n3', kind: 'repost', user: MARCUS, text: 'reposted your post',  post: SEED_POSTS[5] },
     { id: 'n4', kind: 'follow', user: MARCUS },
     { id: 'n5', kind: 'follow', user: TOMMY },
 ];

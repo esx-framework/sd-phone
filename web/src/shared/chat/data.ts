@@ -16,6 +16,7 @@ export interface Message {
     kind:     MsgKind;
     ts:       number;
     read:     boolean;
+    seenAt?:  number;
     reactions?: Reaction[];
     gifUrl?:  string;
     amount?:  number;
@@ -93,7 +94,7 @@ export const CONVERSATIONS: Conversation[] = [
         id: 'c-maya', pinned: true, muted: false,
         participants: [CONTACTS['maya']],
         messages: [
-            { id: 'm1', from: 'me',   body: 'Did you pick up the drop?',            kind: 'text', ts: ago(30*MIN), read: true  },
+            { id: 'm1', from: 'me',   body: 'Did you pick up the drop?',            kind: 'text', ts: ago(30*MIN), read: true, seenAt: ago(29*MIN) },
             { id: 'm2', from: 'maya', body: 'Clean. Money in the account 💰',       kind: 'text', ts: ago(28*MIN), read: true  },
             { id: 'm3', from: 'maya', body: 'Same spot next Tuesday?',              kind: 'text', ts: ago(27*MIN), read: true, reactions: [{ emoji: '👍', count: 1, mine: false }] },
             { id: 'm4', from: 'maya', body: '$25', kind: 'money', amount: 25, requested: true, ts: ago(20*MIN), read: false },

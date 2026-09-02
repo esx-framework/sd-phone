@@ -2,9 +2,12 @@ import { fetchNui, isFiveM } from '@/core/nui';
 import { apiCall, apiData } from '@/core/api';
 
 export interface DialResult {
-    success:  boolean;
-    message?: string;
-    channel?: number;
+    success:      boolean;
+    message?:     string;
+    messageKey?:  string;
+    messageVars?: Record<string, string | number>;
+    channel?:     number;
+    voicemail?:   { number: string; name?: string };
 }
 
 export interface CallParty {
@@ -43,8 +46,16 @@ export async function dialCall(number: string, name?: string, video = false): Pr
         devTimers.push(window.setTimeout(() => devPost('sd-phone:call:connected', { channel }), 2400));
         return { success: true, channel };
     }
-    const res = await apiCall<{ channel: number }>('sd-phone:call:dial', { number, video });
-    return { success: res.success, message: res.message, channel: res.data?.channel };
+    const res = await apiCall<{ channel?: number; voicemail?: { number: string; name?: string } }>(
+        'sd-phone:call:dial', { number, video });
+    return {
+        success:     res.success,
+        message:     res.message,
+        messageKey:  res.messageKey,
+        messageVars: res.messageVars,
+        channel:     res.data?.channel,
+        voicemail:   res.data?.voicemail,
+    };
 }
 
 export async function acceptCall(channel: number): Promise<void> {

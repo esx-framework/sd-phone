@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronLeft, ImagePlus, X } from 'lucide-react';
+import { ChevronLeft, Clock, ImagePlus, X } from 'lucide-react';
 
 import { MediaPickerSheet } from '@/shared/MediaPickerSheet';
+import { SchedulePickerSheet, scheduleLabel } from '@/shared/SchedulePickerSheet';
 import { Scroller } from '@/ui/Scroller';
+import { SegmentedControl } from '@/ui/SegmentedControl';
 import { useSessionState, clearSessionState } from '@/hooks/useSessionState';
 import { ContactFields } from './ContactFields';
 import type { ClassifiedDraft, ClassifiedItem } from './types';
 import { t } from '@/i18n';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
-export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post'), backLabel, bodyPlaceholder = t('classifieds.yourPost', 'Your post'), submitLabel = t('classifieds.post', 'Post'), showPrice = true, initial, draftKey, animateIn = true, onCancel, onCreate }: {
+type Timing = 'now' | 'later';
+
+export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post'), backLabel, bodyPlaceholder = t('classifieds.yourPost', 'Your post'), submitLabel = t('classifieds.post', 'Post'), showPrice = true, allowSchedule = false, initial, draftKey, animateIn = true, onCancel, onCreate }: {
     pageTitle?: string;
     backLabel: string;
     bodyPlaceholder?: string;
     submitLabel?: string;
     showPrice?: boolean;
+    allowSchedule?: boolean;
     initial?: ClassifiedItem;
     draftKey: string;
     animateIn?: boolean;
@@ -31,13 +36,23 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
     const [email,  setEmail]  = useSessionState(`${draftKey}:email`,  () => initial?.email ?? '');
     const [picking, setPicking] = useState(false);
     const [exiting, setExiting] = useState(false);
+    const [timing,  setTiming]  = useSessionState<Timing>(`${draftKey}:timing`, () => (initial?.publishAt ? 'later' : 'now'));
+    const [publishAt, setPublishAt] = useSessionState<number | null>(`${draftKey}:publishAt`, () => initial?.publishAt ?? null);
+    const [timePicker, setTimePicker] = useState(false);
 
     function clearDraft() { clearSessionState(`${draftKey}:`); }
 
     const MAX_IMAGES = 3;
 
     const hasContact = number.trim().length > 0 || email.trim().length > 0;
-    const canPost = title.trim().length > 0 && body.trim().length > 0 && hasContact;
+    const scheduling = allowSchedule && timing === 'later';
+    const canPost = title.trim().length > 0 && body.trim().length > 0 && hasContact
+        && (!scheduling || publishAt !== null);
+
+    function chooseTiming(next: Timing) {
+        setTiming(next);
+        if (next === 'later' && publishAt === null) setTimePicker(true);
+    }
 
     function dismiss(after: () => void) {
         if (exiting) return;
@@ -54,6 +69,7 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
             images: images.length ? images : undefined,
             number: number.trim(),
             email:  email.trim() || undefined,
+            publishAt: scheduling && publishAt !== null ? publishAt : undefined,
         };
         clearDraft();
         dismiss(() => onCreate(draft));
@@ -86,7 +102,7 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                         disabled={!canPost}
                         className={`pr-3 text-[17px] font-semibold ${canPost ? 'text-ios-blue active:opacity-60' : 'text-ios-blue/40'}`}
                     >
-                        {submitLabel}
+                        {scheduling ? t('classifieds.schedule', 'Schedule') : submitLabel}
                     </button>
                 </div>
 
@@ -159,6 +175,42 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                         <span className="text-ios-red">* </span>
                         {t('classifieds.contactHint', 'Add a phone number or email so people can reach you.')}
                     </p>
+
+                    {allowSchedule && (
+                        <>
+                            <Label>{t('classifieds.publishing', 'Publishing')}</Label>
+                            <SegmentedControl<Timing>
+                                value={timing}
+                                onChange={chooseTiming}
+                                options={[
+                                    { value: 'now',   label: t('classifieds.postNow', 'Post now') },
+                                    { value: 'later', label: t('classifieds.schedule', 'Schedule') },
+                                ]}
+                                slide
+                            />
+                            {timing === 'later' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setTimePicker(true)}
+                                    className="mt-3 flex w-full items-center gap-3 rounded-[14px] bg-surface p-4 text-left active:opacity-80"
+                                >
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios-blue text-white">
+                                        <Clock className="h-[19px] w-[19px]" strokeWidth={2.3} />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[17px] font-semibold text-black dark:text-white">
+                                            {publishAt !== null
+                                                ? scheduleLabel(publishAt)
+                                                : t('classifieds.pickPublishTime', 'Pick a publish time')}
+                                        </span>
+                                        <span className="mt-0.5 block text-[15px] text-ios-gray">
+                                            {t('classifieds.scheduleHint', 'Hidden from everyone else until then.')}
+                                        </span>
+                                    </span>
+                                </button>
+                            )}
+                        </>
+                    )}
                 </Scroller>
             </div>
 
@@ -169,6 +221,14 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                     initialSelectedUrls={images}
                     onSelectMany={photos => { setImages(photos.slice(0, MAX_IMAGES).map(p => p.url)); setPicking(false); }}
                     onClose={() => setPicking(false)}
+                />
+            )}
+
+            {timePicker && (
+                <SchedulePickerSheet
+                    at={publishAt}
+                    onPick={setPublishAt}
+                    onClose={() => setTimePicker(false)}
                 />
             )}
         </>

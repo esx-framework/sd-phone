@@ -10,6 +10,8 @@ local config   = require 'configs.config'
 local badges   = require 'server.badges.init'
 ---@type table Admin mute registry (server.admin.moderation): scope guard for dialing out.
 local moderation = require 'server.admin.moderation'
+---@type table Find My handlers (server.findmy.actions): the Lost Mode flag an outgoing call reads.
+local findmy   = require 'server.findmy.actions'
 ---@type table Payphone persistence (server.payphone.store): booth number -> location lookups.
 local payphones = require 'server.payphone.store'
 ---@type table Cell service (server.service): authoritative signal level per player.
@@ -387,6 +389,11 @@ local function eventRing(ring)
     }
 end
 
+---@type table<string, boolean> Teardown reasons that leave the caller free to record a message.
+---Anything else was either the caller's own doing (hangup) or the network's (coverage loss), and
+---neither is a line that "went to voicemail".
+local VOICEMAIL_REASONS <const> = { declined = true, ['no-answer'] = true, busy = true }
+
 ---Tears a call down: drops both sides from voice, persists both recents rows, notifies both
 ---clients, and fires the 'sd-phone:server:call:ended' lifecycle event. Idempotent.
 ---@param channel number
@@ -444,7 +451,18 @@ local function endCall(channel, reason, endedBy)
     -- Only the missed-call count can have moved, and a full snapshot is seven store reads.
     if not answered then badges.pushApp(s.callee.src, 'phone') end
 
-    TriggerClientEvent('sd-phone:client:call:ended', s.caller.src, { channel = channel, reason = reason })
+    -- A call the callee never picked up is the one the caller may leave a message on. The offer
+    -- rides the caller's teardown rather than being worked out on the phone, because only the
+    -- server knows the number reached a real mailbox and not a payphone or a company line.
+    local mailbox = (not answered)
+        and VOICEMAIL_REASONS[reason]
+        and s.payphoneSide ~= 'caller'
+        and s.callee.cid ~= nil
+        and s.callee.number ~= ''
+        and { number = s.callee.number, name = contactNameFor(s.caller.cid, s.callee.number) }
+        or nil
+
+    TriggerClientEvent('sd-phone:client:call:ended', s.caller.src, { channel = channel, reason = reason, voicemail = mailbox })
     TriggerClientEvent('sd-phone:client:call:ended', s.callee.src, { channel = channel, reason = reason })
 
     -- Server-local lifecycle event: the call ended.
@@ -545,7 +563,8 @@ local DIAL_WINDOW = 30000
 local DIAL_PER_WINDOW = 10
 
 ---Starts a call to a dialed number. Rejects when the caller is mid-call/ring or in airplane
----mode, the number is unassigned, or the callee is unreachable, blocked, or busy.
+---mode, the number is unassigned, or the callee is unreachable, silenced by Focus, blocked, or
+---busy.
 ---@param source number caller server id
 ---@param payload { number?: string, video?: boolean } video places it as a video call rather than a voice call
 ---@return table
@@ -559,6 +578,7 @@ function actions.dial(source, payload)
     if sessionForSource(source) or ringForSource(source) or boothRingForSource(source) then return fail('calls.alreadyCall', 'You are already on a call') end
     if not util.rateLimit(cid, 'call:dial', DIAL_WINDOW, DIAL_PER_WINDOW) then return fail('calls.slowDown', 'Slow down') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
+    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
     local muted = moderation.guard(cid, 'calls'); if muted then return muted end
 
@@ -613,15 +633,30 @@ function actions.dial(source, payload)
         return fail('calls.numberNotService', 'Number not in service')
     end
 
+    -- The number resolved to a real character, so every refusal from here down is the callee
+    -- being unavailable rather than the number being wrong: each one carries the mailbox the
+    -- phone may offer to record onto. A blocked caller is told the same thing as an offline one
+    -- and may still record, because the refusal is the only place a block could be read from.
+    -- The contact lookup is a query, so it is paid on the refusal path only.
+    ---@param key string catalogue key for the refusal
+    ---@param message string English refusal text
+    ---@return table refusal envelope carrying data.voicemail
+    local function unavailable(key, message)
+        local res = fail(key, message)
+        res.data = { voicemail = { number = dialed, name = contactNameFor(cid, dialed) } }
+        return res
+    end
+
     -- Any-phone resolver: a call rings the target even when the dialed number sits on the
     -- OTHER phone in their pocket (unlike UI pushes, which only land on the active phone).
     local targetSrc = player.getAnySourceByIdentifier(targetCid)
-    if not targetSrc then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
-    if not reachable(targetSrc) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
-    if settings.isAirplane(targetCid) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
-    if not service.allows(targetSrc, 'call') then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
-    if contacts.isBlocked(targetCid, digits(myNumber)) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
-    if sessionForSource(targetSrc) or ringForSource(targetSrc) then return fail('calls.lineBusy', 'Line busy') end
+    if not targetSrc then return unavailable('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if not reachable(targetSrc) then return unavailable('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if settings.isAirplane(targetCid) then return unavailable('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if settings.isDnd(targetCid) then return unavailable('calls.unavailable', 'Unavailable') end
+    if not service.allows(targetSrc, 'call') then return unavailable('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if contacts.isBlocked(targetCid, digits(myNumber)) then return unavailable('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if sessionForSource(targetSrc) or ringForSource(targetSrc) then return unavailable('calls.lineBusy', 'Line busy') end
 
     local channel = nextChannel
     nextChannel = nextChannel + 1
@@ -730,6 +765,7 @@ function actions.addCall(source, payload)
     if dialed == '' then return fail('calls.noNumberDialed', 'No number dialed') end
     if not util.rateLimit(cid, 'call:dial', DIAL_WINDOW, DIAL_PER_WINDOW) then return fail('calls.slowDown', 'Slow down') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
+    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
     local muted = moderation.guard(cid, 'calls'); if muted then return muted end
 
@@ -750,6 +786,7 @@ function actions.addCall(source, payload)
     if not targetSrc then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if not reachable(targetSrc) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if settings.isAirplane(targetCid) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if settings.isDnd(targetCid) then return fail('calls.unavailable', 'Unavailable') end
     if not service.allows(targetSrc, 'call') then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if contacts.isBlocked(targetCid, myNumber) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if sessionForSource(targetSrc) or ringForSource(targetSrc) or boothRingForSource(targetSrc) then return fail('calls.lineBusy', 'Line busy') end
@@ -801,6 +838,7 @@ function actions.dialPayphone(source, payload)
     if not targetSrc then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if not reachable(targetSrc) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if settings.isAirplane(targetCid) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
+    if settings.isDnd(targetCid) then return fail('calls.unavailable', 'Unavailable') end
     if not service.allows(targetSrc, 'call') then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if callerNumber ~= '' and contacts.isBlocked(targetCid, callerNumber) then return fail('calls.numberCurrentlyUnavailable', 'This number is currently unavailable') end
     if sessionForSource(targetSrc) or ringForSource(targetSrc) then return fail('calls.lineBusy', 'Line busy') end
@@ -876,6 +914,7 @@ function actions.callGroup(source, targets, displayName, displayNumber)
     if not cid then return fail('calls.playerNotFound', 'Player not found') end
     if sessionForSource(source) or ringForSource(source) then return fail('calls.alreadyCall', 'You are already on a call') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
+    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
 
     local myNumber = digits(settings.ensurePhoneNumber(cid))
@@ -884,7 +923,7 @@ function actions.callGroup(source, targets, displayName, displayNumber)
     for _, t in ipairs(targets) do
         if t.src and t.src ~= source
             and not sessionForSource(t.src) and not ringForSource(t.src)
-            and not settings.isAirplane(t.cid) and reachable(t.src)
+            and not settings.isAirplane(t.cid) and not settings.isDnd(t.cid) and reachable(t.src)
             and service.allows(t.src, 'call') then
             ringTargets[t.src] = {
                 src    = t.src,

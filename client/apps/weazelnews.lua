@@ -10,6 +10,8 @@ proxy('sd-phone:weazelnews:watch',       'sd-phone:server:weazelnews:watch')
 proxy('sd-phone:weazelnews:view',        'sd-phone:server:weazelnews:view')
 proxy('sd-phone:weazelnews:save',        'sd-phone:server:weazelnews:save')
 proxy('sd-phone:weazelnews:delete',      'sd-phone:server:weazelnews:delete')
+proxy('sd-phone:weazelnews:reschedule',  'sd-phone:server:weazelnews:reschedule')
+proxy('sd-phone:weazelnews:publishNow',  'sd-phone:server:weazelnews:publishNow')
 proxy('sd-phone:weazelnews:setBreaking', 'sd-phone:server:weazelnews:setBreaking')
 
 -- The newsroom gate rides on the feed, which the app reads once when it mounts, and the switcher

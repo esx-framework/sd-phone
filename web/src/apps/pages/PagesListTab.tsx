@@ -19,12 +19,13 @@ export function PagesListTab({ posts, onCreate, onOpen, onMessage, onCall, onEma
     const [query, setQuery] = useSessionState('pages:search', '');
 
     const q = query.trim().toLowerCase();
+    const listed = posts.filter(p => p.publishAt == null);
     const list = q
-        ? posts.filter(p =>
+        ? listed.filter(p =>
             p.title.toLowerCase().includes(q) ||
             p.body.toLowerCase().includes(q) ||
             p.number.replace(/\D/g, '').includes(q.replace(/\D/g, '')))
-        : posts;
+        : listed;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">

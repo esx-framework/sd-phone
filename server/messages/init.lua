@@ -34,6 +34,7 @@ lib.callback.register('sd-phone:server:messages:addGroupMember', function(src, p
 lib.callback.register('sd-phone:server:messages:updateGroup', function(src, payload) return actions.updateGroup(src, payload) end)
 lib.callback.register('sd-phone:server:messages:removeGroupMember', function(src, payload) return actions.removeGroupMember(src, payload) end)
 lib.callback.register('sd-phone:server:messages:markRead', function(src, payload) return actions.markRead(src, payload) end)
+lib.callback.register('sd-phone:server:messages:typing', function(src, payload) return actions.typing(src, payload) end)
 lib.callback.register('sd-phone:server:messages:delete', function(src, payload) return actions.deleteConversation(src, payload) end)
 lib.callback.register('sd-phone:server:messages:react', function(src, payload) return actions.react(src, payload) end)
 

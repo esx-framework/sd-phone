@@ -9,6 +9,8 @@ import { AlertDialog } from '@/ui/AlertDialog';
 import { SearchBar } from '@/ui/SearchBar';
 import { PromptDialog } from '@/ui/PromptDialog';
 import { ShareAction, ShareSheet } from '@/shared/ShareSheet';
+import { RecordPulse } from '@/shared/audio/RecordPulse';
+import { useAudioRecorder, type AudioRecording, type RecorderError } from '@/shared/audio/useAudioRecorder';
 import { trackFraction } from '@/lib/zoom';
 import {
     deleteMemo, fetchMemos, fmtDuration, fmtMemoDate, renameMemo, shareMemo, uploadMemo, type VoiceMemo,
@@ -16,25 +18,14 @@ import {
 import { t } from '@/i18n';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
-function pickMime(): string | undefined {
-    const c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
-    const MR = window.MediaRecorder;
-    return MR ? c.find(t => MR.isTypeSupported?.(t)) : undefined;
-}
-
-function blobToDataURL(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload  = () => resolve(fr.result as string);
-        fr.onerror = () => reject(fr.error);
-        fr.readAsDataURL(blob);
-    });
+function recorderMessage(code: RecorderError): string {
+    if (code === 'unavailable') return t('voicememos.micUnavailable', 'Microphone unavailable on this server.');
+    if (code === 'blocked')     return t('voicememos.micBlocked', 'Microphone access was blocked.');
+    return t('voicememos.recordingUnsupported', 'Recording is not supported here.');
 }
 
 export function VoiceMemos({ onClose: _onClose }: { onClose: () => void }) {
     const [memos,    setMemos]    = useState<VoiceMemo[]>([]);
-    const [recording, setRecording] = useState(false);
-    const [recSecs,  setRecSecs]  = useState(0);
     const [expanded, setExpanded] = useSessionState<string | null>('voicememos:expandedId', null);
     const [renaming, setRenaming] = useState<VoiceMemo | null>(null);
     const [confirmDel, setConfirmDel] = useState<VoiceMemo | null>(null);
@@ -43,11 +34,16 @@ export function VoiceMemos({ onClose: _onClose }: { onClose: () => void }) {
     const [error,    setError]    = useState<string | null>(null);
     const [query,    setQuery]    = useSessionState('voicememos:query', '');
 
-    const recorderRef = useRef<MediaRecorder | null>(null);
-    const streamRef   = useRef<MediaStream | null>(null);
-    const chunksRef   = useRef<Blob[]>([]);
-    const startRef    = useRef(0);
-    const timerRef    = useRef<number | null>(null);
+    const { recording, seconds: recSecs, error: recError, start: startRec, stop: stopRec } = useAudioRecorder({
+        onComplete: useCallback((rec: AudioRecording) => {
+            const memo = uploadMemo(rec.dataUrl, t('voicememos.newRecording', 'New Recording'), rec.duration, rec.blob);
+            if (memo) setMemos(prev => [memo, ...prev]);
+        }, []),
+    });
+
+    useEffect(() => {
+        if (recError) setError(recorderMessage(recError));
+    }, [recError]);
 
     useEffect(() => { void fetchMemos().then(setMemos); }, []);
 
@@ -57,53 +53,6 @@ export function VoiceMemos({ onClose: _onClose }: { onClose: () => void }) {
     useNuiEvent('sd-phone:voice:uploadFailed', useCallback((d: { message?: string }) => {
         setError(d?.message ?? t('voicememos.uploadFailed', 'Upload failed'));
     }, []));
-
-    useEffect(() => () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        streamRef.current?.getTracks().forEach(t => t.stop());
-    }, []);
-
-    async function startRec() {
-        setError(null);
-        if (!navigator.mediaDevices?.getUserMedia) { setError(t('voicememos.micUnavailable', 'Microphone unavailable on this server.')); return; }
-
-        let stream: MediaStream;
-        try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-        catch { setError(t('voicememos.micBlocked', 'Microphone access was blocked.')); return; }
-        streamRef.current = stream;
-
-        const mime = pickMime();
-        let rec: MediaRecorder;
-        try { rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); }
-        catch { stream.getTracks().forEach(t => t.stop()); setError(t('voicememos.recordingUnsupported', 'Recording is not supported here.')); return; }
-
-        chunksRef.current = [];
-        rec.ondataavailable = (e) => { if (e.data?.size) chunksRef.current.push(e.data); };
-        rec.onstop = () => void finalize(rec.mimeType);
-        recorderRef.current = rec;
-
-        rec.start();
-        startRef.current = Date.now();
-        setRecording(true);
-        setRecSecs(0);
-        timerRef.current = window.setInterval(() => setRecSecs(s => s + 1), 1000);
-    }
-
-    function stopRec() {
-        recorderRef.current?.stop();
-        streamRef.current?.getTracks().forEach(t => t.stop());
-        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-        setRecording(false);
-    }
-
-    async function finalize(mimeType: string) {
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' });
-        if (!blob.size) return;
-        const duration = Math.max(1, Math.round((Date.now() - startRef.current) / 1000));
-        const base64   = await blobToDataURL(blob);
-        const memo     = uploadMemo(base64, t('voicememos.newRecording', 'New Recording'), duration, blob);
-        if (memo) setMemos(prev => [memo, ...prev]);
-    }
 
     function onDelete(id: string) {
         deleteMemo(id);
@@ -165,7 +114,7 @@ export function VoiceMemos({ onClose: _onClose }: { onClose: () => void }) {
                     <button
                         type="button"
                         aria-label={recording ? t('voicememos.stopRecording', 'Stop recording') : t('voicememos.record', 'Record')}
-                        onClick={recording ? stopRec : startRec}
+                        onClick={() => { if (recording) stopRec(); else { setError(null); void startRec(); } }}
                         className="flex h-[84px] w-[84px] items-center justify-center rounded-full bg-elevated ring-[3px] ring-black/15 active:opacity-80 dark:bg-elevated dark:ring-white/20"
                     >
                         <span
@@ -177,17 +126,8 @@ export function VoiceMemos({ onClose: _onClose }: { onClose: () => void }) {
                     </button>
                 </div>
 
-                <div className="mt-3 flex h-[22px] items-center justify-center gap-3">
-                    {recording && (
-                        <>
-                            <span className="flex items-end gap-[3px]" style={{ height: 16 }}>
-                                {[0, 1, 2, 3, 4].map(i => (
-                                    <span key={i} className="w-[3px] rounded-full bg-ios-red" style={{ height: 16, transformOrigin: 'bottom', animation: `eq-bounce 0.6s ease-in-out ${i * 0.1}s infinite` }} />
-                                ))}
-                            </span>
-                            <span className="text-[16px] font-semibold tabular-nums text-ios-red">{fmtDuration(recSecs)}</span>
-                        </>
-                    )}
+                <div className="mt-3 flex h-[22px] items-center justify-center">
+                    {recording && <RecordPulse seconds={recSecs} />}
                 </div>
             </div>
 

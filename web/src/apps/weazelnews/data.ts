@@ -54,6 +54,7 @@ export interface Article {
     views:    number;
     image?:   string;
     featured?: boolean;
+    publishAt?: number;
 }
 
 export interface ArticleDraft {
@@ -64,12 +65,14 @@ export interface ArticleDraft {
     body:     string[];
     image?:   string;
     featured: boolean;
+    publishAt?: number;
 }
 
 export interface NewsFeed {
     articles:  Article[];
     ticker:    string[];
     canManage: boolean;
+    scheduled: Article[];
 }
 
 export function formatViews(n: number): string {

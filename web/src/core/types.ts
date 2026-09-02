@@ -1,6 +1,6 @@
 
 import type { GameClock } from '@/stores/gameClockStore';
-import type { BirdyMessage } from '@/apps/birdy/data';
+import type { BirdyMessage, BirdyPollCounts } from '@/apps/birdy/data';
 import type { CrashBust, CrashSettled, CrashSnapshot, CrashTick } from '@/apps/casino/crash/data';
 import type { HoldemHandEnd, HoldemStatePush } from '@/apps/casino/holdem/data';
 import type { DocFile } from '@/apps/documents/data';
@@ -52,6 +52,20 @@ export interface OpenPayload {
         home: string;
     };
     sim?: SimStatePush;
+}
+
+export interface FindMyLostPush {
+    kind:       string;
+    on:         boolean;
+    message?:   string;
+    contact?:   string;
+    unlock?:    'passcode' | 'face' | 'blocked';
+    pinLength?: number;
+}
+
+export interface FindMySoundPush {
+    kind:    string;
+    seconds: number;
 }
 
 /** Unique-phones SIM snapshot: enabled=false means the feature is off (stock behaviour). */
@@ -214,6 +228,9 @@ interface CallPush {
 interface CallEndedPush {
     channel: number;
     reason:  string;
+    /** Present on the caller's teardown when the callee never answered and the number they
+     *  dialled owns a mailbox, so the call screen can offer to record a message. */
+    voicemail?: { number: string; name?: string };
 }
 
 interface FriendsUpdatePush {
@@ -315,6 +332,8 @@ export type NuiMessage =
     | { action: 'sd-phone:open';    data: OpenPayload }
     | { action: 'sd-phone:apps';    data: { installedApps?: string[]; homeLayout?: string | null } }
     | { action: 'sd-phone:simState'; data: SimStatePush }
+    | { action: 'sd-phone:findmy:lost';  data: FindMyLostPush }
+    | { action: 'sd-phone:findmy:sound'; data: FindMySoundPush }
     | { action: 'sd-phone:frameColor'; data: { color: string } }
     | { action: 'sd-phone:music:receive'; data: MusicSharePush }
     | { action: 'sd-phone:nowPlaying:set';   data: { appId: string; track: ExternalNowPlayingTrack } }
@@ -356,6 +375,8 @@ export type NuiMessage =
     | { action: 'sd-phone:holdem:state';   data: HoldemStatePush }
     | { action: 'sd-phone:holdem:hand';    data: HoldemHandEnd }
     | { action: 'sd-phone:mail:received';         data: unknown }
+    | { action: 'sd-phone:calendar:invited';      data: { event?: unknown } }
+    | { action: 'sd-phone:calendar:refresh';      data: { eventId?: string } }
     | { action: 'sd-phone:camera:key';            data: { key: string } }
     | { action: 'sd-phone:camera:lock';           data: { on: boolean } }
     | { action: 'sd-phone:camera:faceCam';        data: { on: boolean } }
@@ -380,7 +401,7 @@ export type NuiMessage =
         reactions: Reaction[];
       } }
     | { action: 'sd-phone:birdy:notification' }
-    | { action: 'sd-phone:birdy:feedChanged' }
+    | { action: 'sd-phone:birdy:feedChanged'; data: { postId?: string; poll?: BirdyPollCounts } }
     | { action: 'sd-phone:darkchat:message'; data: {
         roomId:  string;
         message: {
@@ -424,6 +445,7 @@ export type NuiMessage =
     | { action: 'sd-phone:callrec:added';     data: { id: string; peerNumber: string; peerName?: string | null; direction: 'incoming' | 'outgoing'; oneSided: boolean; url: string; duration: number; date: string } }
     | { action: 'sd-phone:callrec:failed';    data: { message: string } }
     | { action: 'sd-phone:voice:added';        data: { id: string; name: string; url: string; duration: number; date: string } }
+    | { action: 'sd-phone:voicemail:new';      data: { id: string; number: string; name?: string | null; url: string; duration: number; listened: boolean; date: string } }
     | { action: 'sd-phone:notes:added';        data: { id: string; body: string; sketches: string[]; images: string[]; createdAt: string; updatedAt: string } }
     | { action: 'sd-phone:documents:added';    data: { doc: DocFile } }
     | { action: 'sd-phone:documents:receive';  data: { doc: DocFile; fromName?: string } }
@@ -435,6 +457,8 @@ export type NuiMessage =
     | { action: 'sd-phone:messages:reaction';  data: { conversation: string; id: string; reactions: { emoji: string; count: number; mine: boolean }[] } }
     | { action: 'sd-phone:messages:removed';   data: { conversation: string } }
     | { action: 'sd-phone:messages:meta';      data: { conversation: string; id: string; requestStatus?: 'pending' | 'paid' | 'declined' | 'accepted' } }
+    | { action: 'sd-phone:messages:typing';    data: { conversation: string; from: string; on: boolean } }
+    | { action: 'sd-phone:messages:seen';      data: { conversation: string; seenAt: number } }
     | { action: 'sd-phone:cherry:message';     data: { matchId: string; message: unknown } }
     | { action: 'sd-phone:cherry:match';       data: unknown }
     | { action: 'sd-phone:cherry:reaction';    data: { matchId: string; id: string; reactions: { emoji: string; count: number; mine: boolean }[] } }

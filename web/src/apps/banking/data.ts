@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Briefcase, Building2, Car, CircleDot, Coffee, CreditCard, Crown, Dices, Drill, Film, Flame,
     Fuel, Home, MapPin, Pill, Pizza, ReceiptText, Ship, ShoppingBag, ShoppingCart, Spade,
-    Stethoscope, Type, Wrench, Zap,
+    Repeat, Stethoscope, Type, Wrench, Zap,
 } from 'lucide-react';
 
 import { getCatalogVersion, t } from '@/i18n';
@@ -54,7 +54,7 @@ export type Category =
     | 'food' | 'groceries' | 'shopping' | 'transport' | 'fuel'
     | 'entertainment' | 'services' | 'health' | 'bills' | 'housing'
     | 'income' | 'transfer' | 'invoice' | 'chess' | 'connectfour' | 'battleship' | 'blackjack'
-    | 'casino' | 'wordle' | 'ryde' | 'streaks';
+    | 'casino' | 'wordle' | 'ryde' | 'streaks' | 'standing';
 
 export interface CategoryMeta {
     label: string;
@@ -83,6 +83,7 @@ export function getCategories(): Record<Category, CategoryMeta> {
         income:        { label: t('banking.catIncome', 'Income'),        icon: Briefcase,    color: '#30d158' },
         transfer:      { label: t('banking.catTransfer', 'Transfer'),      icon: CreditCard,   color: '#aeaeb2' },
         invoice:       { label: t('banking.catInvoice', 'Invoice'),       icon: ReceiptText,  color: '#0a84ff' },
+        standing:      { label: t('banking.catStanding', 'Standing Order'), icon: Repeat,       color: '#5856d6' },
         chess:         { label: t('banking.catChess', 'Chess'),         icon: Crown,        color: '#769656' },
         connectfour:   { label: t('banking.catConnectFour', 'Connect Four'),  icon: CircleDot,    color: '#1E66D0' },
         battleship:    { label: t('banking.catBattleship', 'Battleship'),    icon: Ship,         color: '#17A0B5' },

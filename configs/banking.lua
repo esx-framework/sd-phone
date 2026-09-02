@@ -36,6 +36,18 @@ return {
         Locked  = false,
     },
 
+    -- Repeating transfers the player schedules from the Wallet. A due order is put through the
+    -- ordinary transfer path, so it obeys MinSend/MaxSend behaviour, writes both statement rows
+    -- and fires sd-phone:server:banking:transfer exactly like a manual send. The payer must be
+    -- connected for the money to move (no framework has an offline debit); an order belonging to
+    -- someone offline simply stays due and runs on their next connection.
+    StandingOrders = {
+        Enabled   = true,
+        MaxActive = 10,        -- orders one character may have switched on at once
+        MinAmount = 1,         -- smallest allowed per-run amount
+        MaxAmount = 1000000,   -- largest allowed per-run amount
+    },
+
     -- Person-to-person invoicing from the Wallet's Invoices tab (business invoicing is
     -- configured in configs/services.lua and unaffected by this block).
     PersonalInvoices = {

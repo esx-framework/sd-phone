@@ -34,6 +34,19 @@ CreateThread(function()
     end
 end)
 
+-- Scheduled publishing: queued stories go live on their own, in publish order, a small batch at a
+-- time. Half a minute is close enough for a newsroom and cheap enough to run on an idle server,
+-- where the query hits the (status, publish_at) index and matches nothing.
+CreateThread(function()
+    if not APP_ENABLED then return end
+
+    while true do
+        Wait(30000)
+        local ok, err = pcall(actions.runDue)
+        if not ok then print(('^1[sd-phone:weazelnews]^0 scheduled publish failed: %s'):format(err)) end
+    end
+end)
+
 ---Flushes the buffered view counts once on resource stop. Guarded to this resource only.
 ---@param resource string name of the resource that stopped
 AddEventHandler('onResourceStop', function(resource)
@@ -64,6 +77,14 @@ end)
 lib.callback.register('sd-phone:server:weazelnews:delete', function(src, payload)
     if type(payload) ~= 'table' then payload = {} end
     return actions.delete(src, payload.id)
+end)
+
+lib.callback.register('sd-phone:server:weazelnews:reschedule', function(src, payload)
+    return actions.reschedule(src, payload)
+end)
+
+lib.callback.register('sd-phone:server:weazelnews:publishNow', function(src, payload)
+    return actions.publishNow(src, payload)
 end)
 
 lib.callback.register('sd-phone:server:weazelnews:setBreaking', function(src, payload)

@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import type { KeyboardEvent, RefObject } from 'react';
 import { ArrowUp } from 'lucide-react';
 
@@ -9,6 +9,8 @@ export interface ComposerHandle {
     append: (text: string) => void;
 }
 
+const TYPING_IDLE_MS = 3000;
+
 export const Composer = forwardRef<ComposerHandle, {
     convId:         string;
     inputRef:       RefObject<HTMLInputElement | null>;
@@ -16,15 +18,46 @@ export const Composer = forwardRef<ComposerHandle, {
     borderColor:    string;
     onFocus:        () => void;
     onSendText:     (text: string) => void;
-}>(function Composer({ convId, inputRef, hasAttachments, borderColor, onFocus, onSendText }, ref) {
+    onTyping?:      (on: boolean) => void;
+}>(function Composer({ convId, inputRef, hasAttachments, borderColor, onFocus, onSendText, onTyping }, ref) {
     const [draft, setDraft] = useSessionState(`messages:draft:${convId}`, '');
 
+    const lastOnRef = useRef(0);
+    const idleRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const notifyRef = useRef(onTyping);
+    const activeRef = useRef<((on: boolean) => void) | null>(null);
+    notifyRef.current = onTyping;
+
     useImperativeHandle(ref, () => ({ append: s => setDraft(d => d + s) }), [setDraft]);
+
+    const stopTyping = useCallback(() => {
+        if (idleRef.current) { clearTimeout(idleRef.current); idleRef.current = null; }
+        const notify = activeRef.current;
+        if (!notify) return;
+        activeRef.current = null;
+        notify(false);
+    }, []);
+
+    const pingTyping = useCallback(() => {
+        const notify = notifyRef.current;
+        if (!notify) return;
+        const now = Date.now();
+        if (!activeRef.current && now - lastOnRef.current >= TYPING_IDLE_MS) {
+            activeRef.current = notify;
+            lastOnRef.current = now;
+            notify(true);
+        }
+        if (idleRef.current) clearTimeout(idleRef.current);
+        idleRef.current = setTimeout(stopTyping, TYPING_IDLE_MS);
+    }, [stopTyping]);
+
+    useEffect(() => stopTyping, [convId, stopTyping]);
 
     const canSend = !!draft.trim() || hasAttachments;
 
     function submit() {
         if (!canSend) return;
+        stopTyping();
         onSendText(draft.trim());
         setDraft('');
     }
@@ -43,7 +76,7 @@ export const Composer = forwardRef<ComposerHandle, {
                     ref={inputRef}
                     type="text"
                     value={draft}
-                    onChange={e => setDraft(e.target.value)}
+                    onChange={e => { setDraft(e.target.value); pingTyping(); }}
                     onKeyDown={handleKey}
                     onFocus={onFocus}
                     placeholder={t('messages.textMessagePlaceholder', 'Text Message')}

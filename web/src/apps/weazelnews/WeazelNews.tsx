@@ -28,6 +28,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
 
     const [articles, setArticles]   = useState<ArticleT[]>([]);
     const [ticker, setTicker]       = useState<string[]>([]);
+    const [scheduled, setScheduled] = useState<ArticleT[]>([]);
     const [canManage, setCanManage] = useState(false);
     const [loading, setLoading]     = useState(true);
 
@@ -35,6 +36,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
         const feed = await weazelFeed();
         setArticles(feed.articles);
         setTicker(feed.ticker);
+        setScheduled(feed.scheduled);
         setCanManage(feed.canManage);
         setLoading(false);
     }, []);
@@ -218,6 +220,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
             {managing && (
                 <ManageDashboard
                     articles={articles}
+                    scheduled={scheduled}
                     ticker={ticker}
                     dark={dark}
                     onRefresh={refresh}

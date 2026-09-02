@@ -242,13 +242,18 @@ end
 
 ---Transfers money from the caller's bank to the character who owns `number`, or to the player
 ---on `serverId`; debits before crediting, refunds on failure, and logs both sides.
+---`opts` is server-only: the NUI callback never passes one, so a client cannot reach it.
 ---@param src integer player server id
 ---@param payload table { number?: string, serverId?: number, amount: number, note?: string, anonymous?: boolean }
+---@param opts? table { category?: string, skipLimits?: boolean } server-driven transfer overrides
 ---@return table result envelope { success, message?, data? }
-function actions.send(src, payload)
+function actions.send(src, payload, opts)
     local cid = cidOf(src)
     if not cid then return { success = false } end
     payload = type(payload) == 'table' and payload or {}
+    opts    = type(opts) == 'table' and opts or nil
+
+    local category = (opts and opts.category) or 'transfer'
 
     local amount = tonumber(payload.amount) or 0
     local note   = (tostring(payload.note or ''):gsub('^%s+', ''):gsub('%s+$', '')):sub(1, 80)
@@ -286,9 +291,14 @@ function actions.send(src, payload)
         if rcid == cid then return { success = false, messageKey = 'banking.canTSendMoneyYourself', message = "You can't send money to yourself" } end
     end
 
-    if not util.rateLimit(cid, 'bank:send', SEND_WINDOW, SEND_MAX)
-        or not util.rateLimit(cid, 'bank:send:' .. number, SEND_WINDOW, SEND_MAX_PEER) then
-        return { success = false, messageKey = 'banking.tooManyTransfersTryAgain', message = 'Too many transfers, try again in a minute' }
+    -- Server-driven transfers (a standing order firing) bypass the budgets: they are already
+    -- paced by their own schedule, and spending a player's manual allowance on them would make
+    -- their own next transfer fail for no reason they could see.
+    if not (opts and opts.skipLimits) then
+        if not util.rateLimit(cid, 'bank:send', SEND_WINDOW, SEND_MAX)
+            or not util.rateLimit(cid, 'bank:send:' .. number, SEND_WINDOW, SEND_MAX_PEER) then
+            return { success = false, messageKey = 'banking.tooManyTransfersTryAgain', message = 'Too many transfers, try again in a minute' }
+        end
     end
 
     local balance = bank.getBalance(src) or 0
@@ -321,8 +331,8 @@ function actions.send(src, payload)
 
     local ts          = os.time()
     local senderLabel = note ~= '' and note or ('Sent to %s'):format(number)
-    store.insert(cid,  senderLabel,                           -amount, 'transfer', number,     ts)
-    store.insert(rcid, recvTitle,                              amount, 'transfer', senderPeer, ts)
+    store.insert(cid,  senderLabel,                           -amount, category, number,     ts)
+    store.insert(rcid, recvTitle,                              amount, category, senderPeer, ts)
     pruneLog(cid)
     pruneLog(rcid)
 
@@ -355,7 +365,7 @@ function actions.send(src, payload)
             balance = bank.getBalance(src) or (balance - amount),
             transaction = txOut({
                 id = 'new', label = senderLabel, amount = -amount,
-                category = 'transfer', counterparty = number, created_at = ts,
+                category = category, counterparty = number, created_at = ts,
             }, contactMapFor(cid)),
         },
     }
@@ -398,5 +408,9 @@ function actions.addExternal(identifier, data)
     end
     return true
 end
+
+---@type fun(amount: number): string "$1,234" formatter, shared with server.banking.standing so
+---both surfaces phrase money the same way.
+actions.formatMoney = formatMoney
 
 return actions
