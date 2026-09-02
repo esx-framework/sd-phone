@@ -181,7 +181,7 @@ function store.threadPreviews(citizenid)
         INNER JOIN (
             SELECT conversation,
                    MAX(created_at) AS last_at,
-                   SUM(direction = 'in' AND is_read = 0) AS unread
+                   SUM(direction = 'incoming' AND is_read = 0) AS unread
             FROM phone_messages
             WHERE citizenid = ? AND withheld = 0
             GROUP BY conversation

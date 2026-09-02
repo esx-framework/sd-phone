@@ -27,6 +27,7 @@ export interface BankOverview {
     allowAnonymous: boolean;
     cardStyle:      CardStyle;
     cardLocked:     boolean;
+    standingOrders: boolean;
     transactions:   BankTx[];
 }
 
@@ -38,6 +39,7 @@ const DEV_OVERVIEW: BankOverview = {
     allowAnonymous: true,
     cardStyle: presetFor('fleeca'),
     cardLocked: false,
+    standingOrders: true,
     transactions: TRANSACTIONS
         .filter(t => t.accountId === ACCOUNTS[0].id)
         .map(t => ({ id: t.id, merchant: t.merchant, amount: t.amount, category: t.category, date: t.date, pending: t.pending, peerNumber: t.peerNumber, peerInitials: t.peerInitials, peerColor: t.peerColor })),
@@ -46,7 +48,7 @@ const DEV_OVERVIEW: BankOverview = {
 export async function fetchOverview(): Promise<BankOverview> {
     if (!isFiveM) return DEV_OVERVIEW;
     return (await apiData<BankOverview>('sd-phone:banking:overview'))
-        ?? { balance: 0, cash: 0, name: '', number: '', allowAnonymous: false, cardStyle: presetFor('fleeca'), cardLocked: true, transactions: [] };
+        ?? { balance: 0, cash: 0, name: '', number: '', allowAnonymous: false, cardStyle: presetFor('fleeca'), cardLocked: true, standingOrders: false, transactions: [] };
 }
 
 export async function setCardStyle(style: CardStyle): Promise<Envelope<{ cardStyle: CardStyle }>> {

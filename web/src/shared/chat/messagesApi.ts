@@ -187,6 +187,20 @@ export function upsertConversation(list: Conversation[], incoming: Conversation)
     return [merged, ...list.filter((_, i) => i !== idx)];
 }
 
+export function mergeListRefresh(prev: Conversation[], fresh: Conversation[]): Conversation[] {
+    const byId = new Map(prev.map(c => [c.id, c]));
+    const merged = fresh.map(f => {
+        const p = byId.get(f.id);
+        if (!p || p.partial !== false) return f;
+        const newest = f.messages[f.messages.length - 1];
+        if (!newest || !p.messages.some(m => m.id === newest.id)) return f;
+        return { ...p, unread: f.unread };
+    });
+    const listed = new Set(fresh.map(c => c.id));
+    const placeholders = prev.filter(c => !listed.has(c.id) && c.messages.length === 0);
+    return [...placeholders, ...merged];
+}
+
 export function appendMessage(list: Conversation[], conversationId: string, msg: Message): Conversation[] {
     return appendThreadMessage(list, conversationId, msg);
 }

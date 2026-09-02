@@ -61,7 +61,6 @@ function store.ensureSchema()
             notification_tone  VARCHAR(64) NULL,
             airplane_mode      TINYINT(1)  NOT NULL DEFAULT 0,
             dnd                TINYINT(1)  NOT NULL DEFAULT 0,
-            low_power          TINYINT(1)  NOT NULL DEFAULT 0,
             rotation_lock      TINYINT(1)  NOT NULL DEFAULT 0,
             card_name          VARCHAR(64)  NULL,
             card_avatar        VARCHAR(512) NULL,
@@ -1475,19 +1474,6 @@ function store.forgetDnd(citizenid, device)
     dndCache[deviceKey(citizenid, device or 'phone')] = nil
 end
 
----Sets a player's Low Power Mode flag. Read back through the snapshot only, so it needs no cache.
----@param citizenid string framework per-character id
----@param on boolean Low Power Mode enabled
----@param device string|nil device key, defaults to 'phone'
-function store.setLowPower(citizenid, on, device)
-    device = device or 'phone'
-    if not citizenid or citizenid == '' then return end
-    MySQL.update.await([[
-        INSERT INTO phone_settings (citizenid, device, low_power) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE low_power = VALUES(low_power)
-    ]], { citizenid, device, on == true and 1 or 0 })
-end
-
 ---Sets a player's Rotation Lock flag. Read back through the snapshot only, so it needs no cache.
 ---@param citizenid string framework per-character id
 ---@param on boolean Rotation Lock enabled
@@ -2570,7 +2556,6 @@ function store.snapshot(citizenid, device)
         notificationTone = row and row.notification_tone or nil,
         airplaneMode     = airplane,
         focus            = dnd,
-        lowPower         = row ~= nil and isTruthy(row.low_power) or false,
         rotationLock     = row ~= nil and isTruthy(row.rotation_lock) or false,
         hour24           = hour24,
         callerId         = (row == nil or isTruthy(row.caller_id_unset)) and true or isTruthy(row.caller_id),

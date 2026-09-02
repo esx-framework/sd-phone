@@ -219,7 +219,7 @@ function AppContent() {
     // Tone/volume fields are deliberately NOT subscribed here — they're only
     // read inside event callbacks (via useThemeStore.getState()), so slider
     // drags in Control Center don't re-render the whole tree from the root.
-    const { theme, darkTheme, lightTheme, accent, customPalettes, wallpaperLock, wallpaperHome, setTheme, setWallpaper, statusLightOverride, statusBarAutoLight, hideHomeIndicator, airplaneMode, focus, lowPower, rotationLock, hour24, setHour24, setSecurity, appLabels, homeDensity, dockStyle } = useTheme('theme', 'darkTheme', 'lightTheme', 'accent', 'wallpaperLock', 'wallpaperHome', 'setTheme', 'setWallpaper', 'statusLightOverride', 'statusBarAutoLight', 'hideHomeIndicator', 'airplaneMode', 'focus', 'lowPower', 'rotationLock', 'hour24', 'setHour24', 'setSecurity', 'customPalettes', 'appLabels', 'homeDensity', 'dockStyle');
+    const { theme, darkTheme, lightTheme, accent, customPalettes, wallpaperLock, wallpaperHome, setTheme, setWallpaper, statusLightOverride, statusBarAutoLight, hideHomeIndicator, airplaneMode, focus, rotationLock, hour24, setHour24, setSecurity, appLabels, homeDensity, dockStyle } = useTheme('theme', 'darkTheme', 'lightTheme', 'accent', 'wallpaperLock', 'wallpaperHome', 'setTheme', 'setWallpaper', 'statusLightOverride', 'statusBarAutoLight', 'hideHomeIndicator', 'airplaneMode', 'focus', 'rotationLock', 'hour24', 'setHour24', 'setSecurity', 'customPalettes', 'appLabels', 'homeDensity', 'dockStyle');
     const activeThemeId = theme === 'dark' ? darkTheme : lightTheme;
     const themeVars = useMemo(() => {
         const vars: Record<string, string> = accentVars(theme === 'dark' ? 'dark' : 'light', accent);
@@ -793,6 +793,8 @@ function AppContent() {
         setSwitcherReady(false);
         clearDeck();
     }, [clearDeck]);
+
+    useNuiEvent('sd-phone:client:characterLoaded', handleRemoveAll);
 
     const finishInstall = useCallback((id: string) => {
         setInstalledApps(prev => new Set(prev).add(id));
@@ -1511,7 +1513,6 @@ function AppContent() {
                             battery={battery}
                             airplane={airplaneMode}
                             focus={focus}
-                            lowPower={lowPower}
                             noSim={noSim}
                             noService={noService || noServiceArea}
                             light
@@ -1625,7 +1626,6 @@ function AppContent() {
                         battery={battery}
                         airplane={airplaneMode}
                         focus={focus}
-                        lowPower={lowPower}
                         noSim={noSim}
                         noService={noService || noServiceArea}
                         light={noSim ? true : (showSetup ? false : (cameraMode ? true : (statusLightOverride ?? statusBarAutoLight ?? statusLight)))}

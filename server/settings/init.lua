@@ -404,16 +404,6 @@ lib.callback.register('sd-phone:server:settings:setFocus', function(source, payl
     return { success = true }
 end)
 
----Persists the caller's Low Power Mode flag, which halves the cosmetic battery drain.
-lib.callback.register('sd-phone:server:settings:setLowPower', function(source, payload)
-    local cid = player.getIdentifier(source)
-    if not cid then return { success = false, messageKey = 'settings.playerNotFound', message = 'Player not found' } end
-    if not writeAllowed(cid, 'lowPower') then return BUSY end
-    payload = type(payload) == 'table' and payload or {}
-    store.setLowPower(cid, payload.on == true, deviceOf(payload))
-    return { success = true }
-end)
-
 ---Persists the caller's Rotation Lock flag, which keeps the shell portrait.
 lib.callback.register('sd-phone:server:settings:setRotationLock', function(source, payload)
     local cid = player.getIdentifier(source)

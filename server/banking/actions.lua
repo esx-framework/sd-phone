@@ -223,6 +223,7 @@ function actions.overview(src)
             allowAnonymous = BK.AllowAnonymous ~= false,
             cardStyle      = cardStyleFor(cid),
             cardLocked     = (BK.Card and BK.Card.Locked) == true,
+            standingOrders = (BK.StandingOrders and BK.StandingOrders.Enabled) ~= false,
             transactions   = txs,
         },
     }

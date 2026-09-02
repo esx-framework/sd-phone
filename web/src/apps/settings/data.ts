@@ -8,7 +8,7 @@ export type IconName =
     | 'ShoppingBag' | 'CreditCard' | 'Gamepad2' | 'Lock' | 'Mail'
     | 'User' | 'Calendar' | 'StickyNote' | 'ListTodo' | 'Mic'
     | 'Phone' | 'MessageCircle' | 'Video' | 'Compass' | 'Newspaper'
-    | 'Languages' | 'MapPin' | 'Zap' | 'PawPrint' | 'Grid2x2' | 'BatteryLow' | 'Radar';
+    | 'Languages' | 'MapPin' | 'Zap' | 'PawPrint' | 'Grid2x2' | 'Radar';
 
 export interface SettingsRowDef {
     id:        string;
@@ -39,7 +39,6 @@ export function getSettingsGroups(): SettingsGroup[] {
             rows: [
                 { id: 'airplane', icon: 'Plane',  iconBg: '#ff9f0a', label: t('settings.airplaneMode', 'Airplane Mode'),  subtitle: t('settings.airplaneModeSub', 'Turn off calls, data and connectivity') },
                 { id: 'focus',    icon: 'Moon',   iconBg: '#5e5ce6', label: t('settings.focus', 'Focus'),                subtitle: t('settings.focusSub', 'Silence calls and alerts') },
-                { id: 'low-power', icon: 'BatteryLow', iconBg: '#ffd60a', label: t('settings.lowPowerMode', 'Low Power Mode'), subtitle: t('settings.lowPowerModeSub', 'Slow the battery drain') },
                 { id: 'streamer', icon: 'Video',  iconBg: '#5e5ce6', label: t('settings.streamerMode', 'Streamer Mode'),  subtitle: t('settings.streamerModeSub', 'Hide details on stream') },
                 { id: 'wifi',     icon: 'Wifi',   iconBg: '#0a84ff', label: t('settings.wifi', 'Wi-Fi'),                subtitle: t('settings.wifiSub', 'Join nearby networks') },
                 { id: 'bluetooth', icon: 'Bluetooth', iconBg: '#0a84ff', label: t('settings.bluetooth', 'Bluetooth'),   subtitle: t('settings.bluetoothSub', 'Pair with nearby devices') },

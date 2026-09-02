@@ -10,12 +10,13 @@ import { apiCall, failText } from '@/core/api';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useSessionState, seedSessionState, clearSessionState } from '@/hooks/useSessionState';
 import { useDidEnter } from '@/hooks/useDidEnter';
+import { useDeckActive } from '@/shell/deckActive';
 import type { MessagesIncomingPush } from '@/core/types';
 import { unreadCount, type Contact, type Conversation, type Message } from '@/shared/chat/data';
 import {
     loadMessages, loadThread, getCachedMessages, cacheMessages, sendMessageApi, createGroupApi, addGroupMemberApi, updateGroupApi,
     removeGroupMemberApi, markReadApi,
-    upsertConversation, appendMessage, replaceMessage, markConversationRead,
+    upsertConversation, mergeListRefresh, appendMessage, replaceMessage, markConversationRead,
     deleteConversationApi, contactFromNumber, reactMessageApi, toggleReactionLocal,
     applyReaction, applySeen, resolveConvParticipant, typingApi, type SendInput,
 } from '@/shared/chat/messagesApi';
@@ -89,6 +90,36 @@ export function Messages({ onClose }: { onClose: () => void }) {
     const openIdRef = useRef(openId);
     useEffect(() => { openIdRef.current = openId; }, [openId]);
 
+    const hydrateThread = useCallback((id: string) => {
+        void loadThread(id).then(full => {
+            if (!full) return;
+            setConversations(prev => prev.map(c => (c.id === id
+                ? { ...c, messages: full.messages, participants: full.participants, unread: 0, partial: false }
+                : c)));
+        });
+    }, []);
+
+    const deckActive = useDeckActive();
+    const wasActive  = useRef(deckActive);
+    useEffect(() => {
+        const rising = deckActive && !wasActive.current;
+        wasActive.current = deckActive;
+        if (!rising) return;
+        const id = window.setTimeout(() => {
+            void loadMessages().then(state => {
+                cacheMessages(state);
+                setContacts(state.contacts);
+                setConversations(prev => mergeListRefresh(prev, state.conversations));
+                const open = openIdRef.current;
+                if (!open) return;
+                markReadApi(open);
+                setConversations(prev => markConversationRead(prev, open));
+                hydrateThread(open);
+            });
+        }, 420);
+        return () => window.clearTimeout(id);
+    }, [deckActive, hydrateThread]);
+
     useNuiEvent('sd-phone:messages:incoming', useCallback((data: MessagesIncomingPush) => {
         if (!data) return;
         const incoming = data as unknown as Conversation;
@@ -127,15 +158,8 @@ export function Messages({ onClose }: { onClose: () => void }) {
         setOpenId(id);
         markReadApi(id);
         setConversations(prev => markConversationRead(prev, id));
-        // The list row only carries the last line, so pull the real history now. The preview
-        // stays on screen meanwhile, and a failed fetch simply leaves it in place.
-        void loadThread(id).then(full => {
-            if (!full) return;
-            setConversations(prev => prev.map(c => (c.id === id
-                ? { ...c, messages: full.messages, participants: full.participants, unread: 0, partial: false }
-                : c)));
-        });
-    }, []);
+        hydrateThread(id);
+    }, [hydrateThread]);
 
     const sendMessage = useCallback(async (conversationId: string, draft: Draft) => {
         const optimistic: Message = {

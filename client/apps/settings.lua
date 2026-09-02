@@ -21,7 +21,6 @@ writeCallback('sd-phone:settings:tones:add',    'sd-phone:server:settings:tones:
 writeCallback('sd-phone:settings:tones:remove', 'sd-phone:server:settings:tones:remove')
 writeCallback('sd-phone:settings:setAirplane',  'sd-phone:server:settings:setAirplane')
 writeCallback('sd-phone:settings:setFocus',        'sd-phone:server:settings:setFocus')
-writeCallback('sd-phone:settings:setLowPower',     'sd-phone:server:settings:setLowPower')
 writeCallback('sd-phone:settings:setRotationLock', 'sd-phone:server:settings:setRotationLock')
 writeCallback('sd-phone:settings:setHour24',    'sd-phone:server:settings:setHour24')
 writeCallback('sd-phone:settings:setCallerId',  'sd-phone:server:settings:setCallerId')

@@ -10,7 +10,6 @@ export interface StatusBarProps {
     battery: number;
     airplane?: boolean;
     focus?: boolean;
-    lowPower?: boolean;
     noSim?: boolean;
     noService?: boolean;
     light?: boolean;
@@ -18,7 +17,7 @@ export interface StatusBarProps {
     editing?: boolean;
 }
 
-export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, airplane = false, focus = false, lowPower = false, noSim = false, noService = false, light = true, controlHint = false, editing = false }: StatusBarProps) {
+export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, airplane = false, focus = false, noSim = false, noService = false, light = true, controlHint = false, editing = false }: StatusBarProps) {
     const time  = formatClockTime(useDisplayClock(), use24h);
     const color = light ? '#ffffff' : '#000000';
 
@@ -50,7 +49,7 @@ export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, 
                     </>
                 )}
                 {focus && <Moon size={17} />}
-                <Battery size={28} pct={battery} lowPower={lowPower} />
+                <Battery size={28} pct={battery} />
 
                 {controlHint && (
                     <span
@@ -127,10 +126,10 @@ function Moon({ size }: { size: number }) {
     );
 }
 
-function Battery({ size, pct, lowPower = false }: { size: number; pct: number; lowPower?: boolean }) {
+function Battery({ size, pct }: { size: number; pct: number }) {
     const value = Math.max(0, Math.min(100, Math.round(pct)));
     const fillW = (292.63 * value) / 100;
-    const fill  = value <= 20 ? '#ff453a' : lowPower ? '#ffd60a' : 'currentColor';
+    const fill  = value <= 20 ? '#ff453a' : 'currentColor';
     return (
         <svg width={size} height={size} viewBox="0 0 512 512" fill="none" aria-hidden>
             <rect x="32" y="144" width="400" height="224" rx="45.7" ry="45.7" stroke="currentColor" strokeLinecap="square" strokeMiterlimit="10" strokeWidth="32" />

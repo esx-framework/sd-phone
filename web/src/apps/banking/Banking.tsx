@@ -150,13 +150,15 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
                     </button>
                 </div>
 
-                <GroupCard className="mt-3" radius={16}>
-                    <ListRow
-                        label={t('banking.standingOrders', 'Standing Orders')}
-                        left={<Repeat className="h-[21px] w-[21px] text-ios-blue" strokeWidth={2.2} />}
-                        onPress={() => setStanding(true)}
-                    />
-                </GroupCard>
+                {overview?.standingOrders && (
+                    <GroupCard className="mt-3" radius={16}>
+                        <ListRow
+                            label={t('banking.standingOrders', 'Standing Orders')}
+                            left={<Repeat className="h-[21px] w-[21px] text-ios-blue" strokeWidth={2.2} />}
+                            onPress={() => setStanding(true)}
+                        />
+                    </GroupCard>
+                )}
 
                 <div className="mb-3 mt-6 flex items-center justify-between">
                     <h2 className="text-[20px] font-bold tracking-tight">{t('banking.latestTransactions', 'Latest Transactions')}</h2>
@@ -185,7 +187,7 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
 
             {showAll && <AllTransactions transactions={txs} onBack={() => setShowAll(false)} onSelectTx={setActionTx} />}
 
-            {standing && <StandingOrders onBack={() => setStanding(false)} onChanged={refresh} />}
+            {standing && overview?.standingOrders && <StandingOrders onBack={() => setStanding(false)} onChanged={refresh} />}
 
             {sending && (
                 <SendMoney
