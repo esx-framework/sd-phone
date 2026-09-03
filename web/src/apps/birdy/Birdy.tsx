@@ -390,7 +390,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
     const authScreen = (
             <AppAuth
                 appId="birdy"
-                appName="Birdy"
+                appName="Squawk"
                 tagline={t('squawk.tagline', 'Where the city starts conversations.')}
                 icon="birdy"
                 theme={{

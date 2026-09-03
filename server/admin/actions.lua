@@ -529,7 +529,7 @@ function actions.birdySetVerified(source, payload)
     local vtype, valid = verify.parse(payload and payload.type)
     if not valid then return fail('admin.badgeTypeMustOne', 'Badge type must be one of: {list}', { list = verify.list() }) end
 
-    if store.setBirdyVerified(handle, vtype) == 0 then return fail('admin.noBirdyProfile', 'No Birdy profile') end
+    if store.setBirdyVerified(handle, vtype) == 0 then return fail('admin.noBirdyProfile', 'No Squawk profile') end
 
     local aCid, aName = adminIdent(source)
     store.audit(aCid, aName, vtype and 'birdy-verify' or 'birdy-unverify', nil,

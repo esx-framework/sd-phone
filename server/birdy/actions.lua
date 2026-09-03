@@ -360,7 +360,7 @@ function actions.login(source, payload)
         return fail('birdy.wrongUsernamePassword', 'Wrong username or password')
     end
     local prof = store.getProfileByHandle(acc.username)
-    if not prof then return fail('birdy.accountHasNoBirdyProfile', 'That account has no Birdy profile') end
+    if not prof then return fail('birdy.accountHasNoBirdyProfile', 'That account has no Squawk profile') end
 
     acctStore.setSession('birdy', cid, acc.id)
     store.setLoggedIn(prof.handle, true)
@@ -554,13 +554,13 @@ function actions.purchaseVerification(source)
 
     if price > 0 then
         if (tonumber(money.get(source, account)) or 0) < price then return fail('birdy.notEnoughMoney', 'Not enough money') end
-        if not money.remove(source, account, price, 'Birdy verification') then return fail('birdy.paymentFailed', 'Payment failed') end
+        if not money.remove(source, account, price, 'Squawk verification') then return fail('birdy.paymentFailed', 'Payment failed') end
     end
 
     -- Nothing here is transactional, so the charge is undone by hand if the badge write misses.
     -- Without this a player whose account vanished mid-purchase is simply out the money.
     if store.setVerified(prof.handle, 'blue') == 0 then
-        if price > 0 then money.add(source, account, price, 'Birdy verification refund') end
+        if price > 0 then money.add(source, account, price, 'Squawk verification refund') end
         return fail('birdy.couldNotVerifyAccount', 'Could not verify this account')
     end
 
@@ -1224,7 +1224,7 @@ function actions.dmSend(source, payload)
         if not toCid then return fail('birdy.theyNeedOnlineReceiveMoney', 'They need to be online to receive money') end
         local number = settings.getPhoneNumber(toCid)
         if not number then return fail('birdy.paymentFailed', 'Payment failed') end
-        local res = banking.send(source, { number = number, amount = meta.amount, note = 'Birdy payment' })
+        local res = banking.send(source, { number = number, amount = meta.amount, note = 'Squawk payment' })
         if not res or not res.success then
             if res and res.message then return res end
             return fail('birdy.paymentFailed', 'Payment failed')

@@ -67,7 +67,7 @@
     "missingPost": "Missing post",
     "mutedByAdmin": "You have been muted by an admin.",
     "mutedByAdminUntil": "You have been muted by an admin until {time}.",
-    "noBirdyProfile": "No Birdy profile",
+    "noBirdyProfile": "No Squawk profile",
     "noSimRegisteredWithNumber": "No SIM is registered with that number",
     "noValidScopes": "No valid scopes",
     "notAuthorized": "Not authorized",
@@ -490,7 +490,7 @@
   },
   "birdy": {
     "accountAlreadyVerified": "This account is already verified",
-    "accountHasNoBirdyProfile": "That account has no Birdy profile",
+    "accountHasNoBirdyProfile": "That account has no Squawk profile",
     "accountNotFound": "Account not found",
     "bioTooLong": "Bio is too long",
     "cannotFollowYourself": "You cannot follow yourself",

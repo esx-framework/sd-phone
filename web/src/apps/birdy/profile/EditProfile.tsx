@@ -219,7 +219,7 @@ export function EditProfile({ profile, onCancel, onSaved, onSignOut, onSignOutAl
             {pwOpen && (
                 <ChangePasswordPage
                     app="birdy"
-                    appName="Birdy"
+                    appName="Squawk"
                     icon="birdy"
                     theme={{ accent: BLUE, welcomeBg: CARD, welcomeText: 'dark' }}
                     onClose={() => setPwOpen(false)}
