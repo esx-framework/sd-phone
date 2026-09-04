@@ -1088,8 +1088,14 @@ local function pushCharacterLoaded()
     -- phone's frame colour (closed-shell peeks, hand prop) is right before the first open.
     SetTimeout(2000, function() TriggerServerEvent('sd-phone:server:sim:requestPush') end)
 end
+-- Every supported framework has to be listed: the page hydrates on this signal alone, so a
+-- framework missing here leaves the phone on its pre-character state forever - no number, no
+-- setup screen, nothing working. ox_core EMITS its event client-side rather than sending it, so
+-- it takes AddEventHandler; RegisterNetEvent registers cleanly there and then never fires.
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', pushCharacterLoaded)
 RegisterNetEvent('esx:playerLoaded', pushCharacterLoaded)
+RegisterNetEvent('ND:characterLoaded', pushCharacterLoaded)
+AddEventHandler('ox:playerLoaded', pushCharacterLoaded)
 
 ---Server-side settings appeared after the UI had already hydrated, so pull them again. The
 ---lb-phone import writes phone_settings partway through boot, long after the resource-start
