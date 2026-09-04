@@ -70,6 +70,24 @@ if not active then
     end)
 end
 
+---Wraps an ox_target onSelect so qb-target/qtarget can call it. Those backends invoke
+---action(entity, optionData) with the raw entity handle first, while ox_target passes one table
+---{ entity, coords, ... }. Handing onSelect over unwrapped meant every consumer that indexed its
+---argument crashed under qb-target with "attempt to index a number value".
+---@param onSelect fun(data: table)|nil ox_target-shaped handler
+---@return fun(entity: number|nil, data: table|nil)|nil action in the qb-target/qtarget shape
+local function adaptAction(onSelect)
+    if type(onSelect) ~= 'function' then return nil end
+    return function(entity, data)
+        local handle = type(entity) == 'number' and entity ~= 0 and entity or nil
+        onSelect({
+            entity = handle,
+            coords = handle and DoesEntityExist(handle) and GetEntityCoords(handle) or nil,
+            name   = type(data) == 'table' and data.name or nil,
+        })
+    end
+end
+
 ---Translate ox_target option entries to the qb-target/qtarget shape. A pass-through when
 ---ox_target is active.
 ---@param options table[] ox_target-shaped option entries
@@ -85,7 +103,7 @@ local function convertOptions(options)
             event       = o.event,
             icon        = o.icon,
             label       = o.label,
-            action      = o.onSelect,
+            action      = adaptAction(o.onSelect),
             canInteract = o.canInteract,
             distance    = o.distance,
             groups      = o.groups,
