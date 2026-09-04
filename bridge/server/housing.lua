@@ -3,6 +3,10 @@ local config = require 'configs.config'
 ---@type table Framework detection (bridge.shared.framework): name ('qb'|'esx') + live core handle.
 local framework = require 'bridge.shared.framework'
 ---@type table Player bridge (bridge.server.player): identifier/name lookups from a trusted source.
+---
+---Identity here is ALWAYS read with getRealIdentifier, never getIdentifier: under unique phones
+---(configs/uniqueandsim.lua) that one is rewrapped to return the acting SIM identity, and the
+---resources called below key their records by citizenid.
 local player = require 'bridge.server.player'
 
 ---@type table Housing bridge module; the table returned at end of file. Abstracts the supported
@@ -657,7 +661,7 @@ end
 ---@return table[] homes (empty when disabled / no character / unsupported system / adapter failure)
 function housing.list(source)
     if not H.Enabled then return {} end
-    local id = player.getIdentifier(source)
+    local id = player.getRealIdentifier(source)
     if not id then return {} end
 
     local adapter = ADAPTERS[ACTIVE or '']
@@ -778,7 +782,7 @@ function housing.keyHolders(src, id)
         local okProp, prop = pcall(function() return exports.LNS_Housing:GetProperty(p) end)
         if not okProp or type(prop) ~= 'table' then return {} end
 
-        local callerCid = player.getIdentifier(src)
+        local callerCid = player.getRealIdentifier(src)
         if not callerCid then return {} end
 
         local isOwner  = (prop.owner == callerCid)
@@ -855,7 +859,7 @@ function housing.giveKey(src, id, targetSrc)
         if ok then refreshHomes(src, targetSrc) end
         return ok
     elseif ACTIVE == 'RxHousing' then
-        local cid = player.getIdentifier(targetSrc)
+        local cid = player.getRealIdentifier(targetSrc)
         if not cid then return false end
         local ok, res = pcall(function() return exports['RxHousing']:AddKeyholder(p, cid) end)
         if ok and res ~= false then refreshHomes(src, targetSrc) end
@@ -876,7 +880,7 @@ function housing.giveKey(src, id, targetSrc)
             return true
         end
     elseif ACTIVE == 'nolag_properties' then
-        local cid = player.getIdentifier(targetSrc)
+        local cid = player.getRealIdentifier(targetSrc)
         if not cid then return false end
         local ok, res = pcall(function() return exports.nolag_properties:AddKey(src, p, cid) end)
         if ok and res then
@@ -884,8 +888,8 @@ function housing.giveKey(src, id, targetSrc)
             return true
         end
     elseif ACTIVE == 'kartik-properties' then
-        local cid = player.getIdentifier(targetSrc)
-        local ownerCid = player.getIdentifier(src)
+        local cid = player.getRealIdentifier(targetSrc)
+        local ownerCid = player.getRealIdentifier(src)
         if not cid then return false end
         local ok, res = pcall(function() return exports['kartik-properties']:GrantHousingKey(p, cid, ownerCid) end)
         if ok and res and res.success then
@@ -943,7 +947,7 @@ function housing.removeKey(src, id, holderId)
             return true
         end
     elseif ACTIVE == 'kartik-properties' then
-        local ownerCid = player.getIdentifier(src)
+        local ownerCid = player.getRealIdentifier(src)
         local ok, res = pcall(function() return exports['kartik-properties']:RevokeHousingKey(p, tostring(holderId), ownerCid) end)
         if ok and res and res.success then
             refreshHomes(src, holderId)

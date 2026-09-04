@@ -3,6 +3,10 @@ local config    = require 'configs.config'
 ---@type table Framework detection (bridge.shared.framework): name + qb flag for the grade label read.
 local framework = require 'bridge.shared.framework'
 ---@type table Player bridge (bridge.server.player): identifier, name, raw handle and job name.
+---
+---Identity here is ALWAYS read with getRealIdentifier, never getIdentifier: under unique phones
+---(configs/uniqueandsim.lua) that one is rewrapped to return the acting SIM identity, and the
+---resources called below key their records by citizenid.
 local player    = require 'bridge.server.player'
 ---@type table Job bridge (bridge.server.job): display labels for a job name and its grade.
 local job       = require 'bridge.server.job'
@@ -17,7 +21,7 @@ local util      = require 'server.util'
 local ok, fail  = util.ok, util.fail
 
 ---@type table ID app config (config.Id): licence catalogue, job colours, issuer, show duration.
-local CFG = config.Id
+local CFG = config.Id or require 'configs.id'
 
 ---@type string Card face for the State ID; every licence and badge picks its own from config.
 local STATE_COLOR <const> = '#2C3440'
@@ -28,7 +32,7 @@ local actions = {}
 ---Stable per-character key (citizenid on qb/qbx, identifier on ESX), resolved from the server id.
 ---@param src integer player server id
 ---@return string|nil citizenid nil when the player can't be resolved
-local function cidOf(src) return player.getIdentifier(src) end
+local function cidOf(src) return player.getRealIdentifier(src) end
 
 ---The display label for the player's current job grade, read from the live player object where
 ---the framework keeps one. qb/QBox carry it as `job.grade.name`, ESX as `job.grade_label`; ox_core

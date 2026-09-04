@@ -335,6 +335,12 @@ function store.ensureSchema()
     util.ensureIndex('phone_birdy_notifications', 'idx_birdy_notifs_unseen', '(recipient, seen)')
     util.ensureIndex('phone_birdy_notifications', 'idx_birdy_notifs_dedupe', '(recipient, kind, actor, post_id)')
 
+    -- New posts stopped being alerts: the tab answers "what happened to me", so follows, likes,
+    -- reposts and replies belong there and a post does not. Rows written by older versions are
+    -- cleared out here, which also drops the unread badge they were still inflating. Runs every
+    -- boot and deletes nothing once done.
+    MySQL.update.await("DELETE FROM phone_birdy_notifications WHERE kind = 'post'")
+
     -- A post either carries a poll or it does not, so the poll row is keyed by the post itself
     -- rather than by an id of its own. The question is the post body; only the deadline lives here.
     MySQL.query.await([[
@@ -1133,9 +1139,20 @@ function store.isLiked(postId, handle)
     ) ~= nil
 end
 
----Handles of every account following `target`, for notification fan-out. Read-only.
+---Every registered handle except one, for a server-wide post notification fan-out. Read-only.
+---@param except string|nil handle to leave out, normally the posting author
+---@return string[] handles
+function store.allHandles(except)
+    local rows = MySQL.query.await(
+        'SELECT handle FROM phone_birdy_profiles WHERE handle <> ?', { except or '' }) or {}
+    local out = {}
+    for i = 1, #rows do out[#out + 1] = rows[i].handle end
+    return out
+end
+
+---Every handle following a given account. Read-only.
 ---@param target string
----@return string[]
+---@return string[] handles
 function store.followerHandles(target)
     local rows = MySQL.query.await('SELECT follower FROM phone_birdy_follows WHERE target = ?', { target }) or {}
     local out = {}
@@ -1308,29 +1325,6 @@ function store.insertNotification(id, recipient, kind, actor, postId)
         INSERT INTO phone_birdy_notifications (id, recipient, kind, actor, post_id)
         VALUES (?, ?, ?, ?, ?)
     ]], { id, recipient, kind, actor, postId })
-end
-
----Inserts many notifications in one statement. The post fan-out wrote one row per follower, so
----a 100-follower post cost 100 sequential round trips. A nil/empty list is a no-op.
----Every field must be non-nil: the args are positional, and a nil would shift every following
----row's values. Notification kinds with no post (follow) use insertNotification instead.
----@param rows { id: string, recipient: string, kind: string, actor: string, postId: string }[]
-function store.insertNotifications(rows)
-    if type(rows) ~= 'table' or #rows == 0 then return end
-    local ph, args, n = {}, {}, 0
-    for i = 1, #rows do
-        local r = rows[i]
-        if r.id and r.recipient and r.kind and r.actor and r.postId then
-            ph[#ph + 1] = '(?, ?, ?, ?, ?)'
-            args[n + 1], args[n + 2], args[n + 3], args[n + 4], args[n + 5] =
-                r.id, r.recipient, r.kind, r.actor, r.postId
-            n = n + 5
-        end
-    end
-    if n == 0 then return end
-    MySQL.insert.await((
-        'INSERT INTO phone_birdy_notifications (id, recipient, kind, actor, post_id) VALUES %s'
-    ):format(table.concat(ph, ',')), args)
 end
 
 ---@param recipient string

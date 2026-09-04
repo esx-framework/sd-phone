@@ -22,7 +22,9 @@ local moderation = require 'server.admin.moderation'
 local watchers = require('server.watchers').of('birdy')
 
 ---@type table Birdy config (config.Birdy): field bounds + feed/notification limits.
-local birdyCfg = config.Birdy
+local birdyCfg = config.Birdy or require 'configs.birdy'
+---@type table Post-audience rule (shared.postnotify): reads the PostNotifications mode.
+local postnotify = require 'shared.postnotify'
 
 ---@type table Actions module; the table returned at end of file.
 local actions = {}
@@ -676,17 +678,23 @@ function actions.create(source, payload)
     -- with Birdy in the foreground: every other player only refetched to discard the result.
     watchers.push('sd-phone:client:birdy:feedChanged', {})
 
+    local audience = postnotify.audience(birdyCfg.PostNotifications, prof.protected)
+    if audience == 'none' then
+        return ok({ post = serializePost(store.getPost(id, prof.handle)) })
+    end
+
     local preview   = body ~= '' and body:sub(1, 80) or 'shared a photo'
-    local followers = store.followerHandles(prof.handle)
+    local followers = audience == 'everyone'
+        and store.allHandles(prof.handle)
+        or store.followerHandles(prof.handle)
 
     if #followers == 0 then return ok({ post = serializePost(store.getPost(id, prof.handle)) }) end
 
-    local notifs = {}
-    for i = 1, #followers do
-        notifs[i] = { id = store.newId(), recipient = followers[i], kind = 'post', actor = prof.handle, postId = id }
-    end
-    store.insertNotifications(notifs)
-
+    -- A new post is a banner and nothing more. The alerts tab answers "what happened to ME" -
+    -- follows, likes, reposts and replies - so a post is deliberately NOT stored there, and gets
+    -- no app badge either: that count is COUNT(*) of unseen alert rows, so a post that writes no
+    -- row cannot raise it.
+    --
     -- One pass over the connected players for the whole fan-out; this resolved each follower
     -- separately, and every resolution re-scanned every player on the server.
     local activeSrcs = player.activeCidMap()
@@ -695,15 +703,12 @@ function actions.create(source, payload)
         for _, src in ipairs(sourcesFor(handle, activeSrcs)) do targets[#targets + 1] = src end
     end
 
-    util.pushMany('sd-phone:client:birdy:notification', targets, {})
     util.pushMany('sd-phone:client:notify', targets, {
         app = 'birdy', appId = 'birdy', title = 'Squawk',
         bodyKey = 'birdy.postedPreview', body = ('%s posted: %s'):format(prof.displayName, preview),
         bodyVars = { name = prof.displayName, preview = preview },
         time = 'now', quietInApp = true,
     })
-
-    for _, src in ipairs(targets) do badges.pushApp(src, 'birdy') end
 
     return ok({ post = serializePost(store.getPost(id, prof.handle)) })
 end
@@ -983,8 +988,6 @@ function actions.notifications(source)
                 items[#items + 1] = { id = r.id, kind = 'like', user = user, text = 'liked your post' }
             elseif r.kind == 'repost' then
                 items[#items + 1] = { id = r.id, kind = 'repost', user = user, text = 'reposted your post' }
-            elseif r.kind == 'post' then
-                items[#items + 1] = { id = r.id, kind = 'post', user = user, text = 'shared a new post' }
             elseif r.kind == 'follow' then
                 items[#items + 1] = { id = r.id, kind = 'follow', user = user }
             end

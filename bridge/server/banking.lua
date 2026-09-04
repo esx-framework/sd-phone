@@ -3,6 +3,10 @@ local framework = require 'bridge.shared.framework'
 ---@type table Money bridge (bridge.server.money): framework personal-account operations.
 local money     = require 'bridge.server.money'
 ---@type table Player bridge (bridge.server.player): citizenid/identifier lookups from src.
+---
+---Identity here is ALWAYS read with getRealIdentifier, never getIdentifier: under unique phones
+---(configs/uniqueandsim.lua) that one is rewrapped to return the acting SIM identity, and the
+---resources called below key their records by citizenid.
 local player    = require 'bridge.server.player'
 
 ---@type table Banking module; the table returned at end of file. Multi-banking adapter: reads and
@@ -70,7 +74,7 @@ end
 function banking.getBalance(src)
     local name = banking.name
     if name == 'wasabi_banking' then
-        local id = player.getIdentifier(src)
+        local id = player.getRealIdentifier(src)
         if id then
             local ok, bal = pcall(function() return exports.wasabi_banking:GetAccountBalance(id) end)
             if ok and type(bal) == 'number' then return bal end
@@ -155,7 +159,7 @@ function banking.addMoney(src, amount, reason)
     expect(src, amount, false)
     local name = banking.name
     if name == 'wasabi_banking' then
-        local id = player.getIdentifier(src)
+        local id = player.getRealIdentifier(src)
         if id and try(function() exports.wasabi_banking:AddMoney(id, amount, reason or 'Phone transfer') end) then return true end
     elseif name == 'omes_banking' then
         if try(function() exports['omes_banking']:AddBankMoney(src, amount, reason or 'Phone transfer') end) then return true end
@@ -184,7 +188,7 @@ function banking.removeMoney(src, amount, reason)
     local name = banking.name
     local viaProvider = false
     if name == 'wasabi_banking' then
-        local id = player.getIdentifier(src)
+        local id = player.getRealIdentifier(src)
         viaProvider = id ~= nil and try(function() exports.wasabi_banking:RemoveMoney(id, amount, reason or 'Phone transfer') end)
     elseif name == 'omes_banking' then
         viaProvider = try(function() exports['omes_banking']:RemoveBankMoney(src, amount, reason or 'Phone transfer') end)
@@ -258,10 +262,10 @@ function banking.logToResource(src, label, amount, isCredit)
     if name == 'esx_banking' then
         try(function() exports['esx_banking']:logTransaction(src, label, isCredit and 'DEPOSIT' or 'WITHDRAW', amount) end)
     elseif name == 'qb-banking' then
-        local cid = player.getIdentifier(src)
+        local cid = player.getRealIdentifier(src)
         try(function() exports['qb-banking']:CreateBankStatement(src, cid, amount, label, isCredit and 'deposit' or 'withdraw', 'player') end)
     elseif name == 'okokBanking' then
-        local cid = player.getIdentifier(src)
+        local cid = player.getRealIdentifier(src)
         try(function() exports['okokBanking']:AddTransaction(cid, { type = isCredit and 'deposit' or 'withdraw', amount = amount, reason = label }, src) end)
     elseif name == 'omes_banking' then
         try(function() exports['omes_banking']:LogCustomTransaction(src, isCredit and 'deposit' or 'withdraw', amount, label) end)
