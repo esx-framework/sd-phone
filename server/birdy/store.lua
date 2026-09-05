@@ -1228,18 +1228,27 @@ end
 ---@param handle string
 ---@return table[]
 function store.listMessagesFor(handle)
+    -- The two halves stay parenthesised so each keeps its own ORDER BY + LIMIT and rides its own
+    -- covering index (idx_birdy_dms_from_created / _to_created) with no filesort. What is NOT here
+    -- is a `SELECT * FROM ( ... ) recent` wrapper around them: a derived table whose first UNION
+    -- operand is parenthesised is a syntax error before MariaDB 10.4 / MySQL 8, which is a version
+    -- plenty of live servers are still on. The ascending order the caller wants is applied below
+    -- instead, over at most 5000 rows.
     local rows = MySQL.query.await([[
-        SELECT * FROM (
-            (SELECT id, from_handle, to_handle, body, kind, meta, reactions, read_flag,
-                    created_at, UNIX_TIMESTAMP(created_at) AS created_s
-             FROM phone_birdy_dms WHERE from_handle = ? ORDER BY created_at DESC LIMIT 2500)
-            UNION ALL
-            (SELECT id, from_handle, to_handle, body, kind, meta, reactions, read_flag,
-                    created_at, UNIX_TIMESTAMP(created_at) AS created_s
-             FROM phone_birdy_dms WHERE to_handle = ? ORDER BY created_at DESC LIMIT 2500)
-        ) recent ORDER BY created_at ASC
+        (SELECT id, from_handle, to_handle, body, kind, meta, reactions, read_flag,
+                created_at, UNIX_TIMESTAMP(created_at) AS created_s
+         FROM phone_birdy_dms WHERE from_handle = ? ORDER BY created_at DESC LIMIT 2500)
+        UNION ALL
+        (SELECT id, from_handle, to_handle, body, kind, meta, reactions, read_flag,
+                created_at, UNIX_TIMESTAMP(created_at) AS created_s
+         FROM phone_birdy_dms WHERE to_handle = ? ORDER BY created_at DESC LIMIT 2500)
     ]], { handle, handle }) or {}
     for i = 1, #rows do rows[i].created_ms = (tonumber(rows[i].created_s) or 0) * 1000 end
+    -- Oldest first, id breaking ties so two messages sharing a second keep a stable order.
+    table.sort(rows, function(a, b)
+        if a.created_ms ~= b.created_ms then return a.created_ms < b.created_ms end
+        return tostring(a.id) < tostring(b.id)
+    end)
     return rows
 end
 
