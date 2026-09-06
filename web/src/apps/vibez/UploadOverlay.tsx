@@ -10,13 +10,14 @@ import { apiCreate } from './vibezApi';
 
 const EXIT_MS = 300;
 
-export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPosted, onGoLive }: {
+export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPosted, onGoLive, liveEnabled = false }: {
     myHandle?:   string;
     initialUrl?: string | null;
     onRecord:    () => void;
     onClose:     () => void;
     onPosted:    (post: VPost) => void;
     onGoLive:    () => void;
+    liveEnabled?: boolean;
 }) {
     const [picker,  setPicker]  = useState(false);
     const [music,   setMusic]   = useState(false);
@@ -91,12 +92,14 @@ export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPoste
                             <CreateButton onClick={() => setPicker(true)} icon={<Images className="h-5 w-5" strokeWidth={2.2} />}>
                                 {t('vibez.chooseFromGallery', 'Choose from Gallery')}
                             </CreateButton>
-                            <CreateButton
-                                onClick={onGoLive}
-                                icon={<Radio className="h-5 w-5" strokeWidth={2.2} style={{ color: HEART }} />}
-                            >
-                                {t('vibez.goLive', 'Go LIVE')}
-                            </CreateButton>
+                            {liveEnabled && (
+                                <CreateButton
+                                    onClick={onGoLive}
+                                    icon={<Radio className="h-5 w-5" strokeWidth={2.2} style={{ color: HEART }} />}
+                                >
+                                    {t('vibez.goLive', 'Go LIVE')}
+                                </CreateButton>
+                            )}
                         </div>
                     </div>
                 ) : (

@@ -1,6 +1,16 @@
 ---@type fun(nuiAction: string, serverEvent: string) NUI->server pass-through registrar (client.nui).
 local proxyCallback = require 'client.nui'
 
+---@type table Vibez config (configs.vibez): the Live block.
+local VIBEZ_CFG = require 'configs.vibez'
+---@type boolean Whether players may broadcast; the app hides Go LIVE when off.
+local LIVE_ENABLED = type(VIBEZ_CFG.Live) == 'table' and VIBEZ_CFG.Live.Enabled == true
+
+---React -> Lua: whether the Go LIVE action should be offered at all. Read-only.
+RegisterNUICallback('sd-phone:vibez:liveEnabled', function(_, cb)
+    cb({ success = true, enabled = LIVE_ENABLED })
+end)
+
 ---@type string[] Every pure-proxy Vibez action: NUI 'sd-phone:vibez:<name>' forwards to server
 ---'sd-phone:server:vibez:<name>' with no client-side logic in between.
 local ACTIONS = {

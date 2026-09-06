@@ -24,6 +24,7 @@ local config = {
     Groups      = require 'configs.groups',        -- player groups / crews
     Birdy       = require 'configs.birdy',         -- microblog
     Photogram   = require 'configs.photogram',     -- photo social + live video streaming
+    Vibez       = require 'configs.vibez',          -- short-video social + live video streaming
     Voice       = require 'configs.voice',          -- camera/Live audio: own mic + nearby voices (WebRTC)
     Contacts    = require 'configs.contacts',      -- phone-book + recents
     Giphy       = require 'configs.giphy',         -- Messages GIF picker display tunables (key is in configs/server/apikeys.lua)

@@ -6879,6 +6879,7 @@
     "liveEnded": "This live has ended",
     "liveFull": "This live is full",
     "liveHasEnded": "LIVE has ended",
+    "liveNotAvailable": "Live is not available",
     "liveOver": "{handle}'s live is over.",
     "logOut": "Log out",
     "name": "Name",

@@ -6,6 +6,7 @@ import { useDeckActive } from '@/shell/deckActive';
 import { setLaunchIntent } from '@/shell/launchIntent';
 import { useRefreshOnReconnect } from '@/hooks/useRefreshOnReconnect';
 import { clearSessionState, useSessionState } from '@/hooks/useSessionState';
+import { fetchNui, isFiveM } from '@/core/nui';
 import { isVideoUrl } from '@/core/photosApi';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
@@ -62,6 +63,14 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
     const [switching,     setSwitching]     = useState(false);
     const [adding,        setAdding]        = useState(false);
     const [me,            setMe]            = useState<VProfile | null>(null);
+    const [liveEnabled,   setLiveEnabled]   = useState(!isFiveM);
+
+    useEffect(() => {
+        if (!isFiveM) return;
+        void fetchNui<{ enabled?: boolean }>('sd-phone:vibez:liveEnabled')
+            .then(r => setLiveEnabled(r?.enabled === true))
+            .catch(() => setLiveEnabled(false));
+    }, []);
 
     const viewedRef = useRef(new Set<string>());
 
@@ -389,6 +398,7 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                         refetchFeed();
                     }}
                     onGoLive={() => { setUpload(false); setLiveHost(true); }}
+                    liveEnabled={liveEnabled}
                 />
             )}
 

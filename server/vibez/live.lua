@@ -18,6 +18,12 @@ local live = {}
 
 ---@type table Live-video knobs (configs Vibez.Live when present; photogram's defaults otherwise).
 local CFG = (config.Vibez and config.Vibez.Live) or {}
+---@type boolean Whether broadcasting is available at all.
+local ENABLED = CFG.Enabled == true
+
+---Whether broadcasting is switched on, for the app to hide its Go LIVE action.
+---@return boolean
+function live.enabled() return ENABLED end
 ---@type string The relay feature id this file owns, and the first two thirds of every stream key
 ---it mints a token for.
 local FEATURE = 'vibez:live'
@@ -234,6 +240,8 @@ end
 ---@param src integer hosting player server id
 ---@return table result { liveId, startedAt (ms), enc } or failure
 function live.start(src)
+    if not ENABLED then return fail('vibez.liveNotAvailable', 'Live is not available') end
+
     local acc = viewerAccount(src)
     if not acc then return fail('vibez.notSigned', 'Not signed in') end
 
@@ -559,6 +567,8 @@ end
 ---@return table|nil grant { key, role, gen }
 ---@return table|nil refusal keyed refusal envelope shown to the caller
 local function entitle(src, req)
+    if not ENABLED then return nil, fail('vibez.liveNotAvailable', 'Live is not available') end
+
     local liveId = type(req.streamId) == 'string' and req.streamId:match('^vibez:live:(.+)$') or nil
     local session = liveId and lives[liveId]
     if not session then return nil, fail('vibez.liveEnded', 'This live has ended') end
@@ -572,7 +582,9 @@ local function entitle(src, req)
     return { key = req.streamId, role = 'watch', gen = 0 }
 end
 
-media.registerFeature(FEATURE, { entitle = entitle })
+if ENABLED then
+    media.registerFeature(FEATURE, { entitle = entitle })
+end
 
 ---Tears down a departing player's live state: a hosted live ends for everyone, a watched live
 ---loses them as a viewer.
