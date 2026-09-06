@@ -4,6 +4,7 @@ local proxyCallback = require 'client.nui'
 -- Thin delegates into server/messages: thread listing, sending, group management, read
 -- receipts, deletes and reactions.
 proxyCallback('sd-phone:messages:list',        'sd-phone:server:messages:list')
+proxyCallback('sd-phone:messages:thread',      'sd-phone:server:messages:thread')
 proxyCallback('sd-phone:messages:send',        'sd-phone:server:messages:send')
 proxyCallback('sd-phone:messages:uploadVoice', 'sd-phone:server:messages:uploadVoice')
 proxyCallback('sd-phone:messages:createGroup', 'sd-phone:server:messages:createGroup')

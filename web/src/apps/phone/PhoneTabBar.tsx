@@ -9,7 +9,7 @@ export function PhoneTabBar({ tab, onChange, showRecordings }: { tab: PhoneTab; 
     const tabs: TabBarItem<PhoneTab>[] = [
         { id: 'favorites', label: t('phone.favorites','Favorites'), icon: a => <Star      className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} fill={a ? 'currentColor' : 'none'} /> },
         { id: 'recents',   label: t('phone.recents','Recents'),   icon: a => <Clock     className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} /> },
-        { id: 'contacts',  label: t('phone.contacts','Contacts'),  icon: a => <UserRound className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} fill={a ? 'currentColor' : 'none'} /> },
+        { id: 'contacts',  label: t('phone.contacts','Contacts'),  icon: a => <UserRound className="h-[33px] w-[33px]" strokeWidth={a ? 2.2 : 1.9} /> },
         { id: 'keypad',    label: t('phone.keypad','Keypad'),    icon: a => <Grid3x3   className="h-[33px] w-[33px]" strokeWidth={a ? 2.4 : 2.0} /> },
     ];
     if (showRecordings) {

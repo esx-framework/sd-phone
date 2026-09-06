@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { t } from '@/i18n';
+import { ancestorZoom } from '@/lib/zoom';
 import { useTheme } from '@/stores/themeStore';
-
 
 const ITEM_H     = 34;
 const VISIBLE    = 5;
-const WIN_H      = ITEM_H * VISIBLE;
 const ITEM_ANGLE = 18;
-const RADIUS     = ITEM_H / 2 / Math.tan((ITEM_ANGLE * Math.PI) / 180 / 2);
+const COL_W      = 54;
+const FONT_SIZE  = 23;
+const STEP_PX    = 80;
 
 function pad2(n: number) {
     return String(n).padStart(2, '0');
@@ -19,15 +20,20 @@ interface ColumnProps {
     index:    number;
     onChange: (i: number) => void;
     width:    number;
+    itemH:    number;
+    fontSize: number;
     align?:   'center' | 'right' | 'left';
     isDark:   boolean;
 }
 
-function WheelColumn({ items, index, onChange, width, align = 'center', isDark }: ColumnProps) {
-    const last = items.length - 1;
+function WheelColumn({ items, index, onChange, width, itemH, fontSize, align = 'center', isDark }: ColumnProps) {
+    const last   = items.length - 1;
+    const winH   = itemH * VISIBLE;
+    const radius = itemH / 2 / Math.tan((ITEM_ANGLE * Math.PI) / 180 / 2);
 
     const [scroll,    setScroll]    = useState(index);
     const [animating, setAnimating] = useState(false);
+    const rootRef    = useRef<HTMLDivElement>(null);
     const scrollRef  = useRef(index);
     const dragging   = useRef(false);
     const startY     = useRef(0);
@@ -35,17 +41,49 @@ function WheelColumn({ items, index, onChange, width, align = 'center', isDark }
     const lastY      = useRef(0);
     const lastT      = useRef(0);
     const vel        = useRef(0);
+    const zoom       = useRef(1);
+    const wheelAccum = useRef(0);
+    const wheelSnap  = useRef<number | null>(null);
+    const latest     = useRef({ index, last, onChange, itemH, winH });
+    latest.current   = { index, last, onChange, itemH, winH };
 
     const set = (v: number) => { scrollRef.current = v; setScroll(v); };
 
     useEffect(() => {
         if (!dragging.current) set(index);
-         
     }, [index]);
+
+    useEffect(() => {
+        const el = rootRef.current;
+        if (!el) return;
+        function onWheel(e: WheelEvent) {
+            e.preventDefault();
+            const cur = latest.current;
+            const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * cur.winH : e.deltaY;
+            wheelAccum.current += px;
+            if (Math.abs(wheelAccum.current) < STEP_PX) return;
+            const dir = wheelAccum.current > 0 ? 1 : -1;
+            wheelAccum.current = 0;
+            const curIdx  = Math.round(scrollRef.current);
+            const nextIdx = Math.max(0, Math.min(cur.last, curIdx + dir));
+            if (nextIdx === curIdx) return;
+            setAnimating(true);
+            set(nextIdx);
+            cur.onChange(nextIdx);
+            if (wheelSnap.current) window.clearTimeout(wheelSnap.current);
+            wheelSnap.current = window.setTimeout(() => setAnimating(false), 240);
+        }
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => {
+            el.removeEventListener('wheel', onWheel);
+            if (wheelSnap.current) window.clearTimeout(wheelSnap.current);
+        };
+    }, []);
 
     function down(e: React.PointerEvent) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         dragging.current = true;
+        zoom.current     = ancestorZoom(e.currentTarget as HTMLElement);
         startY.current   = e.clientY;
         startScrl.current = scrollRef.current;
         lastY.current    = e.clientY;
@@ -56,14 +94,15 @@ function WheelColumn({ items, index, onChange, width, align = 'center', isDark }
 
     function move(e: React.PointerEvent) {
         if (!dragging.current) return;
-        const deltaItems = (startY.current - e.clientY) / ITEM_H;
+        const step = itemH * zoom.current;
+        const deltaItems = (startY.current - e.clientY) / step;
         let next = startScrl.current + deltaItems;
         if (next < 0)         next = next * 0.35;
         else if (next > last) next = last + (next - last) * 0.35;
         set(next);
 
         const dt = e.timeStamp - lastT.current;
-        if (dt > 0) vel.current = ((lastY.current - e.clientY) / ITEM_H / dt) * 1000;
+        if (dt > 0) vel.current = ((lastY.current - e.clientY) / step / dt) * 1000;
         lastY.current = e.clientY;
         lastT.current = e.timeStamp;
     }
@@ -82,8 +121,9 @@ function WheelColumn({ items, index, onChange, width, align = 'center', isDark }
 
     return (
         <div
+            ref={rootRef}
             className="relative select-none"
-            style={{ width, height: WIN_H, perspective: 1000, touchAction: 'none' }}
+            style={{ width, height: winH, perspective: 1000, touchAction: 'none' }}
             onPointerDown={down}
             onPointerMove={move}
             onPointerUp={up}
@@ -107,15 +147,15 @@ function WheelColumn({ items, index, onChange, width, align = 'center', isDark }
                             className="absolute left-0 right-0 flex items-center px-3"
                             style={{
                                 top:              '50%',
-                                height:           ITEM_H,
-                                marginTop:        -ITEM_H / 2,
+                                height:           itemH,
+                                marginTop:        -itemH / 2,
                                 justifyContent:   justify,
-                                transform:        `rotateX(${angle}deg) translateZ(${RADIUS}px)`,
+                                transform:        `rotateX(${angle}deg) translateZ(${radius}px)`,
                                 transition:       animating ? 'transform 0.2s ease-out, opacity 0.2s ease-out' : 'none',
                                 opacity,
                                 backfaceVisibility: 'hidden',
                                 color:            isDark ? '#fff' : '#000',
-                                fontSize:         23,
+                                fontSize,
                                 fontWeight:       400,
                             }}
                         >
@@ -128,9 +168,17 @@ function WheelColumn({ items, index, onChange, width, align = 'center', isDark }
     );
 }
 
-export function TimeWheel({ value, onChange, open }: { value: string; onChange: (hhmm: string) => void; open: boolean }) {
+export function TimeWheel({ value, onChange, open, itemHeight = ITEM_H, fontSize = FONT_SIZE, columnWidth = COL_W }: {
+    value:        string;
+    onChange:     (hhmm: string) => void;
+    open:         boolean;
+    itemHeight?:  number;
+    fontSize?:    number;
+    columnWidth?: number;
+}) {
     const { theme } = useTheme('theme');
     const isDark = theme === 'dark';
+    const winH   = itemHeight * VISIBLE;
 
     const [hStr, mStr] = value.split(':');
     const h24    = Number(hStr) || 0;
@@ -148,32 +196,31 @@ export function TimeWheel({ value, onChange, open }: { value: string; onChange: 
         onChange(`${pad2(nh24)}:${pad2(nm)}`);
     }
 
+    const col = { width: columnWidth, itemH: itemHeight, fontSize, isDark };
+
     return (
         <div
             style={{
                 overflow:   'hidden',
-                maxHeight:  open ? WIN_H + 8 : 0,
+                maxHeight:  open ? winH + 8 : 0,
                 opacity:    open ? 1 : 0,
                 transition: 'max-height 0.3s cubic-bezier(0.32,0.72,0,1), opacity 0.24s ease-out',
             }}
         >
-            <div data-testid="timewheel" className="relative flex items-center justify-center px-4 pb-1" style={{ height: WIN_H }}>
+            <div data-testid="timewheel" className="relative flex items-center justify-center px-4 pb-1" style={{ height: winH }}>
                 <div
                     className="pointer-events-none absolute left-4 right-4 rounded-[8px]"
                     style={{
                         top:       '50%',
-                        height:    ITEM_H,
+                        height:    itemHeight,
                         transform: 'translateY(-50%)',
                         background: isDark ? 'rgba(120,120,128,0.24)' : 'rgba(120,120,128,0.16)',
                     }}
                 />
                 <div className="relative z-10 flex items-center gap-2">
-                    <WheelColumn items={hours}   index={h12 - 1} width={54} align="right"  isDark={isDark}
-                        onChange={i => emit(i + 1, m, period)} />
-                    <WheelColumn items={minutes} index={m}        width={54} align="left"   isDark={isDark}
-                        onChange={i => emit(h12, i, period)} />
-                    <WheelColumn items={periods} index={period}   width={54} align="center" isDark={isDark}
-                        onChange={i => emit(h12, m, i)} />
+                    <WheelColumn {...col} items={hours}   index={h12 - 1} align="right"  onChange={i => emit(i + 1, m, period)} />
+                    <WheelColumn {...col} items={minutes} index={m}        align="left"   onChange={i => emit(h12, i, period)} />
+                    <WheelColumn {...col} items={periods} index={period}   align="center" onChange={i => emit(h12, m, i)} />
                 </div>
             </div>
         </div>

@@ -6,6 +6,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { useIosPush } from '@/hooks/useIosPush';
 import { SearchBar } from '@/ui/SearchBar';
 import { EmptyState } from '@/ui/EmptyState';
+import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 import { apiSearch } from '../birdyApi';
 import { BG, BLUE, META, PILL, TEXT, type BirdyAuthor, type BirdyConversation, type BirdyMessage } from '../data';
 import { Avatar, VerifiedBadge } from '../ui';
@@ -131,6 +132,7 @@ function NewDm({ onSelect, onBack }: { onSelect: (handle: string) => void; onBac
 
     return (
         <div className="absolute inset-0 z-20 flex flex-col" style={{ background: BG, ...pageStyle }}>
+            <StatusBarSpacer />
             <header className="flex shrink-0 items-center px-2 py-2">
                 <button type="button" onClick={goBack} aria-label={t('squawk.back', 'Back')} className="flex h-11 w-11 items-center justify-center text-label active:opacity-60">
                     <ArrowLeft className="h-6 w-6" strokeWidth={2.2} />

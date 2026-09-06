@@ -1,18 +1,70 @@
 import { useState } from 'react';
-import { AlertCircle, Plus, Repeat } from 'lucide-react';
+import { ChevronRight, Plus, Repeat } from 'lucide-react';
 
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useIosPush } from '@/hooks/useIosPush';
 import { t } from '@/i18n';
 import { formatPhone } from '@/lib/phone';
 import { EmptyState } from '@/ui/EmptyState';
-import { GroupCard, ListRow, ToggleRow } from '@/ui/ListGroup';
+import { GroupCard, ToggleRow } from '@/ui/ListGroup';
 import { NavBar } from '@/ui/NavBar';
+import { Pill, type PillTone } from '@/ui/Pill';
 import { Scroller } from '@/ui/Scroller';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
-import { formatMoney } from './data';
+import { formatMoney, getCategories } from './data';
 import { intervalLabel, whenLabel, StandingOrderSheet } from './StandingOrderSheet';
-import { fetchStandingOrders, updateStandingOrder, type StandingOrder } from './bankingApi';
+import { fetchStandingOrders, updateStandingOrder, type StandingOrder, type StandingStatus } from './bankingApi';
+
+const STATUS: Record<StandingStatus, { tone: PillTone; label: () => string }> = {
+    ok:           { tone: 'green', label: () => t('banking.standingStatusPaid', 'Paid') },
+    insufficient: { tone: 'red',   label: () => t('banking.standingStatusShort', 'Short') },
+    failed:       { tone: 'red',   label: () => t('banking.standingStatusFailed', 'Failed') },
+};
+
+function untilLabel(seconds: number): string {
+    const left = Math.floor(seconds - Date.now() / 1000);
+    if (left <= 0) return t('banking.standingDueNow', 'due now');
+    const days  = Math.floor(left / 86400);
+    const hours = Math.floor((left % 86400) / 3600);
+    const mins  = Math.floor((left % 3600) / 60);
+    const parts = days > 0
+        ? [t('time.daysShort', '{n}d', { n: days }), hours > 0 ? t('time.hoursShort', '{n}h', { n: hours }) : '']
+        : hours > 0
+            ? [t('time.hoursShort', '{n}h', { n: hours }), mins > 0 ? t('time.minutesShort', '{n}m', { n: mins }) : '']
+            : [t('time.minutesShort', '{n}m', { n: Math.max(mins, 1) })];
+    return t('banking.standingIn', 'in {span}', { span: parts.filter(Boolean).join(' ') });
+}
+
+function OrderRow({ order, onPress }: { order: StandingOrder; onPress: () => void }) {
+    const { color } = getCategories().standing;
+    const status = order.lastStatus ? STATUS[order.lastStatus] : null;
+    const schedule = order.active
+        ? `${intervalLabel(order.interval)} · ${whenLabel(order.nextRun)}`
+        : `${intervalLabel(order.interval)} · ${t('banking.standingPausedRow', 'Paused')}`;
+
+    return (
+        <button
+            type="button"
+            onClick={onPress}
+            className="flex w-full items-center gap-3.5 px-4 py-[16px] text-left transition-colors active:bg-black/[0.06] dark:active:bg-white/[0.08]"
+        >
+            <div className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full" style={{ background: `${color}22`, color }}>
+                <Repeat className="h-[22px] w-[22px]" strokeWidth={2.2} />
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="truncate text-[18.5px] font-semibold leading-tight">{order.label}</div>
+                <div className="mt-1 truncate text-[16px]">{order.recipientName ?? formatPhone(order.recipient)}</div>
+                <div className="mt-0.5 text-[15px] leading-snug text-ios-gray">{schedule}</div>
+                {order.active && <div className="mt-0.5 truncate text-[15px] text-ios-gray">{untilLabel(order.nextRun)}</div>}
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <span className="text-[19px] font-semibold tabular-nums tracking-tight">{formatMoney(order.amount, { whole: true })}</span>
+                {status && <Pill tone={status.tone}>{status.label()}</Pill>}
+            </div>
+            <ChevronRight className="h-[20px] w-[20px] shrink-0 text-ios-gray/60" strokeWidth={2.2} />
+        </button>
+    );
+}
 
 export function StandingOrders({ onBack, onChanged }: { onBack: () => void; onChanged: () => void }) {
     const { goBack, pageStyle } = useIosPush(onBack);
@@ -80,18 +132,9 @@ export function StandingOrders({ onBack, onChanged }: { onBack: () => void; onCh
                     )
                 ) : (
                     orders.map(order => (
-                        <GroupCard key={order.id} className="mb-4" radius={14}>
-                            <ListRow
-                                label={order.label}
-                                sub={`${order.recipientName ?? formatPhone(order.recipient)} · ${intervalLabel(order.interval)}${order.active ? ` · ${whenLabel(order.nextRun)}` : ''}`}
-                                value={formatMoney(order.amount, { whole: true })}
-                                right={order.lastStatus && order.lastStatus !== 'ok'
-                                    ? <AlertCircle className="h-[18px] w-[18px] text-ios-red" strokeWidth={2.4} />
-                                    : undefined}
-                                chevron
-                                divider
-                                onPress={() => setEditing(order)}
-                            />
+                        <GroupCard key={order.id} className="mb-4" radius={16}>
+                            <OrderRow order={order} onPress={() => setEditing(order)} />
+                            <div className="h-[0.5px] bg-hairline/20" />
                             <ToggleRow
                                 label={t('banking.standingActiveRow', 'Active')}
                                 on={order.active}

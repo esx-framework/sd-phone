@@ -191,8 +191,8 @@ export function MatchChat({ match, onBack, onSend, onReact, onPayRequest, onUnma
                         const { lead, time } = fmtChatSeparator(item.ts);
                         return (
                             <div key={`sep-${i}`} className="flex justify-center pb-3 pt-4">
-                                <span className="text-[13px] tracking-wide text-black/40">
-                                    <span className="font-semibold text-black/55">{lead}</span> {time}
+                                <span className="text-[15px] font-medium tracking-wide text-black/75">
+                                    <span className="font-bold text-black/90">{lead}</span> {time}
                                 </span>
                             </div>
                         );

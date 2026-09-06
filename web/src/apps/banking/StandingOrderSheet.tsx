@@ -22,7 +22,7 @@ import {
 } from './bankingApi';
 
 const LABEL_MAX  = 40;
-const WHEEL_BAND = 40;
+const WHEEL_BAND = 48;
 const DAY_SPAN   = 60;
 
 export function intervalLabel(interval: StandingInterval): string {
@@ -304,16 +304,18 @@ function StartsSheet({ at, onPick, onClose }: {
                                 values={labels}
                                 index={dayIndex}
                                 onChange={setDayIndex}
-                                width={264}
+                                width={300}
                                 bandHeight={WHEEL_BAND}
-                                fontSize={20}
+                                fontSize={25}
                                 fontWeight={400}
                                 showBand={false}
                             />
                         </div>
                     </div>
 
-                    <TimeWheel value={time} onChange={setTime} open />
+                    <div className="mx-4 my-2 h-[0.5px] bg-hairline/25" />
+
+                    <TimeWheel value={time} onChange={setTime} open itemHeight={44} fontSize={28} columnWidth={74} />
                 </>
             )}
         </Sheet>

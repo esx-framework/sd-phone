@@ -49,6 +49,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
     const [openPost,    setOpenPost]    = useState<BirdyPost | null>(null);
     const [openConvoId, setOpenConvoId] = useSessionState<string | null>('birdy:openConvoId', null);
     const [openConvo,   setOpenConvo]   = useState<BirdyConversation | null>(null);
+    const [openStub,    setOpenStub]    = useState<BirdyConversation | null>(null);
     const [profileOpen,    setProfileOpen]    = useSessionState('birdy:profileOpen', false);
     const [profileTarget,  setProfileTarget]  = useSessionState<string | null>('birdy:profileTarget', null);
     const [postOverProfile, setPostOverProfile] = useSessionState('birdy:postOverProfile', false);
@@ -185,6 +186,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
         if (!r) return;
         setProfileOpen(false); setProfileTarget(null);
         setTab('messages');
+        setOpenStub({ id: r.id, user: r.user, updated: '', messages: [] });
         setOpenConvoId(r.id);
     }
 
@@ -321,7 +323,12 @@ export function Birdy({ onClose }: { onClose: () => void }) {
             : prev);
     }
 
-    const animateNav = useDidEnter(authed && (!openConvoId || !!openConvo));
+    const loadedConvo = openConvo && openConvo.id === openConvoId ? openConvo : null;
+    const shownConvo  = loadedConvo
+        ?? convos.find(c => c.id === openConvoId)
+        ?? (openStub && openStub.id === openConvoId ? openStub : null);
+
+    const animateNav = useDidEnter(authed && (!openConvoId || !!shownConvo));
 
     let content: React.ReactNode;
     if (tab === 'home') {
@@ -473,11 +480,12 @@ export function Birdy({ onClose }: { onClose: () => void }) {
             </nav>
 
             {tab === 'messages' && openConvoId && (
-                openConvo ? (
+                shownConvo ? (
                     <ChatView
-                        convo={openConvo}
+                        convo={shownConvo}
+                        loading={!loadedConvo}
                         onBack={() => setOpenConvoId(null)}
-                        onSend={d => sendMessage(openConvo.id, d)}
+                        onSend={d => sendMessage(shownConvo.id, d)}
                         onReact={reactToMessage}
                         onPayRequest={payRequest}
                         animateIn={animateNav}

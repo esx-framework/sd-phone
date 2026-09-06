@@ -42,8 +42,9 @@ const RECEIVED_BG   = PILL;
 const SURFACE       = BG;
 const ACTION_BAR_BG = CARD;
 
-export function ChatView({ convo, onBack, onSend, onReact, onPayRequest, animateIn = true }: {
+export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPayRequest, animateIn = true }: {
     convo:        BirdyConversation;
+    loading?:     boolean;
     onBack:       () => void;
     onSend:       (draft: MessageDraft) => void;
     onReact:      (messageId: string, emoji: string) => void;
@@ -194,20 +195,20 @@ export function ChatView({ convo, onBack, onSend, onReact, onPayRequest, animate
             </div>
 
             <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-4 py-2">
-                {messages.length === 0 ? (
+                {!loading && messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-8 pb-10 text-center">
                         <Avatar size={104} src={convo.user.avatar} />
                         <p className="mt-4 text-[21px] font-semibold text-label/85">{name}</p>
                         <p className="mt-1.5 text-[16px] font-medium leading-snug text-label/65">{t('squawk.sayHello', 'Say hello to @{handle}', { handle: convo.user.handle })}</p>
                     </div>
                 ) : null}
-                {items.map((item, i) => {
+                {(loading ? [] : items).map((item, i) => {
                     if (item.kind === 'separator') {
                         const { lead, time } = fmtChatSeparator(item.ts);
                         return (
                             <div key={`sep-${i}`} className="flex justify-center pb-3 pt-4">
-                                <span className="text-[13px] tracking-wide text-label/40">
-                                    <span className="font-semibold text-label/55">{lead}</span> {time}
+                                <span className="text-[15px] font-medium tracking-wide text-label/75">
+                                    <span className="font-bold text-label/90">{lead}</span> {time}
                                 </span>
                             </div>
                         );

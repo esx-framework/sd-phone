@@ -51,6 +51,20 @@ export function Messages({ onClose }: { onClose: () => void }) {
     const { contacts: liveCards, myNumber } = useContacts('contacts', 'myNumber');
     useEffect(() => { void useContactsStore.getState().load(); }, []);
 
+    const openIdRef = useRef(openId);
+    useEffect(() => { openIdRef.current = openId; }, [openId]);
+
+    const [hydratingId, setHydratingId] = useState<string | null>(null);
+    const hydrateThread = useCallback((id: string) => {
+        setHydratingId(id);
+        void loadThread(id).then(full => {
+            if (!full) return;
+            setConversations(prev => prev.map(c => (c.id === id
+                ? { ...c, messages: full.messages, participants: full.participants, unread: 0, partial: false }
+                : c)));
+        }).catch(() => null).finally(() => setHydratingId(prev => (prev === id ? null : prev)));
+    }, []);
+
     useEffect(() => {
         clearMessagesTarget();
         let active = true;
@@ -59,6 +73,9 @@ export function Messages({ onClose }: { onClose: () => void }) {
             cacheMessages(state);
             setConversations(state.conversations);
             setContacts(state.contacts);
+
+            const restored = openIdRef.current;
+            if (restored && state.conversations.some(c => c.id === restored)) hydrateThread(restored);
 
             if (!pending) return;
             const digits = pending.number.replace(/\D/g, '');
@@ -85,19 +102,7 @@ export function Messages({ onClose }: { onClose: () => void }) {
             setResolved(true);
         });
         return () => { active = false; };
-    }, []);
-
-    const openIdRef = useRef(openId);
-    useEffect(() => { openIdRef.current = openId; }, [openId]);
-
-    const hydrateThread = useCallback((id: string) => {
-        void loadThread(id).then(full => {
-            if (!full) return;
-            setConversations(prev => prev.map(c => (c.id === id
-                ? { ...c, messages: full.messages, participants: full.participants, unread: 0, partial: false }
-                : c)));
-        });
-    }, []);
+    }, [hydrateThread]);
 
     const deckActive = useDeckActive();
     const wasActive  = useRef(deckActive);
@@ -415,6 +420,7 @@ export function Messages({ onClose }: { onClose: () => void }) {
             {resolved && conv && (
                 <ChatView
                     conv={conv}
+                    loading={conv.partial === true && hydratingId === conv.id}
                     animateIn={animateNav}
                     totalUnread={totalUnread}
                     contacts={composeContacts}
