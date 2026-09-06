@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { HeartPulse, Trophy } from 'lucide-react';
+import { HeartPulse, Stethoscope, Trophy } from 'lucide-react';
 
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
@@ -93,10 +93,20 @@ export function Health({ onClose }: { onClose: () => void }) {
         <div className="absolute inset-0 z-10 flex flex-col bg-base text-black dark:text-white">
             <div className="shrink-0" style={{ height: SB_H }} />
 
-            <div className="shrink-0 px-5 pb-2 pt-1">
+            <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-1">
                 <h1 className="text-[34px] font-bold tracking-tight">
                     {tab === 'summary' ? t('health.title', 'Health') : t('health.board', 'Leaderboard')}
                 </h1>
+                {tab === 'summary' && (
+                    <button
+                        type="button"
+                        onClick={() => setMedicalOpen(true)}
+                        aria-label={t('medical.title', 'Medical ID')}
+                        className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-ios-red/15 text-ios-red active:opacity-60"
+                    >
+                        <Stethoscope className="h-[22px] w-[22px]" strokeWidth={2.3} />
+                    </button>
+                )}
             </div>
 
             <div className="no-scrollbar flex-1 overflow-y-auto">
@@ -109,7 +119,6 @@ export function Health({ onClose }: { onClose: () => void }) {
                             pendingActiveMs={activeMs}
                             hr={hr}
                             awakeMs={Math.max(0, now - (storeStart ?? fallbackStart))}
-                            onOpenMedicalId={() => setMedicalOpen(true)}
                         />
                     ) : (
                         <LeaderboardTab board={board} />

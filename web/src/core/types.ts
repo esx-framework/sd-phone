@@ -4,6 +4,7 @@ import type { BirdyMessage, BirdyPollCounts } from '@/apps/birdy/data';
 import type { CrashBust, CrashSettled, CrashSnapshot, CrashTick } from '@/apps/casino/crash/data';
 import type { HoldemHandEnd, HoldemStatePush } from '@/apps/casino/holdem/data';
 import type { DocFile } from '@/apps/documents/data';
+import type { MedicalId } from '@/apps/health/medicalApi';
 import type { BodycamRecording, Bulletin, Call, ChatMsg, Unit } from '@/apps/mdt/data';
 import type { DMsg as PhotogramDM, User as PhotogramUser } from '@/apps/photogram/data';
 import type {
@@ -382,6 +383,7 @@ export type NuiMessage =
     | { action: 'sd-phone:camera:faceCam';        data: { on: boolean } }
     | { action: 'sd-phone:photos:added';          data: { id: string; url: string; createdAt: string } }
     | { action: 'sd-phone:id:received';           data: ReceivedIdCard }
+    | { action: 'sd-phone:medical:scanned';       data: { record?: MedicalId } }
     | { action: 'sd-phone:photos:uploadFailed';   data: { code?: string } }
     | { action: 'sd-phone:groups:inviteReceived'; data: GroupInvitePush }
     | { action: 'sd-phone:groups:memberJoined';   data: GroupRosterPush }

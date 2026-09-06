@@ -12,7 +12,7 @@ import { Spinner } from '@/ui/Spinner';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 import { MedicalIdHeader } from './MedicalIdCard';
 import {
-    apiMedicalId, apiSaveMedicalId, MEDICAL_LIMITS,
+    apiMedicalId, apiSaveMedicalId, BLOOD_TYPES, MEDICAL_LIMITS,
     type MedicalField, type MedicalId, type MedicalPatch,
 } from './medicalApi';
 
@@ -31,6 +31,39 @@ const FIELD_HINTS: Record<MedicalField, () => string> = {
 };
 
 const FIELD_ORDER: MedicalField[] = ['allergies', 'conditions', 'medications', 'notes'];
+
+function BloodSheet({ value, onPick, onClose }: {
+    value:   string;
+    onPick:  (next: string) => void;
+    onClose: () => void;
+}) {
+    return (
+        <Sheet fit="content" className="bg-base" onClose={onClose}>
+            {({ close }) => (
+                <>
+                    <SheetHeader
+                        cancelLabel={t('common.cancel', 'Cancel')}
+                        onCancel={close}
+                        title={t('medical.bloodType', 'Blood Type')}
+                    />
+                    <div className="px-4 pb-5 pt-1">
+                        <ListGroup>
+                            {BLOOD_TYPES.map((type, i) => (
+                                <ListRow
+                                    key={type}
+                                    label={type}
+                                    selected={value === type}
+                                    divider={i < BLOOD_TYPES.length - 1}
+                                    onPress={() => { onPick(type); close(); }}
+                                />
+                            ))}
+                        </ListGroup>
+                    </div>
+                </>
+            )}
+        </Sheet>
+    );
+}
 
 function FieldSheet({ field, value, onSave, onClose }: {
     field:   MedicalField;
@@ -90,6 +123,7 @@ export function MedicalIdPage({ onBack }: { onBack: () => void }) {
     const [saved, setSaved]     = useState<MedicalId | null>(null);
     const [editing, setEditing] = useState<MedicalField | null>(null);
     const [picking, setPicking] = useState(false);
+    const [bloodOpen, setBloodOpen] = useState(false);
 
     const record = saved ?? data;
 
@@ -125,6 +159,13 @@ export function MedicalIdPage({ onBack }: { onBack: () => void }) {
 
                     <div className="mt-2 flex flex-col gap-6">
                         <ListGroup header={t('medical.medicalDetails', 'Medical Details')}>
+                            <ListRow
+                                label={t('medical.bloodType', 'Blood Type')}
+                                value={record.bloodType || t('medical.notSet', 'Not Set')}
+                                chevron
+                                divider
+                                onPress={() => setBloodOpen(true)}
+                            />
                             {FIELD_ORDER.map((field, i) => (
                                 <ListRow
                                     key={field}
@@ -180,6 +221,14 @@ export function MedicalIdPage({ onBack }: { onBack: () => void }) {
                     value={record[editing]}
                     onSave={next => patch({ [editing]: next })}
                     onClose={() => setEditing(null)}
+                />
+            )}
+
+            {bloodOpen && record && (
+                <BloodSheet
+                    value={record.bloodType}
+                    onPick={next => patch({ bloodType: next })}
+                    onClose={() => setBloodOpen(false)}
                 />
             )}
 

@@ -1,9 +1,14 @@
+---@type table Shared server helpers (server.util): ensureColumns.
+local util = require 'server.util'
+
 ---@type table Store module; the table returned at end of file.
 local store = {}
 
----Create the Medical ID table if it doesn't exist. Run once at boot. Blood type is deliberately
----absent: it belongs to the framework's own character record and is read live, so a card can never
----disagree with the record an EMS terminal reads.
+---Create the Medical ID table if it doesn't exist. Run once at boot. `blood_type` is what the
+---player picked for themselves and it is what the card shows; the framework's `metadata.bloodtype`
+---is only the starting value for someone who has never chosen. Blood type is a roleplay detail
+---rather than a system fact, and ESX has no such field at all, so leaving it to the framework left
+---whole servers reading Unknown with no way to fix it.
 function store.ensureSchema()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS phone_medical_id (
@@ -16,10 +21,14 @@ function store.ensureSchema()
             contact_name   VARCHAR(60)  NULL,
             contact_number VARCHAR(20)  NULL,
             show_on_lock   TINYINT(1)   NOT NULL DEFAULT 1,
+            blood_type     VARCHAR(3)   NULL,
             updated_at     INT          NULL,
             PRIMARY KEY (citizenid)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ]])
+
+    -- Existing installs predate the column, so it is back-filled rather than needing manual SQL.
+    util.ensureColumns('phone_medical_id', { blood_type = 'blood_type VARCHAR(3) NULL' })
 end
 
 ---A character's stored Medical ID row, or nil when they have never filled one in. Read-only.
@@ -28,7 +37,7 @@ end
 function store.get(cid)
     return MySQL.single.await([[
         SELECT citizenid, allergies, conditions, medications, notes, organ_donor,
-               contact_name, contact_number, show_on_lock, updated_at
+               contact_name, contact_number, show_on_lock, blood_type, updated_at
         FROM phone_medical_id WHERE citizenid = ?
     ]], { cid })
 end
@@ -42,8 +51,8 @@ function store.upsert(cid, row, updatedAt)
     MySQL.query.await([[
         INSERT INTO phone_medical_id
             (citizenid, allergies, conditions, medications, notes, organ_donor,
-             contact_name, contact_number, show_on_lock, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             contact_name, contact_number, show_on_lock, blood_type, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             allergies      = VALUES(allergies),
             conditions     = VALUES(conditions),
@@ -53,11 +62,12 @@ function store.upsert(cid, row, updatedAt)
             contact_name   = VALUES(contact_name),
             contact_number = VALUES(contact_number),
             show_on_lock   = VALUES(show_on_lock),
+            blood_type     = VALUES(blood_type),
             updated_at     = VALUES(updated_at)
     ]], {
         cid, row.allergies, row.conditions, row.medications, row.notes,
         row.organDonor and 1 or 0, row.contactName, row.contactNumber,
-        row.showOnLock and 1 or 0, updatedAt,
+        row.showOnLock and 1 or 0, row.bloodType, updatedAt,
     })
 end
 

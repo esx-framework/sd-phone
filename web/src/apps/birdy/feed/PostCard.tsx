@@ -78,9 +78,9 @@ export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, on
                     </p>
                 )}
 
-                {post.poll && <PollBlock postId={post.id} poll={post.poll} onVoted={onPollVoted} />}
-
                 <PostImages images={post.images} />
+
+                {post.poll && <PollBlock postId={post.id} poll={post.poll} onVoted={onPollVoted} />}
 
                 <div className="mt-4 flex max-w-[21rem] items-center justify-between">
                     <ActionButton

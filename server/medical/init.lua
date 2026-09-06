@@ -29,6 +29,7 @@ end
 register('get',    function(src) return actions.get(src) end)
 register('set',    function(src, payload) return actions.set(src, payload) end)
 register('lookup', function(src, payload) return actions.lookup(src, payload) end)
+register('scan',   function(src, payload) return actions.scan(src, payload) end)
 
 ---Public export: exports['sd-phone']:getMedicalId(citizenid). Returns the merged card an EMS
 ---script would put on a patient's chart: name, date of birth and blood type from the framework's

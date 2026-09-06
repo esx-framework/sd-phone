@@ -21,8 +21,10 @@ export type MedicalField = 'allergies' | 'conditions' | 'medications' | 'notes';
 
 export type MedicalPatch = Partial<Pick<
     MedicalId,
-    MedicalField | 'organDonor' | 'contactName' | 'contactNumber' | 'showOnLock'
+    MedicalField | 'bloodType' | 'organDonor' | 'contactName' | 'contactNumber' | 'showOnLock'
 >>;
+
+export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 
 export const MEDICAL_LIMITS: Record<MedicalField | 'contactName' | 'contactNumber', number> = {
     allergies:     200,

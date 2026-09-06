@@ -3,6 +3,7 @@ import { Phone, Trash2, Voicemail as VoicemailIcon } from 'lucide-react';
 import clsx from 'clsx';
 
 import { AlertDialog } from '@/ui/AlertDialog';
+import { ContactAvatar, PlaceholderAvatar } from '@/shared/ContactAvatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { AudioTransport } from '@/shared/audio/AudioTransport';
 import { useNuiEvent } from '@/hooks/useNuiEvent';
@@ -97,7 +98,7 @@ export function VoicemailTab({ contacts, onRequestCall }: {
                             subtitle={t('phone.noVoicemailBody', 'Messages left when you miss a call are kept here.')}
                         />
                     ) : (
-                        <div className="overflow-hidden rounded-[10px] bg-surface">
+                        <div className="overflow-hidden rounded-[12px] bg-surface">
                             {items.map((vm, i) => (
                                 <div key={vm.id}>
                                     {i > 0 && (
@@ -106,6 +107,7 @@ export function VoicemailTab({ contacts, onRequestCall }: {
                                     <Row
                                         vm={vm}
                                         title={titleOf(vm)}
+                                        contact={byNumber.get(digits(vm.number)) ?? null}
                                         open={openId === vm.id}
                                         onToggle={() => setOpenId(prev => (prev === vm.id ? null : vm.id))}
                                         onCallBack={() => onRequestCall({ number: vm.number, name: byNumber.get(digits(vm.number))?.name ?? vm.name ?? undefined })}
@@ -134,9 +136,10 @@ export function VoicemailTab({ contacts, onRequestCall }: {
     );
 }
 
-function Row({ vm, title, open, onToggle, onCallBack, onRequestDelete }: {
+function Row({ vm, title, contact, open, onToggle, onCallBack, onRequestDelete }: {
     vm:              Voicemail;
     title:           string;
+    contact:         Contact | null;
     open:            boolean;
     onToggle:        () => void;
     onCallBack:      () => void;
@@ -152,19 +155,24 @@ function Row({ vm, title, open, onToggle, onCallBack, onRequestDelete }: {
 
     return (
         <div>
-            <button type="button" onClick={onToggle} className="flex w-full items-center gap-3 px-3.5 py-3.5 text-left active:opacity-60">
-                <span className="flex h-[10px] w-[10px] shrink-0 items-center justify-center">
-                    {!vm.listened && <span className="h-[10px] w-[10px] rounded-full bg-ios-blue" />}
-                </span>
+            <button type="button" onClick={onToggle} className="relative flex w-full items-center gap-3.5 px-4 py-[18px] text-left active:opacity-60">
+                {!vm.listened && (
+                    <span className="absolute left-[5px] top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full bg-ios-blue" />
+                )}
+                {contact
+                    ? <ContactAvatar contact={contact} size={52} />
+                    : vm.number
+                        ? <ContactAvatar contact={{ id: vm.number, name: title, initials: '', color: '#8e8e93' }} size={52} />
+                        : <PlaceholderAvatar size={52} />}
                 <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-[17px] text-black dark:text-white ${vm.listened ? '' : 'font-semibold'}`}>
+                    <span className={`block truncate text-[19px] text-black dark:text-white ${vm.listened ? '' : 'font-semibold'}`}>
                         {title}
                     </span>
-                    <span className="block text-[15px] text-black/50 dark:text-white/50">
+                    <span className="mt-0.5 block text-[16px] text-black/50 dark:text-white/50">
                         {formatDuration(vm.duration)}
                     </span>
                 </span>
-                <span className="shrink-0 text-[15px] text-black/50 dark:text-white/50">{when(vm.date)}</span>
+                <span className="shrink-0 text-[16px] text-black/50 dark:text-white/50">{when(vm.date)}</span>
             </button>
 
             <div
@@ -174,7 +182,7 @@ function Row({ vm, title, open, onToggle, onCallBack, onRequestDelete }: {
                 )}
             >
                 <div className="overflow-hidden">
-                    <div className="px-4 pb-4">
+                    <div className="px-4 pb-5">
                         <AudioTransport
                             src={vm.url}
                             armed={armed}
@@ -189,7 +197,7 @@ function Row({ vm, title, open, onToggle, onCallBack, onRequestDelete }: {
                                         aria-label={t('phone.callBack', 'Call Back')}
                                         className="shrink-0 p-1 text-ios-blue active:opacity-60 disabled:opacity-35"
                                     >
-                                        <Phone className="h-[17px] w-[17px]" strokeWidth={2} />
+                                        <Phone className="h-[19px] w-[19px]" strokeWidth={2} />
                                     </button>
                                     <button
                                         type="button"
@@ -197,7 +205,7 @@ function Row({ vm, title, open, onToggle, onCallBack, onRequestDelete }: {
                                         aria-label={t('phone.deleteVoicemail', 'Delete voicemail')}
                                         className="shrink-0 p-1 text-ios-red active:opacity-60"
                                     >
-                                        <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} />
+                                        <Trash2 className="h-[20px] w-[20px]" strokeWidth={2} />
                                     </button>
                                 </>
                             }

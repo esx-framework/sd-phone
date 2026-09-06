@@ -657,7 +657,6 @@ function actions.create(source, payload)
     local images = sanitizeImages(payload and payload.images)
     local poll, pollRefusal = sanitizePoll(payload and payload.poll)
     if pollRefusal then return pollRefusal end
-    if poll and images then return fail('birdy.pollNoMedia', 'A poll cannot also carry media') end
     if poll and body == '' then return fail('birdy.pollNeedsQuestion', 'A poll needs a question') end
     if body == '' and not images then return fail('birdy.postCannotEmpty', 'Post cannot be empty') end
     if #body > birdyCfg.MaxPostLength then return fail('birdy.postTooLong', 'Post is too long') end

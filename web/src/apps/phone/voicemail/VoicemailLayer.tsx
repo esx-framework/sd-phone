@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Voicemail as VoicemailIcon, X } from 'lucide-react';
+import { Voicemail as VoicemailIcon, X } from 'lucide-react';
 
 import { CircularProgress } from '@/ui/CircularProgress';
 import { Spinner } from '@/ui/Spinner';
@@ -13,6 +13,8 @@ import { t } from '@/i18n';
 import { leaveVoicemail, uploadVoicemail, voicemailEnabled, VOICEMAIL_MAX_SECONDS } from '../voicemailApi';
 
 const OFFER_MS = 5000;
+const EXIT_MS = 320;
+const SENT_HOLD_MS = 1250;
 
 type Stage = 'offer' | 'record' | 'sending' | 'sent' | 'error';
 
@@ -31,12 +33,24 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
     const [failure, setFailure] = useState<string | null>(null);
     const [allowed, setAllowed] = useState<boolean | null>(null);
 
-    const close = useCallback(() => useCallStore.getState().clearVoicemailOffer(), []);
+    const [leaving, setLeaving] = useState(false);
+    const closing = useRef(false);
+
+    const closeNow = useCallback(() => useCallStore.getState().clearVoicemailOffer(), []);
+
+    const close = useCallback(() => {
+        if (closing.current) return;
+        closing.current = true;
+        setLeaving(true);
+        window.setTimeout(closeNow, EXIT_MS);
+    }, [closeNow]);
 
     useEffect(() => { void voicemailEnabled().then(setAllowed); }, []);
 
     useEffect(() => {
         if (!offer) return;
+        closing.current = false;
+        setLeaving(false);
         setStage('offer');
         setLeft(OFFER_MS);
         setFailure(null);
@@ -44,7 +58,7 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
 
     useEffect(() => {
         if (!offer || stage !== 'offer' || allowed === null) return;
-        if (allowed === false) { close(); return; }
+        if (allowed === false) { closeNow(); return; }
         const started = Date.now();
         const id = window.setInterval(() => {
             const remaining = OFFER_MS - (Date.now() - started);
@@ -52,11 +66,11 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
             if (remaining <= 0) close();
         }, 100);
         return () => window.clearInterval(id);
-    }, [offer, stage, allowed, close]);
+    }, [offer, stage, allowed, close, closeNow]);
 
     useEffect(() => {
         if (stage !== 'sent') return;
-        const id = window.setTimeout(close, 1500);
+        const id = window.setTimeout(close, SENT_HOLD_MS);
         return () => window.clearTimeout(id);
     }, [stage, close]);
 
@@ -100,7 +114,20 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
     const remaining = Math.max(0, VOICEMAIL_MAX_SECONDS - seconds);
 
     return (
-        <div className="absolute inset-0 z-[60] overflow-hidden font-sf">
+        <div
+            className="absolute inset-0 z-[60] overflow-hidden font-sf"
+            style={{ animation: leaving ? `vm-out ${EXIT_MS}ms cubic-bezier(0.32,0,0.68,1) forwards` : undefined }}
+        >
+            <style>{`
+                @keyframes vm-out { to { opacity: 0; transform: scale(0.97); } }
+                @keyframes vm-pop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+                @keyframes vm-halo { 0% { transform: scale(0.55); opacity: 0.5; } 100% { transform: scale(1.75); opacity: 0; } }
+                @keyframes vm-tick { to { stroke-dashoffset: 0; } }
+                @keyframes vm-rise { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+                @media (prefers-reduced-motion: reduce) {
+                    .vm-anim, .vm-anim * { animation: none !important; }
+                }
+            `}</style>
             <div
                 className="absolute inset-0"
                 style={{
@@ -184,8 +211,30 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
                     {stage === 'sending' && <Spinner />}
 
                     {stage === 'sent' && (
-                        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-ios-green">
-                            <Check className="h-[36px] w-[36px] text-white" strokeWidth={3} />
+                        <span className="vm-anim relative flex h-[88px] w-[88px] items-center justify-center">
+                            <span
+                                className="absolute h-[80px] w-[80px] rounded-full bg-ios-green"
+                                style={{ animation: 'vm-halo 0.68s cubic-bezier(0.22,1,0.36,1) forwards' }}
+                            />
+                            <span
+                                className="relative flex h-[80px] w-[80px] items-center justify-center rounded-full bg-ios-green"
+                                style={{
+                                    animation: 'vm-pop 0.44s cubic-bezier(0.34,1.56,0.64,1) both',
+                                    boxShadow: '0 10px 30px rgba(48,209,88,0.35)',
+                                }}
+                            >
+                                <svg viewBox="0 0 52 52" className="h-[42px] w-[42px]" aria-hidden="true">
+                                    <path
+                                        d="M14 27.5 L22.5 36 L38 18.5"
+                                        fill="none"
+                                        stroke="#ffffff"
+                                        strokeWidth="5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        style={{ strokeDasharray: 44, strokeDashoffset: 44, animation: 'vm-tick 0.36s 0.18s cubic-bezier(0.65,0,0.35,1) forwards' }}
+                                    />
+                                </svg>
+                            </span>
                         </span>
                     )}
 

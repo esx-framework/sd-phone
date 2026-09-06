@@ -15,6 +15,7 @@ import { NotificationHost, type NotificationItem } from '@/shell/Notifications';
 import { AirShareCard, type AirShareRequest } from '@/shared/AirShare';
 import { SignRequestLayer, type SignRequestData } from '@/apps/documents/SignRequestLayer';
 import { ReceivedIdLayer } from '@/shell/ReceivedIdLayer';
+import { ScannedMedicalLayer } from '@/shell/ScannedMedicalLayer';
 import { useIdStore } from '@/stores/idStore';
 import { ControlCenter, ControlCenterHotzone } from '@/shell/ControlCenter';
 import { NotificationCenter, NotificationCenterHotzone } from '@/shell/NotificationCenter';
@@ -1764,6 +1765,8 @@ function AppContent() {
                 {shownIdCard && (
                     <ReceivedIdLayer key={shownIdCard.id} shown={shownIdCard} onDone={markIdSeen} />
                 )}
+
+                <ScannedMedicalLayer />
 
                 {!showSetup && (
                     <>

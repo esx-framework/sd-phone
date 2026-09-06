@@ -49,6 +49,7 @@ local config = {
     Music       = require 'configs.music',          -- which URL sources the Music library accepts
     WeazelNews  = require 'configs.weazelnews',     -- broadcast network: staff-published articles + breaking ticker
     Streaks     = require 'configs.streaks',        -- photo-a-day streaks: milestone cash + global gallery
+    Medical     = require 'configs.medical',      -- Medical ID: who may scan another player's card in the field
     Mdt         = require 'configs.mdt',            -- police terminal: departments, permission grades, jail + dispatch limits
     Racing      = require 'configs.racing',         -- Racing: tracks, races, MMR, the gate creator
     Migrate     = require 'configs.migrate',         -- one-time lb-phone -> sd-phone data import
