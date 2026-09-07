@@ -10,7 +10,7 @@ import {
     adminMessages, adminBirdyDeletePost, adminOverview, adminResetAccountPassword,
     adminResetPasscode, adminSetApp, adminSetNumber, adminUnmute, adminWipePhone,
 } from '../adminApi';
-import { acceptedNumberLengths } from '@/lib/phone';
+import { acceptedNumberLengths, numberLengthsText } from '@/lib/phone';
 import {
     fmtPhone, fmtTime, scopeLabel,
     type AdminBirdyPost, type AdminBirdyProfile, type AdminCall, type AdminMessage, type AdminMute, type AdminOverview,
@@ -52,13 +52,9 @@ export function PlayerDetail({ cid, onBack, toast, onOpenGallery }: {
     const [tab, setTab] = useState<Tab>('overview');
     const [modal, setModal] = useState<null | 'number' | 'wipe' | { password: { id: number; label: string } }>(null);
 
-    // Whatever lengths this server recognises, not a hardcoded 10, so the prompt still matches
-    // after config.Phone.Number.Length changes (and keeps accepting the previous length).
     const acceptedLengths = acceptedNumberLengths();
     const longestLength = acceptedLengths[acceptedLengths.length - 1];
-    const numberLengthLabel = acceptedLengths.length === 1
-        ? `${acceptedLengths[0]}-digit`
-        : `${acceptedLengths.slice(0, -1).join(', ')} or ${longestLength}-digit`;
+    const numberLengthLabel = `${numberLengthsText()}-digit`;
     const numberPlaceholder = '2085551234567890'.slice(0, longestLength);
 
     const reload = useCallback(() => {

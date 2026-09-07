@@ -723,8 +723,10 @@ exports('isNumberAvailable', function(number)
 end)
 
 ---Server export: assign a specific number to the SIM in a player's ACTIVE phone, keeping its
----identity/data. This is the hook for server-owned "buy a custom number" implementations.
----Returns false with 'invalid' | 'no_sim' | 'taken' on failure.
+---identity/data. This is the hook for server-owned "buy a custom number" implementations. The
+---number must be a length the server accepts (config.Phone.Number: Length, a Formats length, or
+---the Custom range) and cannot start with 0. Returns false with 'invalid' | 'reserved' |
+---'no_sim' | 'taken' on failure; 'reserved' is a company or emergency line.
 ---@param source number player server id
 ---@param number string requested phone number (digits kept)
 ---@return boolean ok
@@ -733,7 +735,9 @@ exports('setSimNumber', function(source, number)
     if not state.active then return false, 'invalid' end
     if type(source) ~= 'number' or not GetPlayerName(source) then return false, 'invalid' end
     local digits = util.digits(number)
-    if #digits < 3 or #digits > 15 then return false, 'invalid' end
+    local why = util.numberAssignError(digits)
+    if why == 'reserved' then return false, 'reserved' end
+    if why then return false, 'invalid' end
 
     session.invalidate(source)
     local s = session.resolve(source)

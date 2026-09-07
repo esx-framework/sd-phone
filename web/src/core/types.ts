@@ -36,6 +36,7 @@ export interface OpenPayload {
     number?: {
         formats?: Record<string, string>;
         length?: number;
+        custom?: { min: number; max: number };
     };
     bootScreen?: boolean;
     casino?: {

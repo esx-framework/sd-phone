@@ -231,10 +231,11 @@ function actions.overview(source, payload)
     return ok(data)
 end
 
----Reassigns a player's phone number. The number must be 10 digits and not owned by anyone
----else. Under unique phones the number lives on a SIM, so this renames the SIM in the
----player's ACTIVE phone (they must be online carrying it) - the classic tool for giving a
----player their lost number back.
+---Reassigns a player's phone number. The number must be a length this server accepts (the
+---generated one, a formatted one, or the config.Phone.Number.Custom range for short premium
+---numbers) and not owned by anyone else. Under unique phones the number lives on a SIM, so this
+---renames the SIM in the player's ACTIVE phone (they must be online carrying it) - the classic
+---tool for giving a player their lost number back.
 ---@param source number admin player server id
 ---@param payload { cid?: string, number?: string }|nil
 ---@return table envelope { number }
@@ -242,10 +243,13 @@ function actions.setNumber(source, payload)
     local cid = cleanCid(payload and payload.cid)
     if not cid then return fail('admin.missingPlayer', 'Missing player') end
     local digits = util.digits(payload and payload.number)
-    -- Any length this server recognises, not just the one it generates, so a number issued
-    -- before config.Phone.Number.Length changed can still be corrected.
-    if not util.validNumberLength(digits) then
-        return fail('admin.phoneNumbersDigits', 'Phone numbers are {lengths} digits', { lengths = table.concat(util.numberLengths, ' or ') })
+    local why = util.numberAssignError(digits)
+    if why == 'length' then
+        return fail('admin.phoneNumbersDigits', 'Phone numbers are {lengths} digits', { lengths = util.numberLengthsText() })
+    elseif why == 'zero' then
+        return fail('admin.phoneNumberLeadingZero', 'Phone numbers cannot start with 0')
+    elseif why == 'reserved' then
+        return fail('admin.numberIsCompanyLine', 'That number is a company or emergency line')
     end
 
     if simState.active then

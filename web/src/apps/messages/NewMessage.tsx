@@ -4,6 +4,7 @@ import { ArrowUp, X } from 'lucide-react';
 import { ContactAvatar } from '@/shared/ContactAvatar';
 import { clearSessionState, useSessionState } from '@/hooks/useSessionState';
 import { contactFromNumber } from '@/shared/chat/messagesApi';
+import { minTypedNumberLength } from '@/lib/phone';
 import { useMaskedPhone } from '@/stores/themeStore';
 import type { Contact } from '@/shared/chat/data';
 import { t } from '@/i18n';
@@ -48,7 +49,7 @@ export function NewMessage({ contacts, myNumber, onCancel, onSend }: NewMessageP
     }, [contacts, query, selectedIds, myNumber]);
 
     const rawNumber = digitsOf(query);
-    const showRaw = rawNumber.length >= 3 && !contacts.some(c => digitsOf(c.phone ?? '') === rawNumber);
+    const showRaw = rawNumber.length >= minTypedNumberLength() && !contacts.some(c => digitsOf(c.phone ?? '') === rawNumber);
 
     function addRecipient(c: Contact) {
         setSelected(prev => (prev.some(x => x.id === c.id) ? prev : [...prev, c]));

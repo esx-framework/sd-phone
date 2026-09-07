@@ -480,7 +480,7 @@ function AppContent() {
         registerRuntimeLocales(data.locales);
         if (data.locale) useLocaleStore.getState().applyServerDefault(data.locale);   // server default, unless the player already picked their own
         if (data.mailDomain) setMailDomain(data.mailDomain);
-        if (data.number) setNumberFormat(data.number.formats, data.number.length);
+        if (data.number) setNumberFormat(data.number.formats, data.number.length, data.number.custom);
         setMusicSources(data.music);
         setCasinoGames(data.casino?.games);
         setBootScreenEnabled(data.bootScreen !== false);

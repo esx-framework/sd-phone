@@ -15,6 +15,7 @@ import { ImageLightbox } from '@/ui/ImageLightbox';
 import { PhotosIcon } from '@/shell/AppIconSVG';
 import { mapsConfig } from '@/apps/maps/config';
 import { decodeWaypoint, encodeWaypoint } from '@/lib/waypointCode';
+import { isServiceShortCode } from '@/lib/phone';
 import { dialCall } from '@/apps/phone/callsApi';
 import { fmtChatSeparator, type Contact, type Conversation, type Message } from './data';
 import { takeSharedMessages } from './sharedInbox';
@@ -241,15 +242,11 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
 
     const name = conv.groupName ?? conv.participants[0]?.name ?? t('messages.unknown', 'Unknown');
 
-    // For a 1:1 thread with a number that isn't saved yet, offer to add it as a contact.
-    // Service short codes (5-digit app senders, password resets) aren't people: real player
-    // numbers are 10 digits (7+ on servers with imported numbers), so shorter senders hide it.
     const soloNumber = !conv.groupName
         ? (conv.participants[0]?.phone ?? conv.participants[0]?.id ?? '').replace(/\D/g, '')
         : '';
     const isKnownNumber = !soloNumber || contacts.some(c => (c.phone ?? '').replace(/\D/g, '') === soloNumber);
-    const isServiceNumber = soloNumber.length > 0 && soloNumber.length < 7;
-    const canAddContact = !!onSaveContact && !!soloNumber && !isServiceNumber && !isKnownNumber;
+    const canAddContact = !!onSaveContact && !!soloNumber && !isServiceShortCode(soloNumber) && !isKnownNumber;
 
     interface RenderMsg { kind: 'msg'; msg: Message; isLast: boolean; contact?: Contact }
     interface RenderSep { kind: 'separator'; ts: number }

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ChevronRight, Radar, Search } from 'lucide-react';
 
 import { adminSearch, adminSimLookup } from '../adminApi';
+import { minTypedNumberLength } from '@/lib/phone';
 import { fmtPhone, type AdminPlayerHit, type AdminSimLookup } from '../types';
 import { Badge, Btn, Card, CenterNote, ConfirmModal, Input, LoadMore, OnlineDot, PromptModal, Spinner } from '../ui';
 import { usePaged } from '../usePaged';
@@ -100,7 +101,7 @@ export function PlayersPage({ initialQuery, onOpenPlayer }: {
                     placeholder="e.g. 2085551234"
                     mono
                     submitLabel="Trace"
-                    validate={v => v.replace(/\D/g, '').length >= 3 ? null : 'Enter a phone number'}
+                    validate={v => v.replace(/\D/g, '').length >= minTypedNumberLength() ? null : 'Enter a phone number'}
                     onSubmit={async v => {
                         const res = await adminSimLookup(v);
                         setTrace(res.success && res.data

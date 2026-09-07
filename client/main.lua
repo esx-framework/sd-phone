@@ -59,7 +59,7 @@ end
 -- Number display config for the NUI. Format keys are stringified deliberately: a Lua table whose
 -- integer keys run contiguously from 1 encodes as a JSON ARRAY, which would land in the UI
 -- off-by-one, so this guarantees an object either way.
----@type { formats: table<string, string>, length: integer }
+---@type { formats: table<string, string>, length: integer, custom?: { min: integer, max: integer } }
 local NUMBER_FORMAT = {}
 do
     local cfg = type(config.Phone.Number) == 'table' and config.Phone.Number or {}
@@ -68,6 +68,13 @@ do
         if type(pattern) == 'string' and pattern ~= '' then formats[tostring(length)] = pattern end
     end
     NUMBER_FORMAT = { formats = formats, length = math.floor(tonumber(cfg.Length) or 10) }
+    -- The hand-assigned range, held to the same 2..15 rule as server.util so the admin panel and
+    -- the server refuse the same lengths; a bad range is dropped here as it is there.
+    if type(cfg.Custom) == 'table' then
+        local min = math.floor(tonumber(cfg.Custom.MinLength) or 0)
+        local max = math.floor(tonumber(cfg.Custom.MaxLength) or 0)
+        if min >= 2 and max <= 15 and min <= max then NUMBER_FORMAT.custom = { min = min, max = max } end
+    end
 end
 
 -- Which URL sources the Music library accepts (configs/music.lua). Blanket YouTube is opt-in, so

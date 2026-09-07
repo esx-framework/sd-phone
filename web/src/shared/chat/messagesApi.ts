@@ -2,6 +2,7 @@
 import { fetchNui, isFiveM } from '@/core/nui';
 import { colorFor, digits, initialsFor } from '@/lib/format';
 import { formatPhone } from '@/apps/phone/data';
+import { isServiceShortCode } from '@/lib/phone';
 import { CONTACTS, CONVERSATIONS, ME, type Contact, type Conversation, type Message, type Reaction } from './data';
 import { apiCall, apiData } from '@/core/api';
 
@@ -43,7 +44,7 @@ export function resolveConvParticipant(conv: Conversation, cardByNumber: Map<str
     const key = digits(p?.phone ?? p?.id ?? conv.id ?? '');
     if (!key) return conv;
 
-    const resolved = cardByNumber.get(key) ?? (key.length >= 7 ? contactFromNumber(key) : undefined);
+    const resolved = cardByNumber.get(key) ?? (isServiceShortCode(key) ? undefined : contactFromNumber(key));
     if (!resolved) return conv;
     if (p && p.name === resolved.name && p.avatar === resolved.avatar
         && p.color === resolved.color && p.initials === resolved.initials) {

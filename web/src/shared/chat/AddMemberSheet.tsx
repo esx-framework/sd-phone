@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { ContactAvatar } from '@/shared/ContactAvatar';
 import { Sheet } from '@/ui/Sheet';
 import { contactFromNumber } from './messagesApi';
+import { minTypedNumberLength } from '@/lib/phone';
 import { useMaskedPhone } from '@/stores/themeStore';
 import type { Contact } from './data';
 import { t } from '@/i18n';
@@ -54,7 +55,7 @@ export function AddMemberSheet({ groupName, contacts, existing, myNumber, onCanc
     }, [contacts, query, selectedIds, excluded]);
 
     const rawNumber = digitsOf(query);
-    const showRaw = rawNumber.length >= 3
+    const showRaw = rawNumber.length >= minTypedNumberLength()
         && !contacts.some(c => digitsOf(c.phone ?? '') === rawNumber)
         && !excluded.has(rawNumber)
         && !selectedIds.has(rawNumber);

@@ -75,6 +75,19 @@ return {
             -- renders 12075550123 as +1 (207) 555-0123.
             -- [11] = '+X (XXX) XXX-XXXX',
         },
+
+        -- Custom numbers handed out by hand: phoneadmin's "Change phone number"
+        -- and the setSimNumber export (the hook for a paid "vanity number"
+        -- script). Those normally accept only Length and the Formats lengths
+        -- above, which catches an admin typo. This range accepts every digit
+        -- count inside it as well, so a premium player can be given a 2 or 3
+        -- digit number while everyone else keeps getting Length digits.
+        --
+        -- Generated numbers never use it. It must sit inside 2 to 15, a custom
+        -- number cannot start with 0, and a company or emergency line (911) is
+        -- refused because the dialler resolves those ahead of player numbers.
+        -- Set it to nil to accept only the lengths above.
+        Custom = { MinLength = 2, MaxLength = 3 },
     },
 
     -- Default keybind to open / close the phone. Players can rebind

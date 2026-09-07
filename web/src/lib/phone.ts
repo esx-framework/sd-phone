@@ -9,10 +9,15 @@ let FORMATS: Record<number, string> = { 10: '(XXX) XXX-XXXX' };
 /** Digit count a newly generated number has, mirroring config.Phone.Number.Length. */
 let LENGTH = 10;
 
+interface CustomNumberRange { min: number; max: number }
+
+let CUSTOM: CustomNumberRange | null = null;
+
 /** Applied from the `sd-phone:open` payload so the UI matches the server's configuration. */
-export function setNumberFormat(formats?: Record<number, string>, length?: number): void {
+export function setNumberFormat(formats?: Record<number, string>, length?: number, custom?: CustomNumberRange | null): void {
     if (formats && Object.keys(formats).length > 0) FORMATS = formats;
     if (length && length > 0) LENGTH = length;
+    CUSTOM = custom && custom.min >= 2 && custom.max <= 15 && custom.min <= custom.max ? { ...custom } : null;
 }
 
 /**
@@ -25,7 +30,26 @@ export function acceptedNumberLengths(): number[] {
         const n = Number(key);
         if (Number.isFinite(n) && n > 0) lengths.add(n);
     }
+    if (CUSTOM) for (let n = CUSTOM.min; n <= CUSTOM.max; n++) lengths.add(n);
     return [...lengths].sort((a, b) => a - b);
+}
+
+export function numberLengthsText(): string {
+    const parts: string[] = [];
+    if (CUSTOM) parts.push(CUSTOM.min === CUSTOM.max ? `${CUSTOM.min}` : `${CUSTOM.min} to ${CUSTOM.max}`);
+    for (const n of acceptedNumberLengths()) {
+        if (!CUSTOM || n < CUSTOM.min || n > CUSTOM.max) parts.push(`${n}`);
+    }
+    return parts.join(' or ');
+}
+
+export function minTypedNumberLength(): number {
+    return Math.min(3, acceptedNumberLengths()[0]);
+}
+
+export function isServiceShortCode(value: string): boolean {
+    const d = digits(value);
+    return d.length > 0 && d.length < 7 && !acceptedNumberLengths().includes(d.length);
 }
 
 /** Fills `pattern`'s X placeholders from `d`, printing every other character literally. */

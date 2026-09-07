@@ -200,14 +200,64 @@ util.numberLengths = (function()
     return out
 end)()
 
----True when `digits` is a length this server accepts.
+---@type { min: integer, max: integer }|nil Digit counts a hand-assigned number may ALSO have, from
+---config.Phone.Number.Custom. Generated numbers never use it; it only widens what phoneadmin and
+---the setSimNumber export accept, so a premium player can be handed a 2 or 3 digit number. Held
+---to 2..15 (a single digit collides with keypad shortcuts, 15 is the storage bound); a range that
+---breaks that or runs backwards is dropped with the reason printed on boot, like a bad Prefix.
+util.customNumberRange = (function()
+    local raw = NUMBER.Custom
+    if type(raw) ~= 'table' then return nil end
+    local min = math.floor(tonumber(raw.MinLength) or 0)
+    local max = math.floor(tonumber(raw.MaxLength) or 0)
+    if min < 2 or max > 15 or min > max then
+        print(('^3[sd-phone]^0 Number.Custom { MinLength = %s, MaxLength = %s } ignored: it must sit inside 2 to 15 with MinLength <= MaxLength.'):format(tostring(raw.MinLength), tostring(raw.MaxLength)))
+        return nil
+    end
+    return { min = min, max = max }
+end)()
+
+---True when `digits` is a length this server accepts: one it generates or formats, or one inside
+---the custom range.
 ---@param digits string bare digits
 ---@return boolean
 function util.validNumberLength(digits)
     for _, n in ipairs(util.numberLengths) do
         if #digits == n then return true end
     end
-    return false
+    local custom = util.customNumberRange
+    return custom ~= nil and #digits >= custom.min and #digits <= custom.max
+end
+
+---The accepted digit counts as prose for an error message: "10", "7 or 10", "2 to 3 or 10".
+---@return string
+function util.numberLengthsText()
+    local parts = {}
+    local custom = util.customNumberRange
+    if custom then
+        parts[1] = custom.min == custom.max and tostring(custom.min) or ('%d to %d'):format(custom.min, custom.max)
+    end
+    for _, n in ipairs(util.numberLengths) do
+        if not (custom and n >= custom.min and n <= custom.max) then parts[#parts + 1] = tostring(n) end
+    end
+    return table.concat(parts, ' or ')
+end
+
+---Why `digits` cannot be handed to a player as their number, nil when it can. Shared by
+---phoneadmin's number change and the setSimNumber export so both refuse the same shapes: a
+---length this server does not accept, a leading zero (lost the first time the number passes
+---through tonumber, which turns 077 into 77 and then into someone else's number), and a company
+---or emergency line, which the dialler resolves ahead of player numbers, so a player holding 911
+---could never be called.
+---@param digits string bare digits
+---@return 'length'|'zero'|'reserved'|nil reason
+function util.numberAssignError(digits)
+    if not util.validNumberLength(digits) then return 'length' end
+    if digits:sub(1, 1) == '0' then return 'zero' end
+    -- Required lazily: server.services.actions requires this module at load.
+    local services = require 'server.services.actions'
+    if services.jobForCallNumber(digits) then return 'reserved' end
+    return nil
 end
 
 ---@type string[] iOS system-colour palette, mirrored from the frontend.
