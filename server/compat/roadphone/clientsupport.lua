@@ -8,6 +8,8 @@ local dispatch = require 'server.compat.roadphone.dispatch'
 local contacts = require 'server.compat.roadphone.contacts'
 ---@type table Shared server helpers (server.util): per-character cooldown + rate limiting.
 local util = require 'server.util'
+---@type table Media URL ownership checks for content a client asks another player's NUI to render.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Self-export proxy for sd-phone's own server surface.
 local sd = exports['sd-phone']
@@ -62,8 +64,9 @@ end)
 ---@param image string|nil banner image URL
 RegisterNetEvent('sd-phone:server:compat:roadphone:dispatch', function(message, job, image)
     local src = source
-    if not allowed(src, 'roadphone:dispatch') then return end
-    dispatch.send(job, player.getName(src), message, nil, image)
+    local cid = allowed(src, 'roadphone:dispatch')
+    if not cid then return end
+    dispatch.send(job, player.getName(src), message, nil, mediaGuard.photo(cid, image))
 end)
 
 ---Backs the client roadphone:client:GiveContactDetails event, which shares the caller's own name

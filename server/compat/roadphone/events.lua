@@ -21,6 +21,8 @@ local social = require 'server.compat.roadphone.social'
 local mailStore = require 'server.mail.store'
 ---@type table Shared server helpers (server.util): per-character rate limiting on the client path.
 local util = require 'server.util'
+---@type table Media URL ownership checks for client-originated compatibility events.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Self-export proxy for sd-phone's own server surface.
 local sd = exports['sd-phone']
@@ -49,10 +51,18 @@ end
 ---roadphone:sendDispatch(claimedSource, message, job, coords?, anonym?, image?, deathcause?): the
 ---backing handler for the sendDispatch export. An anonymous dispatch drops the sender's name.
 RegisterNetEvent('roadphone:sendDispatch', function(claimedSource, message, job, coords, anonym, image)
-    local src, allowed = actingSource(source, claimedSource, 'roadphone:sendDispatch')
+    local net = source
+    local clientOrigin = tonumber(net) and tonumber(net) > 0 and GetPlayerName(tonumber(net)) ~= nil
+    local src, allowed = actingSource(net, claimedSource, 'roadphone:sendDispatch')
     if not allowed then return end
 
     local sender = (anonym ~= true and src) and player.getName(src) or 'Dispatch'
+    local cid = src and player.getIdentifier(src) or nil
+    if clientOrigin then
+        image = mediaGuard.photo(cid, image)
+    else
+        image = mediaGuard.https(image)
+    end
     dispatch.send(job, sender, message, coords, image)
 end)
 
@@ -67,13 +77,23 @@ end)
 ---roadphone:roaddrop:receive(data): the backing handler for sendRoadDrop. `data.playerId` names the
 ---recipient, so it is folded into the export's own targetPlayers list.
 RegisterNetEvent('roadphone:roaddrop:receive', function(data)
-    local _, allowed = actingSource(source, nil, 'roadphone:roaddrop')
+    local net = source
+    local clientOrigin = tonumber(net) and tonumber(net) > 0 and GetPlayerName(tonumber(net)) ~= nil
+    local src, allowed = actingSource(net, nil, 'roadphone:roaddrop')
     if not allowed or type(data) ~= 'table' then return end
+
+    local cid = src and player.getIdentifier(src) or nil
+    local image
+    if clientOrigin then
+        image = mediaGuard.photo(cid, data.picturelink)
+    else
+        image = mediaGuard.https(data.picturelink)
+    end
 
     social.drop({
         sender        = data.sender or 'RoadDrop',
         message       = data.message,
-        image         = data.picturelink,
+        image         = image,
         targetPlayers = data.playerId and { data.playerId } or data.targetPlayers,
     })
 end)

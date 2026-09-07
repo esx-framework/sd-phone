@@ -8,6 +8,8 @@ local player = require 'bridge.server.player'
 local share  = require 'server.share.core'
 ---@type table Shared server helpers (server.util): the per-character save budget.
 local util   = require 'server.util'
+---@type table Media URL ownership checks for note images that may be shared with another player.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Notes config (configs/notes.lua): per-player note count + content caps.
 local N = config.Notes
@@ -113,7 +115,7 @@ function actions.save(src, payload)
     if #body > N.MaxBodyLength then body = body:sub(1, N.MaxBodyLength) end
 
     local sketches     = sanitizeList(payload.sketches, N.MaxSketches, MAX_SKETCH_BYTES)
-    local images       = sanitizeList(payload.images, N.MaxImages, MAX_IMAGE_BYTES)
+    local images       = mediaGuard.photos(cid, payload.images, N.MaxImages)
     local sketchesJson = json.encode(sketches)
     local imagesJson   = json.encode(images)
     if #sketchesJson > MAX_MEDIA_JSON or #imagesJson > MAX_MEDIA_JSON then
@@ -156,7 +158,7 @@ function actions.requestShare(src, target, payload)
     if #body > N.MaxBodyLength then body = body:sub(1, N.MaxBodyLength) end
 
     local sketches = sanitizeList(payload.sketches, N.MaxSketches, MAX_SKETCH_BYTES)
-    local images   = sanitizeList(payload.images, N.MaxImages, MAX_IMAGE_BYTES)
+    local images   = mediaGuard.photos(cid, payload.images, N.MaxImages)
     if body:gsub('%s', '') == '' and #sketches == 0 and #images == 0 then
         return { success = false, messageKey = 'notes.nothingShare', message = 'Nothing to share' }
     end

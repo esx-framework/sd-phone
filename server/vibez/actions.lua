@@ -8,6 +8,8 @@ local badges     = require 'server.badges.init'
 local store      = require 'server.vibez.store'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for posting/commenting.
 local moderation = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery ownership and GIPHY host validation.
+local mediaGuard = require 'server.media.guard'
 ---@type table Vibez Live module (server.vibez.live): in-memory livestream sessions.
 local live       = require 'server.vibez.live'
 ---@type table Watcher registry (server.watchers): shared with server.vibez.live and init.
@@ -248,14 +250,11 @@ local function bumpBadge(username)
     for _, src in ipairs(sourcesFor(username)) do badges.pushApp(src, 'vibez') end
 end
 
----One http(s) URL clamped to the column width, or nil.
+---One gallery-owned HTTPS URL, or nil.
+---@param cid string caller's framework character id
 ---@param value any raw payload value
 ---@return string|nil url
-local function sanitizeUrl(value)
-    local url = trim(value)
-    if not lib.string.startsWith(url, 'http') then return nil end
-    return url:sub(1, 512)
-end
+local function sanitizeUrl(cid, value) return mediaGuard.photo(cid, value) end
 
 ---Handle mentions ("@name") in a caption / comment that resolve to real vibez accounts,
 ---deduplicated and excluding the author. Lookups cap at 50 per text.
@@ -349,9 +348,10 @@ function actions.create(src, payload)
     local slow = throttle(src, 'create'); if slow then return slow end
     ensureProfile(acc)
 
-    local video = sanitizeUrl(payload.video)
+    local cid = player.getIdentifier(src)
+    local video = sanitizeUrl(cid, payload.video)
     if not video then return fail('vibez.pickVideoFirst', 'Pick a video first') end
-    local thumb   = sanitizeUrl(payload.thumb)
+    local thumb   = sanitizeUrl(cid, payload.thumb)
     local caption = trim(payload.caption):sub(1, 300)
     local sound   = trim(payload.sound):sub(1, 120)
     if sound == '' then sound = ('original sound — %s'):format(acc.username) end
@@ -498,14 +498,11 @@ function actions.addComment(src, payload)
 
     local text = trim(payload.text):sub(1, 500)
 
-    -- A GIF reply carries no words, so the empty-comment guard has to accept one in place of text.
-    -- Only http(s) is stored: the URL is handed straight back to an <img> on every viewer's phone.
-    local gifUrl = trim(payload.gifUrl):sub(1, 512)
-    if gifUrl ~= '' and not gifUrl:match('^https?://') then gifUrl = '' end
-    if text == '' and gifUrl == '' then return fail('vibez.emptyComment', 'Empty comment') end
+    local gifUrl = mediaGuard.giphy(payload.gifUrl)
+    if text == '' and not gifUrl then return fail('vibez.emptyComment', 'Empty comment') end
 
     local id = store.newId()
-    store.insertComment(id, row.id, acc.username, text, os.time(), gifUrl ~= '' and gifUrl or nil)
+    store.insertComment(id, row.id, acc.username, text, os.time(), gifUrl)
 
     notify(row.author, 'comment', acc.username, row.id, text:sub(1, 120))
     for _, m in ipairs(mentionsIn(text, acc.username)) do
@@ -633,7 +630,7 @@ function actions.updateProfile(src, payload)
     store.upsertProfile(acc.username, {
         displayName = name,
         bio         = trim(payload.bio):sub(1, 160),
-        avatar      = sanitizeUrl(payload.avatar),
+        avatar      = mediaGuard.photoOrCurrent(player.getIdentifier(src), payload.avatar, existing.avatar),
         verified    = flag(existing.verified),
         createdAt   = existing.created_at,
     })

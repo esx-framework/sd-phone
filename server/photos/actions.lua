@@ -147,29 +147,26 @@ local function hostMatchesList(host, list)
     return false
 end
 
----Host check for PLAYER-supplied import URLs. Rejects unparseable/non-http URLs and any host
----in config.Photos.ImportBlocklist; when ImportAllowlist is non-empty the host must also appear
----there. Camera uploads never pass through here - their URL comes from the server-side uploader.
+---Host check for player-supplied import URLs: HTTPS only, host on config.Photos.ImportAllowlist
+---and not on ImportBlocklist. An empty allowlist rejects everything.
 ---@param url any
 ---@return boolean
 function actions.isAllowedImportUrl(url)
     if type(url) ~= 'string' then return false end
-    local host = url:lower():match('^https?://([%w%.%-]+)[:/]') or url:lower():match('^https?://([%w%.%-]+)$')
+    local host = url:lower():match('^https://([%w%.%-]+)[:/]') or url:lower():match('^https://([%w%.%-]+)$')
     if not host then return false end
     if hostMatchesList(host, photosCfg.ImportBlocklist) then return false end
     local allow = photosCfg.ImportAllowlist
-    if type(allow) == 'table' and #allow > 0 and not hostMatchesList(host, allow) then
-        return false
-    end
-    return true
+    return type(allow) == 'table' and #allow > 0 and hostMatchesList(host, allow)
 end
 
----Persists a photo URL against the caller: the URL must be a non-empty http(s) string within
----the column cap, and the gallery is pruned back under config.Photos.MaxPhotosPerPlayer.
+---Persists a photo URL against the caller: a non-empty HTTPS string within the column cap, with
+---the gallery pruned back under config.Photos.MaxPhotosPerPlayer.
 ---@param source number player server id
----@param url string http(s) URL of the hosted media
+---@param url string HTTPS URL of the hosted media
+---@param trusted boolean|nil server-established provenance
 ---@return table result { success, data = { photo } }
-function actions.saveFromUrl(source, url)
+function actions.saveFromUrl(source, url, trusted)
 
     local cid = player.getIdentifier(source)
     if not cid then
@@ -180,8 +177,8 @@ function actions.saveFromUrl(source, url)
         print('^1[sd-phone:photos]^0 saveFromUrl: empty url')
         return fail('photos.noUrl', 'No URL')
     end
-    if not (lib.string.startsWith(url, 'https://') or lib.string.startsWith(url, 'http://')) then
-        print('^1[sd-phone:photos]^0 saveFromUrl: url not http(s)')
+    if not lib.string.startsWith(url, 'https://') then
+        print('^1[sd-phone:photos]^0 saveFromUrl: url is not HTTPS')
         return fail('photos.invalidUrl', 'Invalid URL')
     end
     if #url > MAX_URL_BYTES then
@@ -189,7 +186,7 @@ function actions.saveFromUrl(source, url)
     end
 
     local id = store.newId()
-    if not store.insertPhoto(id, cid, url) then
+    if not store.insertPhoto(id, cid, url, trusted) then
         print('^1[sd-phone:photos]^0 DB insert failed')
         return fail('photos.failedSavePhoto', 'Failed to save photo')
     end
@@ -277,7 +274,7 @@ function actions.deliverShare(targetSrc, payload)
     if store.hasUrl(cid, url) then return false, 'Already in your gallery' end
 
     local id = store.newId()
-    if not store.insertPhoto(id, cid, url) then return false end
+    if not store.insertPhoto(id, cid, url, true) then return false end
     store.pruneOldest(cid, photosCfg.MaxPhotosPerPlayer)
 
     TriggerClientEvent('sd-phone:client:photos:added', targetSrc, {

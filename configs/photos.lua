@@ -36,10 +36,12 @@ return {
     MinAlbumNameLength = 1,
     MaxAlbumNameLength = 40,
 
-    -- Player URL import (the Import button in Photos). Imported URLs are stored and
-    -- rendered as-is, NOT re-hosted, so each viewer's client loads the image from its
-    -- source host. The check is server-side; camera uploads bypass it (their URL comes
-    -- from the server uploader, not the player).
+    -- Player URL import (the Import button in Photos). Imported URLs are stored and rendered
+    -- as-is, NOT re-hosted, so every phone that shows the picture fetches it from that host. A
+    -- hostile host would learn the IP address of each viewer, which is why only the hosts in
+    -- ImportAllowlist are accepted: large image CDNs behind their own edge network, where the
+    -- uploader never sees who views the file. Camera uploads are unaffected because their URL
+    -- comes from the server uploader.
     AllowImport = true, -- master switch; false disables URL import and hides the button.
 
     -- Hosts to always reject. Exact hostnames, or '*.domain.com' for every subdomain.
@@ -51,7 +53,26 @@ return {
         'bit.ly', 'tinyurl.com', 't.co',
     },
 
-    -- If non-empty, ONLY these hosts are allowed (the blocklist still applies on top).
-    -- Empty means allow any host that isn't blocked. Same '*.domain.com' wildcard syntax.
-    ImportAllowlist = {},
+    -- ONLY these hosts may be imported (the blocklist still applies on top). An empty list
+    -- rejects every import instead of trusting the whole internet. '*.domain.com' matches the
+    -- bare domain and every subdomain. Add a host only if its images are served by the platform
+    -- itself, never by the person who uploaded them.
+    ImportAllowlist = {
+        '*.imgur.com',
+        '*.discordapp.com', '*.discordapp.net', -- note: Discord attachment links expire after roughly a day
+        '*.fivemanage.com',
+        '*.ibb.co',
+        '*.postimg.cc',
+        '*.gyazo.com',
+        '*.redd.it',
+        '*.giphy.com',
+        '*.tenor.com',
+        '*.twimg.com',
+        '*.pinimg.com',
+        '*.githubusercontent.com',
+        '*.googleusercontent.com',
+        '*.unsplash.com',
+        '*.pexels.com',
+        '*.wikimedia.org',
+    },
 }

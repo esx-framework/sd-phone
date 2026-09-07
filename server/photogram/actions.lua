@@ -10,6 +10,8 @@ local store     = require 'server.photogram.store'
 local live      = require 'server.photogram.live'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for posting/commenting/DMing.
 local moderation = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery/voice ownership and GIPHY host validation.
+local mediaGuard = require 'server.media.guard'
 ---@type table Watcher registry (server.watchers): shared with server.photogram.live and init.
 local watchers  = require('server.watchers').of('photogram')
 
@@ -343,36 +345,30 @@ local function pingActivity(recipient)
     end
 end
 
----Clamps a client-supplied list of post image URLs: http(s) scheme only, at most 10 images,
----each capped at 512 chars.
+---Accepts at most ten distinct images already present in the caller's server-owned gallery.
+---@param cid string caller's framework character id
 ---@param list any raw payload value
 ---@return string[] images
-local function sanitizeImages(list)
-    local out = {}
-    if type(list) ~= 'table' then return out end
-    for i = 1, #list do
-        local url = trim(list[i])
-        if lib.string.startsWith(url, 'http') then
-            out[#out + 1] = url:sub(1, 512)
-            if #out >= 10 then break end
-        end
-    end
-    return out
-end
+local function sanitizeImages(cid, list) return mediaGuard.photos(cid, list, 10) end
+
+---@type fun(viewer: string, profileRow: table|nil): boolean
+local canView
 
 ---Whitelists + clamps DM metadata per kind, dropping anything the kind doesn't own.
+---@param cid string caller's framework character id
+---@param viewer string caller's Photogram handle
 ---@param kind string whitelisted DM kind
 ---@param payload table raw client payload
 ---@return table meta sanitized metadata (may be empty)
-local function sanitizeDmMeta(kind, payload)
+local function sanitizeDmMeta(cid, viewer, kind, payload)
     local meta = {}
-    if kind == 'image' or kind == 'gif' then
-        local url = trim(payload.gifUrl)
-        if lib.string.startsWith(url, 'http') then meta.gifUrl = url:sub(1, 512) end
+    if kind == 'image' then
+        meta.gifUrl = mediaGuard.photo(cid, payload.gifUrl)
+    elseif kind == 'gif' then
+        meta.gifUrl = mediaGuard.giphy(payload.gifUrl)
     elseif kind == 'voice' then
         meta.duration = lib.math.clamp(math.floor(tonumber(payload.duration) or 0), 0, 36000)
-        local audio = trim(payload.audioUrl)
-        if lib.string.startsWith(audio, 'http') then meta.audio = audio:sub(1, 512) end
+        meta.audio = mediaGuard.voice(cid, payload.audioUrl)
         if type(payload.waveform) == 'table' then
             local bars = {}
             for i = 1, math.min(#payload.waveform, 64) do
@@ -382,16 +378,17 @@ local function sanitizeDmMeta(kind, payload)
         end
     elseif kind == 'post' then
         local p = type(payload.post) == 'table' and payload.post or {}
-        local pid   = trim(p.id)
-        local image = trim(p.image)
-        if pid ~= '' then
-            local avatar = trim(p.avatar)
+        local pid = trim(p.id):sub(1, 16)
+        local row = pid ~= '' and store.getPost(viewer, pid) or nil
+        local profile = row and store.getProfile(row.author) or nil
+        if row and (not profile or canView(viewer, profile)) then
+            local images = store.decodeJson(row.images)
             meta.post = {
-                id      = pid:sub(1, 16),
-                image   = (lib.string.startsWith(image, 'http')) and image:sub(1, 512) or '',
-                avatar  = (lib.string.startsWith(avatar, 'http')) and avatar:sub(1, 512) or '',
-                author  = trim(p.author):sub(1, 64),
-                caption = trim(p.caption):sub(1, 200),
+                id      = row.id,
+                image   = images[1] or '',
+                avatar  = row.avatar or '',
+                author  = row.author,
+                caption = (row.caption or ''):sub(1, 200),
             }
         end
     end
@@ -440,7 +437,7 @@ end
 ---@param viewer string viewer handle
 ---@param profileRow table content owner's profile row
 ---@return boolean allowed
-local function canView(viewer, profileRow)
+canView = function(viewer, profileRow)
     if viewer == profileRow.username then return true end
     if not flag(profileRow.is_private) then return true end
     return store.isAcceptedFollower(viewer, profileRow.username)
@@ -512,7 +509,7 @@ function actions.create(src, payload)
     local slow = throttle(src, 'create'); if slow then return slow end
     local me = ensureProfile(acc)
 
-    local images = sanitizeImages(payload.images)
+    local images = sanitizeImages(player.getIdentifier(src), payload.images)
     if #images == 0 then return fail('photogram.addLeastOnePhoto', 'Add at least one photo') end
     local caption  = trim(payload.caption):sub(1, 2200)
     local location = trim(payload.location):sub(1, 120)
@@ -668,8 +665,7 @@ function actions.addComment(src, payload)
     if not canInteract(acc.username, row.author) then return fail('photogram.profileNotPublic', 'Profile is not public') end
 
     local text   = trim(payload.text):sub(1, 1000)
-    local gifUrl = trim(payload.gifUrl)
-    gifUrl = (lib.string.startsWith(gifUrl, 'http')) and gifUrl:sub(1, 512) or nil
+    local gifUrl = mediaGuard.giphy(payload.gifUrl)
     if text == '' and not gifUrl then return fail('photogram.emptyComment', 'Empty comment') end
 
     local id = store.newId()
@@ -785,8 +781,7 @@ function actions.updateProfile(src, payload)
 
     local name = trim(payload.name):sub(1, 64)
     if name == '' then name = existing.display_name end
-    local avatar = trim(payload.avatar)
-    avatar = (lib.string.startsWith(avatar, 'http')) and avatar:sub(1, 512) or nil
+    local avatar = mediaGuard.photoOrCurrent(player.getIdentifier(src), payload.avatar, existing.avatar)
 
     store.upsertProfile(acc.username, {
         displayName = name,
@@ -973,14 +968,14 @@ function actions.addStory(src, payload)
     if not acc then return fail('photogram.notSigned', 'Not signed in') end
     local slow = throttle(src, 'story'); if slow then return slow end
     ensureProfile(acc)
-    local image = trim(payload.image)
-    if not lib.string.startsWith(image, 'http') then return fail('photogram.addPhoto', 'Add a photo') end
+    local image = mediaGuard.photo(player.getIdentifier(src), payload.image)
+    if not image then return fail('photogram.addPhoto', 'Add a photo') end
     -- Frames expire on their own after STORY_TTL, so this caps the live window rather than the
     -- account: a full tray drains back to zero a day later.
     if store.countActiveStories(acc.username, os.time() - STORY_TTL) >= STORY_CAP then
         return fail('photogram.storyFullToday', 'Your story is full for today')
     end
-    store.insertStory(store.newId(), acc.username, image:sub(1, 512), os.time())
+    store.insertStory(store.newId(), acc.username, image, os.time())
     return ok()
 end
 
@@ -1122,7 +1117,7 @@ function actions.dmSend(src, payload)
 
     local kind = VALID_DMKIND[payload.kind] and payload.kind or 'text'
     local body = trim(payload.body):sub(1, 1000)
-    local meta = sanitizeDmMeta(kind, payload)
+    local meta = sanitizeDmMeta(player.getIdentifier(src), acc.username, kind, payload)
     if not hasDmContent(kind, body, meta) then return fail('photogram.emptyMessage', 'Empty message') end
 
     local id = store.newId()

@@ -18,6 +18,8 @@ local store     = require 'server.id.store'
 local share     = require 'server.share.core'
 ---@type table Shared server helpers (server.util): envelopes, hashing colour, string caps.
 local util      = require 'server.util'
+---@type table Media trust boundary: a displayed portrait must come from the caller's gallery.
+local mediaGuard = require 'server.media.guard'
 local ok, fail  = util.ok, util.fail
 
 ---@type table ID app config (config.Id): licence catalogue, job colours, issuer, show duration.
@@ -194,9 +196,8 @@ function actions.setPortrait(src, payload)
 
     local url = payload.url
     if url ~= nil then
-        url = util.trim(url)
-        if not lib.string.startsWith(url, 'http') then return fail('id.invalidPhoto', 'Invalid photo') end
-        url = url:sub(1, 512)
+        url = mediaGuard.photo(cid, url)
+        if not url then return fail('id.invalidPhoto', 'Invalid photo') end
     end
     store.setPortrait(cid, url)
     return ok({ portrait = url })

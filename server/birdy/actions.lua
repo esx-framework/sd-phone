@@ -18,6 +18,8 @@ local money = require 'bridge.server.money'
 local badges = require 'server.badges.init'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for posting/DMing.
 local moderation = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery/voice ownership and GIPHY host validation.
+local mediaGuard = require 'server.media.guard'
 ---@type table Watcher registry (server.watchers): shared with server.birdy.init.
 local watchers = require('server.watchers').of('birdy')
 
@@ -98,23 +100,12 @@ local function normalizeHandle(raw)
     return (raw:lower():gsub('[^a-z0-9_]', ''))
 end
 
----Cleans a client-supplied image list into at most 3 non-empty URL strings (each capped at 512
----chars), or nil.
+---Cleans a client-supplied image list into at most three distinct gallery-owned URLs, or nil.
+---@param cid string caller's framework character id
 ---@param raw any
 ---@return string[]|nil
-local function sanitizeImages(raw)
-    if type(raw) ~= 'table' then return nil end
-    local out = {}
-    for i = 1, #raw do
-        local u = raw[i]
-        if type(u) == 'string' then
-            u = (u:gsub('^%s+', ''):gsub('%s+$', ''))
-            if #u > 0 and #u <= 512 then
-                out[#out + 1] = u
-                if #out >= 3 then break end
-            end
-        end
-    end
+local function sanitizeImages(cid, raw)
+    local out = mediaGuard.photos(cid, raw, 3)
     if #out == 0 then return nil end
     return out
 end
@@ -494,7 +485,7 @@ end
 ---@param payload { name?: string, bio?: string, protected?: boolean, avatar?: string|false, banner?: string|false }|nil
 ---@return table envelope
 function actions.updateProfile(source, payload)
-    local prof = viewer(source); if not prof then return fail('birdy.notSigned', 'Not signed in') end
+    local prof, cid = viewer(source); if not prof or not cid then return fail('birdy.notSigned', 'Not signed in') end
     payload = tbl(payload)
 
     local name = trimmed(payload.name) or prof.displayName
@@ -505,8 +496,8 @@ function actions.updateProfile(source, payload)
     if #bio > birdyCfg.MaxBioLength then return fail('birdy.bioTooLong', 'Bio is too long') end
 
     local function imageUrl(v, fallback)
-        local u = trimmed(v)
-        if u and lib.string.startsWith(u, 'http') then return u:sub(1, 512) end
+        local u = mediaGuard.photo(cid, v)
+        if u then return u end
         if v == false then return nil end
         return fallback
     end
@@ -654,7 +645,7 @@ function actions.create(source, payload)
     local slow = throttle(cid, 'create'); if slow then return slow end
     payload = tbl(payload)
     local body = trimmed(payload and payload.body) or ''
-    local images = sanitizeImages(payload and payload.images)
+    local images = sanitizeImages(cid, payload and payload.images)
     local poll, pollRefusal = sanitizePoll(payload and payload.poll)
     if pollRefusal then return pollRefusal end
     if poll and body == '' then return fail('birdy.pollNeedsQuestion', 'A poll needs a question') end
@@ -725,7 +716,7 @@ function actions.reply(source, payload)
     payload = tbl(payload)
     local parentId = payload and payload.parentId
     local body = trimmed(payload and payload.body) or ''
-    local images = sanitizeImages(payload and payload.images)
+    local images = sanitizeImages(cid, payload and payload.images)
     if type(parentId) ~= 'string' or parentId == '' then return fail('birdy.missingPost', 'Missing post') end
     if body == '' and not images then return fail('birdy.replyCannotEmpty', 'Reply cannot be empty') end
     if #body > birdyCfg.MaxPostLength then return fail('birdy.replyTooLong', 'Reply is too long') end
@@ -1014,14 +1005,16 @@ local VALID_DM_KINDS = { text = true, image = true, gif = true, money = true, lo
 
 ---Clamps/coerces composer metadata per kind: only whitelisted fields survive, strings are
 ---length-capped, numbers floored + clamped, money amounts reject non-finite doubles.
+---@param cid string caller's framework character id
 ---@param kind string validated DM kind (a VALID_DM_KINDS member)
 ---@param payload table raw client payload
 ---@return table meta whitelisted, clamped metadata
-local function sanitizeDmMeta(kind, payload)
+local function sanitizeDmMeta(cid, kind, payload)
     local meta = {}
-    if kind == 'image' or kind == 'gif' then
-        local url = trimmed(payload.gifUrl) or ''
-        if url ~= '' then meta.gifUrl = url:sub(1, 512) end
+    if kind == 'image' then
+        meta.gifUrl = mediaGuard.photo(cid, payload.gifUrl)
+    elseif kind == 'gif' then
+        meta.gifUrl = mediaGuard.giphy(payload.gifUrl)
     elseif kind == 'money' then
         local amount = tonumber(payload.amount) or 0
         if amount == math.huge then amount = 0 end
@@ -1029,8 +1022,7 @@ local function sanitizeDmMeta(kind, payload)
         if payload.requested == true then meta.requested = true end
     elseif kind == 'voice' then
         meta.duration = lib.math.clamp(math.floor(tonumber(payload.duration) or 0), 0, 36000)
-        local audio = trimmed(payload.audioUrl) or ''
-        if audio ~= '' then meta.audio = audio:sub(1, 512) end
+        meta.audio = mediaGuard.voice(cid, payload.audioUrl)
         if type(payload.waveform) == 'table' then
             local bars = {}
             for i = 1, math.min(#payload.waveform, 64) do
@@ -1212,7 +1204,7 @@ function actions.dmSend(source, payload)
 
     local kind = VALID_DM_KINDS[payload.kind] and payload.kind or 'text'
     local body = (trimmed(payload.body) or ''):sub(1, birdyCfg.MaxDmLength)
-    local meta = sanitizeDmMeta(kind, payload)
+    local meta = sanitizeDmMeta(cid, kind, payload)
     if not dmHasContent(kind, body, meta) then return fail('birdy.messageCannotEmpty', 'Message cannot be empty') end
 
     if kind == 'money' and not meta.requested then

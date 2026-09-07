@@ -10,6 +10,8 @@ local config = require 'configs.racing'
 local notify = require 'bridge.server.notify'
 ---@type table Notifications module (server.notifications.init): identity-addressed banner routing.
 local notifications = require 'server.notifications.init'
+---@type table Media trust boundary: public racer avatars must come from the caller's gallery.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Actions module; the table returned at end of file.
 local actions = {}
@@ -632,8 +634,8 @@ function actions.setAlias(src, payload)
     return ok({ alias = alias })
 end
 
----Sets or clears the caller's avatar. Only https links are stored: the tablet renders the URL
----straight into an image, so a plain http one would be a mixed-content hole.
+---Sets or clears the caller's avatar: the picture must be one of the caller's own gallery photos,
+---and an empty value clears it.
 ---@param src integer player server id
 ---@param payload table { avatar }
 ---@return table envelope
@@ -644,9 +646,10 @@ function actions.setAvatar(src, payload)
         return fail('racing.tooManyProfileChangesWait', 'Too many profile changes, wait a moment')
     end
 
-    local avatar = util.limitedString(payload.avatar, int(LIMITS.AvatarUrlMax, 500))
-    if avatar and not avatar:match('^https://') then
-        return fail('racing.avatarLinksHaveStartWith', 'Avatar links have to start with https://')
+    local wanted = util.trim(payload.avatar)
+    local avatar = wanted ~= '' and mediaGuard.photo(cid, wanted) or nil
+    if wanted ~= '' and not avatar then
+        return fail('racing.avatarNotInGallery', 'Choose a picture from your Photos gallery')
     end
 
     local row = store.profileRow(cid)

@@ -10,6 +10,8 @@ local store   = require 'server.streaks.store'
 local live    = require 'server.streaks.live'
 ---@type table Banking actions (server.banking.actions): addExternal appends a Wallet statement row.
 local banking = require 'server.banking.actions'
+---@type table Media trust boundary: only gallery-owned images may reach the public feed.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Streaks app config (config.Streaks): milestone ladder, reward account, size caps.
 local CFG = config.Streaks or require 'configs.streaks'
@@ -156,9 +158,8 @@ function actions.post(src, payload)
     local cid = cidOf(src)
     if not cid then return fail('streaks.notSigned', 'Not signed in') end
 
-    local imageUrl = trim(payload.imageUrl)
-    if not lib.string.startsWith(imageUrl, 'http') then return fail('streaks.invalidImage', 'Invalid image') end
-    imageUrl = imageUrl:sub(1, 512)
+    local imageUrl = mediaGuard.photo(cid, payload.imageUrl)
+    if not imageUrl then return fail('streaks.invalidImage', 'Invalid image') end
 
     local caption = trim(payload.caption):sub(1, CFG.MaxCaptionLength)
     if caption == '' then caption = nil end

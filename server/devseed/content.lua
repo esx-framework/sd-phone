@@ -750,11 +750,11 @@ content.seed.gallery = function(ctx)
         { ctx.cid, IMG:format('galme%') })
 
     for i = 1, 6 do
-        photosStore.insertPhoto(photosStore.newId(), cast.at(i).id, img('gal' .. i))
+        photosStore.insertPhoto(photosStore.newId(), cast.at(i).id, img('gal' .. i), true)
         rows = rows + 1
     end
     for i = 1, 3 do
-        photosStore.insertPhoto(photosStore.newId(), ctx.cid, img('galme' .. i))
+        photosStore.insertPhoto(photosStore.newId(), ctx.cid, img('galme' .. i), true)
         rows = rows + 1
     end
     return result(rows, false, 'the camera writes these, so there is no action to call')

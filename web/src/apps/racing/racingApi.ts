@@ -615,11 +615,7 @@ export async function racingSetAlias(alias: string): Promise<Envelope<{ alias: s
 
 export async function racingSetAvatar(avatar: string): Promise<Envelope<{ avatar: string | null }>> {
     if (!isFiveM) {
-        const trimmed = avatar.trim();
-        if (trimmed && !trimmed.startsWith('https://')) {
-            return { success: false, message: t('racing.avatarNeedsHttps', 'The avatar link has to start with https://') };
-        }
-        DEV_AVATAR = trimmed || null;
+        DEV_AVATAR = avatar.trim() || null;
         return { success: true, data: { avatar: DEV_AVATAR } };
     }
     return apiCall<{ avatar: string | null }>('sd-phone:racing:setAvatar', { avatar });

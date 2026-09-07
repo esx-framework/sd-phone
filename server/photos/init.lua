@@ -108,7 +108,7 @@ RegisterNetEvent('sd-phone:server:photos:upload', function(image, kind)
 
         -- The upload landed but the row did not, which used to report nothing on either end: the
         -- player waited on a photo that was hosted yet unreachable, and the console stayed quiet.
-        local saveRes = actions.saveFromUrl(src, url)
+        local saveRes = actions.saveFromUrl(src, url, true)
         if not (saveRes and saveRes.success and saveRes.data and saveRes.data.photo) then
             uploadFailed(src, 'save-failed', ('uploaded to %s but the row would not save: %s')
                 :format(url, tostring(saveRes and saveRes.message or 'no reason given')))
@@ -138,7 +138,7 @@ lib.callback.register('sd-phone:server:photos:saveUrl', function(src, payload)
     -- gap is invisible, and without it this path writes and prunes phone_photos at line rate.
     local okLimit = mediaLimit.check(player.getIdentifier(src), #(payload and payload.url or ''))
     if not okLimit then return { success = false, messageKey = 'photos.slowDownMoment', message = 'Slow down a moment' } end
-    local res = actions.saveFromUrl(src, payload and payload.url)
+    local res = actions.saveFromUrl(src, payload and payload.url, true)
     if res and res.success and res.data and res.data.photo then
         TriggerClientEvent('sd-phone:client:photos:added', src, res.data.photo)
     end
@@ -210,16 +210,16 @@ exports('getPhotosByIdentifier', function(citizenid, opts)
     return actions.listForCid(citizenid, opts)
 end)
 
----Public export: exports['sd-phone']:addPhoto(source, url). Saves an already-hosted http(s) URL
+---Public export: exports['sd-phone']:addPhoto(source, url). Saves an already-hosted HTTPS URL
 ---into a player's gallery and pushes photos:added; a non-integer source returns { success = false }.
 ---@param source number acting player's server id (the gallery owner resolves from it)
----@param url string http(s) URL of the hosted media
+---@param url string HTTPS URL of the hosted media
 ---@return { success: boolean, photo?: table }
 exports('addPhoto', function(source, url)
     if type(source) ~= 'number' or not util.finite(source) or source % 1 ~= 0 then
         return { success = false }
     end
-    local res = actions.saveFromUrl(source, url)
+    local res = actions.saveFromUrl(source, url, true)
     if res and res.success and res.data and res.data.photo then
         TriggerClientEvent('sd-phone:client:photos:added', source, res.data.photo)
         return { success = true, photo = res.data.photo }

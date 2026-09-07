@@ -14,6 +14,10 @@ local mail = require 'server.compat.gksphone.mail'
 local dispatch = require 'server.compat.gksphone.dispatch'
 ---@type table Map shim ops (server.compat.gksphone.maps): the shared pin writers.
 local maps = require 'server.compat.gksphone.maps'
+---@type table Player bridge (bridge.server.player): character identity for gallery ownership.
+local player = require 'bridge.server.player'
+---@type table Media URL ownership checks for client-authored report images.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Self-export proxy for sd-phone's own server surface.
 local sd = exports['sd-phone']
@@ -70,7 +74,9 @@ end)
 ---the company they named.
 RegisterNetEvent('sd-phone:server:compat:gks:report', function(payload)
     if type(payload) ~= 'table' then return end
-    dispatch.fileReport(source, payload.message, payload.photo, payload.job, payload.anonymous)
+    local cid = player.getIdentifier(source)
+    if not cid then return end
+    dispatch.fileReport(source, payload.message, mediaGuard.photo(cid, payload.photo), payload.job, payload.anonymous)
 end)
 
 ---Backs heavyJammer(status, message) with no handset id: jams the CALLER's own phone. The

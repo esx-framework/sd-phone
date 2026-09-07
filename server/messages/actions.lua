@@ -20,6 +20,8 @@ local store         = require 'server.messages.store'
 local badges        = require 'server.badges.init'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for sending texts.
 local moderation    = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery/voice ownership and GIPHY host validation.
+local mediaGuard    = require 'server.media.guard'
 ---@type table Cell service (server.service): authoritative signal level per player.
 local service       = require 'server.service'
 
@@ -274,14 +276,16 @@ end
 
 ---Sanitizes composer metadata: clamps string lengths, coerces money amounts to a non-negative
 ---integer, accepts only 'pending' request statuses, and bounds voice waveforms.
+---@param cid string caller's framework character id
 ---@param kind string
 ---@param payload table
 ---@return table
-local function sanitizeMeta(kind, payload)
+local function sanitizeMeta(cid, kind, payload)
     local meta = {}
-    if kind == 'image' or kind == 'gif' then
-        local url = trim(payload.gifUrl)
-        if url ~= '' then meta.gifUrl = url:sub(1, 512) end
+    if kind == 'image' then
+        meta.gifUrl = mediaGuard.photo(cid, payload.gifUrl)
+    elseif kind == 'gif' then
+        meta.gifUrl = mediaGuard.giphy(payload.gifUrl)
     elseif kind == 'money' then
         local amount = tonumber(payload.amount) or 0
         if amount ~= amount or amount == math.huge or amount == -math.huge then amount = 0 end
@@ -293,8 +297,7 @@ local function sanitizeMeta(kind, payload)
         if rs == 'pending' then meta.requestStatus = rs end
     elseif kind == 'voice' then
         meta.duration = lib.math.clamp(math.floor(tonumber(payload.duration) or 0), 0, 36000)
-        local audio = trim(payload.audioUrl)
-        if audio ~= '' then meta.audio = audio:sub(1, 512) end
+        meta.audio = mediaGuard.voice(cid, payload.audioUrl)
         if type(payload.waveform) == 'table' then
             local bars = {}
             for i = 1, math.min(#payload.waveform, 64) do
@@ -613,7 +616,12 @@ function actions.systemText(senderNumber, senderName, targetNumber, body, opts)
     local kind, meta = 'text', nil
     if type(opts) == 'table' and SYSTEM_KINDS[opts.kind] then
         kind = opts.kind
-        meta = sanitizeMeta(kind, opts)
+        if kind == 'image' or kind == 'gif' then
+            local url = mediaGuard.https(opts.gifUrl)
+            meta = url and { gifUrl = url } or {}
+        else
+            meta = sanitizeMeta(targetCid, kind, opts)
+        end
     end
     if not hasContent(kind, body, meta or {}) then return false end
 
@@ -777,7 +785,7 @@ function actions.send(source, payload)
     local body = trim(payload.body)
     if #body > cfg.MaxBodyLength then body = body:sub(1, cfg.MaxBodyLength) end
 
-    local meta = sanitizeMeta(kind, payload)
+    local meta = sanitizeMeta(cid, kind, payload)
     if not hasContent(kind, body, meta) then return fail('messages.emptyMessage', 'Empty message') end
 
     local isGroup = lib.string.startsWith(conversation, 'g-')
@@ -1010,8 +1018,7 @@ function actions.updateGroup(source, payload)
     if name == '' then return fail('messages.groupNameRequired', 'Group name required') end
     if #name > cfg.MaxGroupNameLength then name = name:sub(1, cfg.MaxGroupNameLength) end
 
-    local avatar = payload.avatar
-    if type(avatar) == 'string' then avatar = avatar:sub(1, 512) else avatar = group.avatar end
+    local avatar = payload.avatar ~= nil and mediaGuard.photo(cid, payload.avatar) or group.avatar
 
     store.updateGroup(groupId, name, avatar)
 
@@ -1343,7 +1350,9 @@ function actions.uploadVoice(source, payload)
 
     local url = Citizen.Await(p)
     if not url then return fail('messages.uploadFailed', 'Upload failed') end
-    return ok({ url = url })
+    local trustedUrl = mediaGuard.rememberVoice(player.getIdentifier(source), url)
+    if not trustedUrl then return fail('messages.uploadFailed', 'Upload failed') end
+    return ok({ url = trustedUrl })
 end
 
 return actions

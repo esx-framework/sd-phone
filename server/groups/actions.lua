@@ -4,6 +4,8 @@ local config  = require 'configs.config'
 local player  = require 'bridge.server.player'
 ---@type table Groups persistence layer (server.groups.store): phone_groups row CRUD + active-group pointers.
 local store   = require 'server.groups.store'
+---@type table Media trust boundary: only gallery-owned images may be shared with group members.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Groups app config (configs/groups.lua): member/invite caps + name length rules.
 local groupsCfg = config.Groups
@@ -407,11 +409,8 @@ function actions.setAvatar(source, payload)
         return fail('groups.onlyLeaderCanChangeGroup', 'Only the leader can change the group photo')
     end
 
-    local avatar = payload.avatar
-    if type(avatar) ~= 'string' then return fail('groups.photoRequired', 'A photo is required') end
-    avatar = avatar:gsub('^%s+', ''):gsub('%s+$', '')
-    if avatar == '' then return fail('groups.photoRequired', 'A photo is required') end
-    if #avatar > 512 then avatar = avatar:sub(1, 512) end
+    local avatar = mediaGuard.photo(me.cid, payload.avatar)
+    if not avatar then return fail('groups.photoRequired', 'A photo is required') end
 
     if not store.setAvatar(group.id, avatar) then
         return fail('groups.failedUpdateGroupPhoto', 'Failed to update group photo')

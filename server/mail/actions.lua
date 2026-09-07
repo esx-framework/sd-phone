@@ -11,6 +11,8 @@ local acctStore   = require 'server.accounts.store'
 local acctActions = require 'server.accounts.actions'
 ---@type table Home-screen badge engine (server.badges.init): recomputes + pushes unread counts.
 local badges      = require 'server.badges.init'
+---@type table Media URL ownership checks for attachments rendered by mail recipients.
+local mediaGuard  = require 'server.media.guard'
 
 ---@type table Mail app config (configs/mail.lua): domain, length limits, per-player caps.
 local mailCfg = config.Mail
@@ -167,16 +169,26 @@ local function sanitizeAttachments(raw, cid)
         if #out >= MAX_ATTACHMENTS then break end
         local a = raw[i]
         if type(a) == 'table' then
-            if a.kind == 'photo' and type(a.url) == 'string' and a.url ~= '' and #a.url <= MAX_ATTACHMENT_URL_LEN then
-                out[#out + 1] = { kind = 'photo', url = a.url }
-            elseif a.kind == 'audio' and type(a.url) == 'string' and a.url ~= '' and #a.url <= MAX_ATTACHMENT_URL_LEN then
+            local photoUrl, audioUrl
+            if cid then
+                photoUrl = mediaGuard.photo(cid, a.url)
+                audioUrl = mediaGuard.voice(cid, a.url)
+            else
+                photoUrl = mediaGuard.https(a.url)
+                audioUrl = mediaGuard.https(a.url)
+            end
+            if a.kind == 'photo' and photoUrl and #photoUrl <= MAX_ATTACHMENT_URL_LEN then
+                out[#out + 1] = { kind = 'photo', url = photoUrl }
+            elseif a.kind == 'audio' and audioUrl and #audioUrl <= MAX_ATTACHMENT_URL_LEN then
                 local name = type(a.name) == 'string' and a.name or ''
                 if #name > MAX_ATTACHMENT_NAME_LEN then name = name:sub(1, MAX_ATTACHMENT_NAME_LEN) end
-                out[#out + 1] = { kind = 'audio', url = a.url, name = name, duration = tonumber(a.duration) or 0 }
+                out[#out + 1] = { kind = 'audio', url = audioUrl, name = name, duration = tonumber(a.duration) or 0 }
             elseif a.kind == 'document' and cid and type(a.docId) == 'string' and a.docId ~= '' then
                 local docsStore = require 'server.documents.store'
                 local row = docsStore.getDoc(cid, a.docId)
-                if row and not (row.locked == true or row.locked == 1) then
+                local shareableImage = row and row.kind == 'image' and mediaGuard.photo(cid, row.url) or nil
+                if row and (row.kind ~= 'image' or shareableImage)
+                    and not (row.locked == true or row.locked == 1) then
                     local sigs = nil
                     if row.kind == 'text' then
                         local list = docsStore.listSignatures(a.docId)
@@ -190,7 +202,7 @@ local function sanitizeAttachments(raw, cid)
                     end
                     out[#out + 1] = {
                         kind = 'document', docId = a.docId, name = row.name, docKind = row.kind,
-                        content = row.content, url = row.url, size = tonumber(row.size) or 0,
+                        content = row.content, url = shareableImage or row.url, size = tonumber(row.size) or 0,
                         source = row.source,
                         signable = not (row.signable == false or row.signable == 0),
                         signatures = sigs,
@@ -865,7 +877,7 @@ function actions.saveAttachment(source, payload)
         -- The URL comes from the stored row (not the player), so the URL-import config gate
         -- that guards photos:saveUrl does not apply here.
         local photosActions = require 'server.photos.actions'
-        local res = photosActions.saveFromUrl(source, att.url)
+        local res = photosActions.saveFromUrl(source, att.url, true)
         if not (res and res.success) then return fail('mail.couldNotSavePhotos', 'Could not save to Photos') end
         if res.data and res.data.photo then
             TriggerClientEvent('sd-phone:client:photos:added', source, res.data.photo)

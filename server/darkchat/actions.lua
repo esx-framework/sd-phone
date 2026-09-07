@@ -6,6 +6,8 @@ local store  = require 'server.darkchat.store'
 local player = require 'bridge.server.player'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for sending messages.
 local moderation = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery/voice ownership and GIPHY host validation.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Dark Chat config (config.DarkChat): public rooms, length caps, history limit, code length.
 local DC = config.DarkChat
@@ -240,12 +242,17 @@ function actions.send(src, roomId, payload)
     if kind == 'text' then
         if body == '' then return { success = false, messageKey = 'darkchat.emptyMessage', message = 'Empty message' } end
     elseif kind == 'image' or kind == 'gif' then
-        local url = sanitizeStr(raw.mediaUrl, 1024)
+        local url
+        if kind == 'image' then
+            url = mediaGuard.photo(cid, raw.mediaUrl)
+        else
+            url = mediaGuard.giphy(raw.mediaUrl)
+        end
         if not url then return { success = false, messageKey = 'darkchat.missingMedia', message = 'Missing media' } end
         meta.mediaUrl = url
         if body == '' then body = (kind == 'gif') and 'GIF' or '📷 Photo' end
     elseif kind == 'voice' then
-        local url = sanitizeStr(raw.audioUrl, 1024)
+        local url = mediaGuard.voice(cid, raw.audioUrl)
         if not url then return { success = false, messageKey = 'darkchat.missingAudio', message = 'Missing audio' } end
         meta.audioUrl = url
         meta.duration = lib.math.clamp(math.floor(tonumber(raw.duration) or 1), 1, 600)

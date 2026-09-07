@@ -14,6 +14,8 @@ local player   = require 'bridge.server.player'
 local job      = require 'bridge.server.job'
 ---@type table Society bridge (bridge.server.society): employee list, grade ladder, hire and fire.
 local society  = require 'bridge.server.society'
+---@type table Media trust boundary: roster avatars must come from the officer's gallery.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Roster module; the table returned at end of file.
 local roster = {}
@@ -365,7 +367,7 @@ roster.meUpdate = access.audited('me.update', function(src, payload, me)
         fields.callsign = callsign:upper()
     end
     if payload.avatar ~= nil then
-        fields.avatar = util.limitedString(payload.avatar, math.floor(tonumber((MDT.Limits or {}).MediaUrl) or 512)) or ''
+        fields.avatar = mediaGuard.photoOrCurrent(me.citizenid, payload.avatar, me.avatar) or ''
     end
     if payload.notes ~= nil then
         fields.notes = util.limitedString(payload.notes, 4000) or ''

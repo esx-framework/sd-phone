@@ -183,7 +183,7 @@ recordings.share = access.audited('cameras.view', function(_src, payload, me)
         -- The photo library reads a clip's kind back off the URL extension, and a recording is
         -- hosted as .webm, so it lands as a video with no extra flag to set.
         if not photos.hasUrl(targetCid, row.url) then
-            photos.insertPhoto(photos.newId(), targetCid, row.url)
+            photos.insertPhoto(photos.newId(), targetCid, row.url, true)
         end
         sent[#sent + 1] = 'phone'
         if targetSrc then

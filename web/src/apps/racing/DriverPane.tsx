@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { t } from '@/i18n';
 import { colorFor, initialsFor } from '@/lib/format';
 import { ContactAvatar } from '@/shared/ContactAvatar';
+import { MediaPickerSheet } from '@/shared/MediaPickerSheet';
 import { ListGroup, ListRow, ToggleRow } from '@/ui/ListGroup';
 import { PromptDialog } from '@/ui/PromptDialog';
 import { Scroller } from '@/ui/Scroller';
@@ -21,7 +22,6 @@ import { failText } from '@/core/api';
 
 const ALIAS_MIN = 3;
 const ALIAS_MAX = 16;
-const AVATAR_MAX = 500;
 
 const NARROW_WIDTH = 560;
 
@@ -193,7 +193,7 @@ export function DriverPane() {
         }, delay);
     }, [setDraft, setHud]);
 
-    const clearIdentity = useCallback((pending: Promise<{ success: boolean; message?: string }>) => {
+    const applyIdentity = useCallback((pending: Promise<{ success: boolean; message?: string }>) => {
         void pending.then(envelope => {
             if (!envelope.success) {
                 setError(failText(envelope, t('racing.identityFailed', 'That change could not be saved.')));
@@ -265,7 +265,7 @@ export function DriverPane() {
                             destructive
                             chevron={false}
                             divider={!!avatarValue}
-                            onPress={() => clearIdentity(racingSetAlias(''))}
+                            onPress={() => applyIdentity(racingSetAlias(''))}
                         />
                     )}
                     {!!avatarValue && (
@@ -273,7 +273,7 @@ export function DriverPane() {
                             label={t('racing.removeAvatar', 'Remove picture')}
                             destructive
                             chevron={false}
-                            onPress={() => clearIdentity(racingSetAvatar(''))}
+                            onPress={() => applyIdentity(racingSetAvatar(''))}
                         />
                     )}
                 </ListGroup>
@@ -377,26 +377,14 @@ export function DriverPane() {
             )}
 
             {prompt === 'avatar' && (
-                <PromptDialog
-                    title={t('racing.setAvatar', 'Profile picture')}
-                    message={t('racing.setAvatarSub', 'Paste a direct link to an image.')}
-                    label={t('racing.imageLink', 'Image link')}
-                    placeholder="https://"
-                    initialValue={avatarValue}
-                    maxLength={AVATAR_MAX}
-                    inputMode="url"
-                    validate={value => (value.toLowerCase().startsWith('https://')
-                        ? null
-                        : t('racing.avatarInvalid', 'The link has to start with https://'))}
-                    onCancel={() => setPrompt(null)}
-                    onConfirm={async value => {
-                        const envelope = await racingSetAvatar(value);
-                        if (!envelope.success) {
-                            return failText(envelope, t('racing.avatarFailed', 'That picture could not be saved.'));
-                        }
-                        refresh();
-                        return null;
+                <MediaPickerSheet
+                    filter={p => !p.video}
+                    initialSelectedUrls={avatarValue ? [avatarValue] : undefined}
+                    onSelect={p => {
+                        setPrompt(null);
+                        applyIdentity(racingSetAvatar(p.url));
                     }}
+                    onClose={() => setPrompt(null)}
                 />
             )}
         </Scroller>

@@ -12,6 +12,8 @@ local badges        = require 'server.badges.init'
 local notifications = require 'server.notifications.init'
 ---@type table Shared server helpers (server.util): envelopes, digits, trim, rate limits.
 local util          = require 'server.util'
+---@type table Media trust boundary: only the caller's just-uploaded recording may be delivered.
+local mediaGuard    = require 'server.media.guard'
 
 local ok, fail = util.ok, util.fail
 local digits, trim = util.digits, util.trim
@@ -112,9 +114,8 @@ function actions.leave(src, payload)
         return fail('voicemail.slowDown', 'Slow down')
     end
 
-    local url = trim(payload.url)
-    if not lib.string.startsWith(url, 'http') then return fail('voicemail.invalidRecording', 'Invalid recording') end
-    url = url:sub(1, 512)
+    local url = mediaGuard.voice(cid, payload.url)
+    if not url then return fail('voicemail.invalidRecording', 'Invalid recording') end
 
     local dialed = digits(payload.number)
     if dialed == '' then return fail('voicemail.numberNotService', 'Number not in service') end

@@ -8,6 +8,8 @@ local player = require 'bridge.server.player'
 local share  = require 'server.share.core'
 ---@type table Shared server helpers (server.util): envelopes, id + string helpers, TINYINT reader.
 local util   = require 'server.util'
+---@type table Media URL ownership checks for image documents rendered after sharing.
+local mediaGuard = require 'server.media.guard'
 local ok, fail, trim, isTruthy = util.ok, util.fail, util.trim, util.truthy
 
 ---@type table Actions module; the table returned at end of file. Handlers resolve the acting
@@ -826,6 +828,9 @@ function actions.requestShare(src, target, payload)
     local row = store.getDoc(cid, id)
     if not row then return fail('documents.documentNotFound', 'Document not found') end
     if isTruthy(row.locked) then return fail('documents.documentCannotShared', 'This document cannot be shared') end
+    if row.kind == 'image' and not mediaGuard.photo(cid, row.url) then
+        return fail('documents.imageNotInGallery', 'Only images from your Photos gallery can be shared')
+    end
 
     -- Signatures travel with the copy (read server-side here, re-inserted server-side on
     -- delivery), so a signed contract stays verifiably signed on the recipient's phone.

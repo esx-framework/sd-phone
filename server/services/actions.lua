@@ -18,6 +18,8 @@ local player   = require 'bridge.server.player'
 local settings = require 'server.settings.store'
 ---@type table Calls actions (server.calls.actions): the group-ring plumbing company calls reuse.
 local calls    = require 'server.calls.actions'
+---@type table Media trust boundary: only gallery-owned images may reach another player's NUI.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Services config (configs/services.lua): companies, boss grades, employee caps.
 local SV           = config.Services
@@ -81,16 +83,17 @@ local READ_MAX = 90
 
 ---Parses a client message draft into a kind, a body, and a JSON meta blob of the extras, with
 ---every client string length-capped. Returns `nil` plus a refusal when the draft is empty/invalid.
+---@param cid string caller's framework character id
 ---@param payload { kind?: string, body?: string, mediaUrl?: string, wpCode?: string, wpSub?: string }
 ---@return string|nil kind nil when the draft is unusable
 ---@return string|nil body
 ---@return string|nil meta
 ---@return table|nil refusal failure envelope, set only when kind is nil
-local function parseDraft(payload)
+local function parseDraft(cid, payload)
     local kind = tostring(payload.kind or 'text')
     if kind == 'image' then
-        local url = trim(payload.mediaUrl):sub(1, 512)
-        if url == '' then return nil, nil, nil, fail('services.noImage', 'No image') end
+        local url = mediaGuard.photo(cid, payload.mediaUrl)
+        if not url then return nil, nil, nil, fail('services.noImage', 'No image') end
         return 'image', '📷 Photo', json.encode({ mediaUrl = url })
     elseif kind == 'location' then
         local wp = trim(payload.wpCode):sub(1, 256)
@@ -839,7 +842,7 @@ function actions.messageCompany(src, payload)
         return fail('services.pleaseWaitMoment', 'Please wait a moment')
     end
 
-    local kind, body, meta, refusal = parseDraft(payload)
+    local kind, body, meta, refusal = parseDraft(cid, payload)
     if not kind then return refusal end
 
     local myNumber = digits(settings.ensurePhoneNumber(cid) or '')
@@ -885,7 +888,7 @@ function actions.replyCompany(src, payload)
     -- Staff answer existing conversations; they never open one. Without this an employee mints a
     -- brand-new company thread per call, and the inbox rebuild runs a query per thread.
     if not msgstore.threadExists(entry.job, citizenNumber) then return fail('services.noSuchConversation', 'No such conversation') end
-    local kind, body, meta, refusal = parseDraft(payload)
+    local kind, body, meta, refusal = parseDraft(cid, payload)
     if not kind then return refusal end
 
     msgstore.insert({

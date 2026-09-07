@@ -10,6 +10,8 @@ local acctStore = require 'server.accounts.store'
 local store     = require 'server.cherry.store'
 ---@type table Admin mute registry (server.admin.moderation): scope guards for sending messages.
 local moderation = require 'server.admin.moderation'
+---@type table Media trust boundary: gallery/voice ownership and GIPHY host validation.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Actions module; the table returned at end of file.
 local actions = {}
@@ -194,14 +196,16 @@ end
 
 ---Clamps/coerces composer metadata per kind: URLs trimmed + byte-capped, voice duration and
 ---waveform bars clamped, waypoint strings capped, money forced to a finite capped integer.
+---@param cid string caller's framework character id
 ---@param kind string whitelisted message kind
 ---@param payload table raw client payload
 ---@return table meta sanitized meta (possibly empty)
-local function sanitizeMeta(kind, payload)
+local function sanitizeMeta(cid, kind, payload)
     local meta = {}
-    if kind == 'image' or kind == 'gif' then
-        local url = trim(payload.gifUrl)
-        if url ~= '' then meta.gifUrl = url:sub(1, 512) end
+    if kind == 'image' then
+        meta.gifUrl = mediaGuard.photo(cid, payload.gifUrl)
+    elseif kind == 'gif' then
+        meta.gifUrl = mediaGuard.giphy(payload.gifUrl)
     elseif kind == 'money' then
         local amount = tonumber(payload.amount) or 0
         if amount ~= amount or amount == math.huge or amount == -math.huge then amount = 0 end
@@ -209,8 +213,7 @@ local function sanitizeMeta(kind, payload)
         if payload.requested == true then meta.requested = true end
     elseif kind == 'voice' then
         meta.duration = lib.math.clamp(math.floor(tonumber(payload.duration) or 0), 0, 36000)
-        local audio = trim(payload.audioUrl)
-        if audio ~= '' then meta.audio = audio:sub(1, 512) end
+        meta.audio = mediaGuard.voice(cid, payload.audioUrl)
         if type(payload.waveform) == 'table' then
             local bars = {}
             for i = 1, math.min(#payload.waveform, 64) do
@@ -314,13 +317,9 @@ function actions.saveProfile(src, payload)
     local name = trim(payload.name):sub(1, 50)
     if name == '' then return fail('cherry.nameRequired', 'Name is required') end
 
-    local photos = {}
-    if type(payload.photos) == 'table' then
-        for i = 1, math.min(#payload.photos, 6) do
-            local url = trim(payload.photos[i])
-            if lib.string.startsWith(url, 'http') then photos[#photos + 1] = url:sub(1, 512) end
-        end
-    end
+    local existing = store.getProfile(acc.username)
+    local photos = mediaGuard.photos(player.getIdentifier(src), payload.photos, 6,
+        existing and store.decodeJson(existing.photos) or nil)
 
     store.upsertProfile(acc.username, {
         name       = name,
@@ -450,7 +449,7 @@ function actions.send(src, payload)
 
     local kind = VALID_KINDS[payload.kind] and payload.kind or 'text'
     local body = trim(payload.body):sub(1, 1000)
-    local meta = sanitizeMeta(kind, payload)
+    local meta = sanitizeMeta(player.getIdentifier(src), kind, payload)
     if not hasContent(kind, body, meta) then return fail('cherry.emptyMessage', 'Empty message') end
 
     local partner = partnerOf(m, acc.username)

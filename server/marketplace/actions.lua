@@ -6,6 +6,8 @@ local store = require 'server.marketplace.store'
 local player = require 'bridge.server.player'
 ---@type table Watcher registry (server.watchers): players with Marketplace open.
 local watchers = require('server.watchers').of('marketplace')
+---@type table Media trust boundary: only gallery-owned images may reach public listings.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Marketplace app config (configs/marketplace.lua): feed limit + field caps.
 local MP = config.Marketplace
@@ -122,7 +124,7 @@ end
 ---Title/body are required and capped, price clamps to MaxPrice (nil = "wanted"), images cap at
 ---MaxImages, and a number or email is required.
 ---@param payload table client payload (all fields untrusted)
----@param cid string caller citizenid (unused)
+---@param cid string caller citizenid
 ---@return table|nil fields columns to store, nil when invalid
 ---@return string? err rejection message when fields is nil
 local function parseFields(payload, cid)
@@ -140,10 +142,8 @@ local function parseFields(payload, cid)
 
     local images = {}
     local function addImg(u)
-        local url = trim(u)
-        if url ~= '' and #images < (MP.MaxImages or 3) then
-            images[#images + 1] = url:sub(1, MP.MaxImageUrlLength)
-        end
+        local url = mediaGuard.photo(cid, u)
+        if url and #images < (MP.MaxImages or 3) then images[#images + 1] = url end
     end
     if type(payload.images) == 'table' then
         if #payload.images > MAX_IMAGE_ENTRIES then return nil, 'Too many photos' end

@@ -31,6 +31,7 @@ function store.ensureSchema()
             id         VARCHAR(16)  NOT NULL,
             citizenid  VARCHAR(64)  NOT NULL,
             url        VARCHAR(512) NOT NULL,
+            trusted    TINYINT(1)   NOT NULL DEFAULT 0,
             favorite   TINYINT(1)   NOT NULL DEFAULT 0,
             created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -38,11 +39,21 @@ function store.ensureSchema()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ]])
 
-    util.ensureColumns('phone_photos', {
+    local hadTrusted = MySQL.scalar.await([[
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = DATABASE() AND table_name = 'phone_photos' AND column_name = 'trusted'
+    ]]) ~= nil
+
+    local added = util.ensureColumns('phone_photos', {
         url        = "url VARCHAR(512) NOT NULL DEFAULT ''",
+        trusted    = 'trusted TINYINT(1) NOT NULL DEFAULT 0',
         favorite   = 'favorite TINYINT(1) NOT NULL DEFAULT 0',
         created_at = 'created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP',
     })
+
+    if added and not hadTrusted then
+        MySQL.update.await('UPDATE phone_photos SET trusted = 1 WHERE trusted = 0')
+    end
 
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS phone_photo_albums (
@@ -81,11 +92,12 @@ end
 ---@param id string generated row id
 ---@param citizenid string owner's framework per-character id
 ---@param url string hosted media URL
+---@param trusted boolean|nil true only when the server uploader or an explicit host allowlist supplied the URL
 ---@return boolean inserted
-function store.insertPhoto(id, citizenid, url)
+function store.insertPhoto(id, citizenid, url, trusted)
     local affected = MySQL.insert.await(
-        'INSERT INTO phone_photos (id, citizenid, url) VALUES (?, ?, ?)',
-        { id, citizenid, url }
+        'INSERT INTO phone_photos (id, citizenid, url, trusted) VALUES (?, ?, ?, ?)',
+        { id, citizenid, url, trusted == true and 1 or 0 }
     )
     return affected ~= nil
 end
@@ -96,7 +108,7 @@ end
 ---@return string|nil url
 function store.urlFor(photoId, citizenid)
     local url = MySQL.scalar.await(
-        'SELECT url FROM phone_photos WHERE id = ? AND citizenid = ?',
+        'SELECT url FROM phone_photos WHERE id = ? AND citizenid = ? AND trusted = 1',
         { photoId, citizenid }
     )
     return (type(url) == 'string' and url ~= '') and url or nil
@@ -108,7 +120,8 @@ end
 ---@return boolean
 function store.hasUrl(citizenid, url)
     return MySQL.scalar.await(
-        'SELECT 1 FROM phone_photos WHERE citizenid = ? AND url = ? LIMIT 1', { citizenid, url }) ~= nil
+        'SELECT 1 FROM phone_photos WHERE citizenid = ? AND url = ? AND trusted = 1 LIMIT 1',
+        { citizenid, url }) ~= nil
 end
 
 ---@type string Video-URL test, mirroring isVideoUrl() in web/src/core/photosApi.ts.

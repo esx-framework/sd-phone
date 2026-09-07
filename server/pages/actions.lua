@@ -6,6 +6,8 @@ local store = require 'server.pages.store'
 local player = require 'bridge.server.player'
 ---@type table Watcher registry (server.watchers): players with Pages open.
 local watchers = require('server.watchers').of('pages')
+---@type table Media trust boundary: only gallery-owned images may reach public posts.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Pages app config (configs/pages.lua): feed limit + field caps.
 local PG = config.Pages
@@ -164,7 +166,7 @@ end
 ---Validates + normalises a post payload into the columns we store, or nil + an error message.
 ---Title/body are required and capped, images cap at MaxImages, and a number or email is required.
 ---@param payload table client payload (all fields untrusted)
----@param cid string caller citizenid (unused)
+---@param cid string caller citizenid
 ---@return table|nil fields columns to store, nil when invalid
 ---@return string? err rejection message when fields is nil
 local function parseFields(payload, cid)
@@ -179,10 +181,8 @@ local function parseFields(payload, cid)
 
     local images = {}
     local function addImg(u)
-        local url = trim(u)
-        if url ~= '' and #images < (PG.MaxImages or 3) then
-            images[#images + 1] = url:sub(1, PG.MaxImageUrlLength)
-        end
+        local url = mediaGuard.photo(cid, u)
+        if url and #images < (PG.MaxImages or 3) then images[#images + 1] = url end
     end
     if type(payload.images) == 'table' then
         if #payload.images > MAX_IMAGE_ENTRIES then return nil, 'Too many photos' end

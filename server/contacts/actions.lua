@@ -10,6 +10,8 @@ local settings = require 'server.settings.store'
 local share    = require 'server.share.core'
 ---@type table Badge engine (server.badges.init): server-authoritative unread badge pushes.
 local badges   = require 'server.badges.init'
+---@type table Media trust boundary: contact and My Card photos must come from the caller's gallery.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Contacts config (config.Contacts): caps for contacts, recents, and field lengths.
 local cfg = config.Contacts or require 'configs.contacts'
@@ -42,18 +44,19 @@ local MAX_BLOCKED = 300
 
 ---Validates and normalises an add/update payload into stored fields: phone stored as bare
 ---digits, a nameless contact falls back to the typed number, lengths capped.
+---@param cid string caller's framework character id
 ---@param payload any client-supplied contact fields
+---@param currentAvatar string|nil avatar already stored on the contact being edited
 ---@return { name: string, phone: string, email: string|nil, address: string|nil, avatar: string|nil }|nil fields
 ---@return table? refusal keyed refusal envelope when fields is nil
-local function validate(payload)
+local function validate(cid, payload, currentAvatar)
     if type(payload) ~= 'table' then payload = {} end
     local name    = trim(payload.name)
     local typed   = trim(payload.phone)
     local phone   = (typed:gsub('%D', ''))
     local email   = trim(payload.email)
     local address = trim(payload.address)
-    local avatar  = trim(payload.avatar)
-    if #avatar > 512 then avatar = avatar:sub(1, 512) end
+    local avatar  = mediaGuard.photoOrCurrent(cid, payload.avatar, currentAvatar)
 
     if name == '' and phone == '' then
         return nil, fail('contacts.nameNumberRequired', 'A name or number is required')
@@ -81,7 +84,7 @@ local function validate(payload)
         phone   = phone,
         email   = email   ~= '' and email   or nil,
         address = address ~= '' and address or nil,
-        avatar  = avatar  ~= '' and avatar  or nil,
+        avatar  = avatar,
     }
 end
 
@@ -153,7 +156,9 @@ end
 function actions.saveCard(source, payload)
     local cid = player.getIdentifier(source)
     if not cid then return fail('contacts.playerNotFound', 'Player not found') end
-    settings.setCard(cid, type(payload) == 'table' and payload or {})
+    payload = type(payload) == 'table' and payload or {}
+    payload.avatar = mediaGuard.photoOrCurrent(cid, payload.avatar, settings.getCard(cid).avatar)
+    settings.setCard(cid, payload)
     return ok(settings.getCard(cid))
 end
 
@@ -166,7 +171,7 @@ function actions.add(source, payload)
     local cid = player.getIdentifier(source)
     if not cid then return fail('contacts.playerNotFound', 'Player not found') end
 
-    local fields, refusal = validate(payload)
+    local fields, refusal = validate(cid, payload)
     if not fields then return refusal end
 
     local newDigits = (tostring(fields.phone):gsub('%D', ''))
@@ -222,7 +227,7 @@ function actions.requestShare(source, target, payload)
     local cid = player.getIdentifier(source)
     if not cid then return fail('contacts.playerNotFound', 'Player not found') end
 
-    local fields, refusal = validate(payload)
+    local fields, refusal = validate(cid, payload)
     if not fields then return refusal end
 
     local okSent, refusal = share.request(source, target, 'contact', fields)
@@ -288,9 +293,10 @@ function actions.update(source, payload)
 
     local id = type(payload.id) == 'string' and payload.id or ''
     if id == '' then return fail('contacts.contactIdRequired', 'Contact id is required') end
-    if not store.getContact(id, cid) then return fail('contacts.contactNotFound', 'Contact not found') end
+    local existing = store.getContact(id, cid)
+    if not existing then return fail('contacts.contactNotFound', 'Contact not found') end
 
-    local fields, refusal = validate(payload)
+    local fields, refusal = validate(cid, payload, existing.avatar)
     if not fields then return refusal end
 
     if not store.updateContact(id, cid, fields) then

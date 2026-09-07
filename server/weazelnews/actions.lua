@@ -8,6 +8,8 @@ local watchers = require('server.watchers').of('weazelnews')
 local player = require 'bridge.server.player'
 ---@type table Job bridge (bridge.server.job): framework job membership/grade/boss checks.
 local job    = require 'bridge.server.job'
+---@type table Media trust boundary: staff images come from their gallery; server exports use HTTPS.
+local mediaGuard = require 'server.media.guard'
 
 ---@type table Weazel News config (configs/weazelnews.lua): staff gating + content caps.
 local WZ = config.WeazelNews
@@ -176,9 +178,10 @@ end
 ---Validates + clamps a client save payload into a row-ready table. Category is whitelist-checked
 ---and the headline required; everything else is clamped to the configured caps.
 ---@param payload any client-supplied article draft
+---@param cid string|nil caller's framework character id, nil for server-authored articles
 ---@return table|nil row row-ready fields, nil on a hard validation failure
 ---@return string? message failure reason when row is nil
-local function sanitize(payload)
+local function sanitize(payload, cid)
     if type(payload) ~= 'table' then payload = {} end
 
     local category = trim(payload.category)
@@ -204,9 +207,18 @@ local function sanitize(payload)
     local body = table.concat(paras, '\n\n')
     if #body > WZ.MaxBodyLength then body = body:sub(1, WZ.MaxBodyLength) end
 
-    local image = trim(payload.image)
-    if image == '' then image = nil
-    elseif #image > WZ.MaxImageUrlLength then image = image:sub(1, WZ.MaxImageUrlLength) end
+    local rawImage = trim(payload.image)
+    local image
+    if rawImage ~= '' then
+        if cid then
+            image = mediaGuard.photo(cid, rawImage)
+        else
+            image = mediaGuard.https(rawImage)
+        end
+    end
+    if rawImage ~= '' and not image then
+        return nil, cid and 'Choose an image from your Photos gallery' or 'The article image has to be an HTTPS link'
+    end
 
     return {
         category = category,
@@ -316,7 +328,7 @@ function actions.save(src, payload)
     local cid = cidOf(src)
     if not cid then return { success = false } end
 
-    local row, err = sanitize(payload)
+    local row, err = sanitize(payload, cid)
     if not row then return { success = false, message = err } end
 
     local ts = os.time()
@@ -509,7 +521,7 @@ end
 ---@return integer|nil articleId new article id, nil on validation failure
 ---@return string? reason failure reason when articleId is nil
 function actions.publish(article)
-    local row, err = sanitize(article)
+    local row, err = sanitize(article, nil)
     if not row then return nil, err end
 
     local author = trim(article.author)

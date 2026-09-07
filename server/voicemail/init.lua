@@ -9,6 +9,8 @@ local actions    = require 'server.voicemail.actions'
 local uploader   = require 'server.photos.uploader'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
 local mediaLimit = require 'server.photos.mediaLimit'
+---@type table Media trust boundary: remembers uploader-returned voicemail URLs for delivery.
+local mediaGuard = require 'server.media.guard'
 ---@type table Player bridge (bridge.server.player): citizenid for the shared upload budget.
 local player     = require 'bridge.server.player'
 ---@type table Shared server helpers (server.util): the ok/fail envelopes.
@@ -93,5 +95,7 @@ lib.callback.register('sd-phone:server:voicemail:upload', function(src, payload)
         print(('^1[sd-phone:voicemail]^0 upload failed: %s'):format(tostring(result.err)))
         return util.fail('voicemail.uploadFailed', 'Upload failed')
     end
-    return util.ok({ url = result.url })
+    local trustedUrl = mediaGuard.rememberVoice(player.getIdentifier(src), result.url)
+    if not trustedUrl then return util.fail('voicemail.uploadFailed', 'Upload failed') end
+    return util.ok({ url = trustedUrl })
 end)
