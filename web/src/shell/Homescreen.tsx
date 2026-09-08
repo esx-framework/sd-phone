@@ -286,18 +286,26 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
     const [galleryOpen, setGalleryOpen] = useState(false);
 
-    /** Places a widget on the current page, or reports back that it would not fit. */
     const addWidget = useCallback((kind: string, size: WidgetSize, align: WidgetAlign, theme: WidgetTheme, picks?: string[]): boolean => {
-        const spot = firstFit(size, pageRef.current, slots, widgets, itemsPerPage());
-        if (!spot) return false;
+        const per = itemsPerPage();
+        const lastIconPage   = Math.floor(lastFilledIndex(slots) / per);
+        const lastWidgetPage = widgets.reduce((m, w) => Math.max(m, w.page), -1);
+        const lastPage = Math.max(lastIconPage, lastWidgetPage) + 1;
+        let placed: { page: number; col: number; row: number } | null = null;
+        for (let p = pageRef.current; p <= lastPage && !placed; p++) {
+            const spot = firstFit(size, p, slots, widgets, per);
+            if (spot) placed = { page: p, col: spot.col, row: spot.row };
+        }
+        if (!placed) return false;
         const next: WidgetPlacement[] = [...widgets, {
             uid: `w${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`,
-            kind, size, align, theme, page: pageRef.current, col: spot.col, row: spot.row,
+            kind, size, align, theme, page: placed.page, col: placed.col, row: placed.row,
             ...(picks?.length ? { picks } : {}),
         }];
         setWidgets(next);
-        setSlots(prev => normalize(reflowAround(prev, next, itemsPerPage())));
+        setSlots(prev => normalize(reflowAround(prev, next, per)));
         setGalleryOpen(false);
+        if (placed.page !== pageRef.current) setPage(placed.page);
         return true;
     }, [slots, widgets]);
 
@@ -1437,6 +1445,8 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
 }): ReactNode {
     const TILE = useGrid().icon;
     const panelRef = useRef<HTMLDivElement>(null);
+    const [closing, setClosing] = useState(false);
+    function requestClose() { if (!closing) setClosing(true); }
     const [localEdit, setLocalEdit] = useState(false);
     const editing = homeEditing || localEdit;
     const editingRef = useRef(editing);
@@ -1533,12 +1543,14 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
     }
 
     return (
-        <div className="absolute inset-0 z-[70]" onPointerDown={onClose}>
-            <div
-                className="absolute inset-0"
-                style={{ backgroundImage: `url(${resolveWallpaper(wallpaper)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(34px) brightness(0.5)', transform: 'scale(1.18)' }}
-            />
-            <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 z-[70]" onPointerDown={requestClose} style={closing ? { pointerEvents: 'none' } : undefined}>
+            <div className="absolute inset-0" style={{ animation: closing ? 'folder-fade-out 0.2s ease-in forwards' : 'folder-fade-in 0.26s ease-out' }}>
+                <div
+                    className="absolute inset-0"
+                    style={{ backgroundImage: `url(${resolveWallpaper(wallpaper)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(22px) brightness(0.72) saturate(1.15)', transform: 'scale(1.12)' }}
+                />
+                <div className="absolute inset-0 bg-black/25" />
+            </div>
 
             {localEdit && (
                 <button type="button" onPointerDown={e => e.stopPropagation()} onClick={() => setLocalEdit(false)} className="absolute right-5 top-[58px] z-20 rounded-full border border-white/25 bg-white/20 px-4 py-1.5 text-[15px] font-semibold text-white backdrop-blur-md active:opacity-70">
@@ -1546,7 +1558,11 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
                 </button>
             )}
 
-            <div className="relative z-10 flex h-full flex-col items-center pt-[150px]" style={{ animation: 'folder-open 0.26s cubic-bezier(0.2,0.9,0.3,1.08)' }}>
+            <div
+                className="relative z-10 flex h-full flex-col items-center pt-[150px]"
+                style={{ animation: closing ? 'folder-close 0.2s ease-in forwards' : 'folder-open 0.26s cubic-bezier(0.2,0.9,0.3,1.08)' }}
+                onAnimationEnd={e => { if (closing && e.target === e.currentTarget) onClose(); }}
+            >
                 {editName ? (
                     <input
                         autoFocus
@@ -1571,7 +1587,7 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
                     onPointerUp={onPanelUp}
                     onPointerCancel={onPanelUp}
                     style={{ touchAction: 'none' }}
-                    className="w-[calc(100%-48px)] rounded-[34px] border border-white/15 bg-white/10 p-5 backdrop-blur-2xl"
+                    className="w-[calc(100%-48px)] rounded-[34px] border border-white/15 bg-white/[0.14] p-5"
                 >
                     {/* A folder page is its own 4-up grid, not the home grid, so it does not follow device cols. */}
                     <div ref={gridRef} className="relative grid grid-cols-4 gap-x-3 gap-y-5">

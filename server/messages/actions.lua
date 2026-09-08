@@ -4,8 +4,6 @@ local config        = require 'configs.config'
 local player        = require 'bridge.server.player'
 ---@type table Settings persistence (server.settings.store): number registry + airplane-mode flag.
 local settings      = require 'server.settings.store'
----@type table Find My handlers (server.findmy.actions): the Lost Mode flag an outgoing text reads.
-local findmy        = require 'server.findmy.actions'
 ---@type table Contacts persistence (server.contacts.store): saved-contact rows + the block list.
 local contactsStore = require 'server.contacts.store'
 ---@type table Banking actions (server.banking.actions): validated transfers with refund-on-failure.
@@ -774,7 +772,6 @@ function actions.send(source, payload)
         return fail('messages.slowDown', 'Slow down')
     end
     if settings.isAirplane(cid) then return fail('messages.airplaneMode', 'Airplane Mode is on') end
-    if findmy.isLost(cid) then return fail('messages.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'text') then return fail('messages.noService', 'No Service') end
     local muted = moderation.guard(cid, 'sms'); if muted then return muted end
 

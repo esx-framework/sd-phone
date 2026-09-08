@@ -134,7 +134,7 @@ export function WidgetGallery({
                                 </button>
                                 {failed && (
                                     <span className="mt-2 text-[12px] text-[#ff9f0a]">
-                                        {t('widgets.noRoom', 'No room on this page. Free some space and try again.')}
+                                        {t('widgets.noRoom', 'No room for this widget. Free some space and try again.')}
                                     </span>
                                 )}
                             </div>

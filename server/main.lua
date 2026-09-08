@@ -75,7 +75,6 @@ require 'server.documents.init'
 require 'server.homes.init'
 require 'server.maps.init'
 require 'server.friends.init'
-require 'server.findmy.init'
 require 'server.cherry.init'
 -- Ahead of the three features that stream live video, so the relay's gate is resolved and its
 -- feature registry is there to be registered against before any of them takes a viewer.

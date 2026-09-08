@@ -55,7 +55,6 @@ local config = {
     Racing      = require 'configs.racing',         -- Racing: tracks, races, MMR, the gate creator
     Migrate     = require 'configs.migrate',         -- one-time lb-phone -> sd-phone data import
     Sim         = require 'configs.uniqueandsim',    -- unique phones + SIM cards (see its pick-your-setup header)
-    FindMy      = require 'configs.findmy',        -- Find My: where each device was last seen, plus Lost Mode
     CellTowers  = require 'configs.celltowers',   -- degradable service by distance to a mast
     Wifi        = require 'configs.wifi',          -- local networks that carry data off the towers
     Bluetooth   = require 'configs.bluetooth',     -- devices other resources register for phones to pair with

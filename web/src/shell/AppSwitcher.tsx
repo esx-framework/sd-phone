@@ -68,6 +68,7 @@ export function AppSwitcher({
     const badges = useBadges();
     const [focusedIdx, setFocusedIdx] = useState(0);
     const [swipeUpY,   setSwipeUpY]   = useState(0);
+    const [dragX,      setDragX]      = useState(0);
     const [ejectingId, setEjectingId] = useState<string | null>(null);
 
     const isDraggingRef   = useRef(false);
@@ -78,6 +79,8 @@ export function AppSwitcher({
     const suppressClick   = useRef(false);
     const lastWheelRef    = useRef(0);
     const swipeUpYRef     = useRef(0);
+    const dragXRef        = useRef(0);
+    const lastMoveRef     = useRef({ x: 0, t: 0, vx: 0 });
     const swipeDragIdx    = useRef(-1);
     const suppressMount  = useRef(true);
     const focusedRef     = useRef(focusedIdx);
@@ -99,9 +102,10 @@ export function AppSwitcher({
             if (now - lastWheelRef.current < 280) return;
             lastWheelRef.current = now;
 
-            if (e.deltaY < 0) {
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : -e.deltaY;
+            if (delta > 0) {
                 setFocusedIdx(f => Math.min(f + 1, recents.length - 1));
-            } else if (e.deltaY > 0) {
+            } else if (delta < 0) {
                 setFocusedIdx(f => Math.max(f - 1, 0));
             }
         }
@@ -116,6 +120,7 @@ export function AppSwitcher({
         capturedRef.current   = false;
         axisRef.current       = null;
         swipeDragIdx.current  = focusedRef.current;
+        lastMoveRef.current   = { x: e.clientX, t: performance.now(), vx: 0 };
     }
 
     function onPointerMove(e: React.PointerEvent) {
@@ -126,12 +131,26 @@ export function AppSwitcher({
         if (!axisRef.current && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
             axisRef.current = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
         }
-        if (axisRef.current !== 'v') return;
+        if (!axisRef.current) return;
 
         if (!capturedRef.current) {
             capturedRef.current = true;
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         }
+
+        if (axisRef.current === 'h') {
+            const now = performance.now();
+            const last = lastMoveRef.current;
+            const dt = Math.max(1, now - last.t);
+            lastMoveRef.current = { x: e.clientX, t: now, vx: (e.clientX - last.x) / dt };
+            const atStart = focusedRef.current === 0 && dx > 0;
+            const atEnd   = focusedRef.current === recents.length - 1 && dx < 0;
+            const eased = atStart || atEnd ? dx * 0.35 : dx;
+            dragXRef.current = eased;
+            setDragX(eased);
+            return;
+        }
+
         const newY = Math.min(0, dy);
         swipeUpYRef.current = newY;
         setSwipeUpY(newY);
@@ -141,6 +160,17 @@ export function AppSwitcher({
         if (axisRef.current) {
             suppressClick.current = true;
             setTimeout(() => { suppressClick.current = false; }, 80);
+        }
+
+        if (axisRef.current === 'h') {
+            const dx = dragXRef.current;
+            const vx = lastMoveRef.current.vx;
+            let steps = Math.round(-dx / CARD_STEP);
+            if (steps === 0 && Math.abs(dx) > 30) steps = dx < 0 ? 1 : -1;
+            if (Math.abs(vx) > 0.6) steps = vx < 0 ? Math.max(steps, 1) : Math.min(steps, -1);
+            setFocusedIdx(f => Math.max(0, Math.min(recents.length - 1, f + steps)));
+            dragXRef.current = 0;
+            setDragX(0);
         }
 
         if (axisRef.current === 'v') {
@@ -198,7 +228,7 @@ export function AppSwitcher({
             >
                 {recents.map((appId, idx) => {
                     const appDef    = apps.find(a => a.id === appId);
-                    const tx        = CENTER + (idx - focusedIdx) * CARD_STEP;
+                    const tx        = CENTER + (idx - focusedIdx) * CARD_STEP + dragX;
                     const snapping  = !isDraggingRef.current;
                     const isEjecting = ejectingId === appId;
                     const isSwiping  = idx === swipeDragIdx.current;
@@ -328,6 +358,7 @@ export function AppSwitcher({
                                     className="absolute inset-0 z-[2]"
                                     onClick={e => {
                                         e.stopPropagation();
+                                        if (suppressClick.current) return;
                                         const cx = (tx + CARD_W / 2) / SW;
                                         const cy = (CARD_TOP + CARD_H / 2) / SH;
                                         onOpen(appId, {

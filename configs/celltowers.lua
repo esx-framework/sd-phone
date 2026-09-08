@@ -101,7 +101,7 @@ return {
         'settings', 'phone', 'apps', 'sim', 'admin', 'badges', 'compat',
         'notes', 'documents', 'photos', 'albums', 'music', 'clock', 'voice',
         'contacts', 'call', 'calls', 'messages', 'payphone', 'share', 'airshare',
-        'radio', 'cookie', 'medical', 'findmy',
+        'radio', 'cookie', 'medical',
     },
 
     -- Single actions that need Thresholds.Data even though the app around them is offline-safe,
@@ -114,14 +114,9 @@ return {
     -- A Medical ID is emergency information about the person holding the phone, so reading and
     -- editing your own card is device behaviour and stays available in a dead zone. Looking up
     -- someone ELSE's from the medical terminal is a remote record read, so it is gated.
-    --
-    -- Find My is a network feature: locating a device, ringing it, Lost Mode and a remote erase
-    -- all need data. Only 'findmy:unlock' stays offline-safe, because that one is the lock screen
-    -- of the phone in your hand asking whether the code you just typed is the right one.
     Gated = {
         'apps:install',
         'medical:lookup',
-        'findmy:list', 'findmy:playSound', 'findmy:setLost', 'findmy:clearLost', 'findmy:erase',
     },
 
     -- Reads whose last good answer is kept, so a data app in a dead zone shows what it was

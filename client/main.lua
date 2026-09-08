@@ -177,7 +177,6 @@ require 'client.apps.homes'
 require 'client.apps.maps'
 require 'client.apps.compass'
 require 'client.apps.findfriends'
-require 'client.apps.findmy'
 require 'client.apps.cherry'
 require 'client.apps.photogram'
 require 'client.apps.vibez'
@@ -327,6 +326,11 @@ local CONTROLS_LOOK <const> = { 1, 2 }
 ---@type integer[] The number row, which GTA binds to weapon slots while a digit field is focused.
 local CONTROLS_DIGITS <const> = { 157, 158, 159, 160, 161, 162, 163, 164, 165, 166 }
 
+---@type integer[] INPUT_JUMP. Left alone while the phone is unlocked so the player can still jump
+---with it in hand, but held while the lockscreen is up: Space starts the unlock there, the same as
+---Enter, and under keep-input that press would otherwise also jump the ped.
+local CONTROLS_JUMP <const> = { 22 }
+
 ---@type table<table, true> Groups currently added to lib.disableControls.
 local appliedControls = {}
 
@@ -380,6 +384,7 @@ local function startInputThread()
                 setControlGroup(CONTROLS_MOVEMENT, suppress)
                 setControlGroup(CONTROLS_LOOK, suppress and not lookMode and not cameraCursorFree)
                 setControlGroup(CONTROLS_DIGITS, suppress and typingNumeric)
+                setControlGroup(CONTROLS_JUMP, phoneState.locked)
 
                 if suppress then DisablePlayerFiring(cache.playerId, true) end
 
@@ -391,6 +396,7 @@ local function startInputThread()
             setControlGroup(CONTROLS_MOVEMENT, false)
             setControlGroup(CONTROLS_LOOK, false)
             setControlGroup(CONTROLS_DIGITS, false)
+            setControlGroup(CONTROLS_JUMP, false)
 
             local held = 0
             while held < 15 and not phoneState.open do

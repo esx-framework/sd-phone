@@ -78,7 +78,7 @@ export function WeatherWidget({ size, width, height, align = 'left' }: {
     if (size === 'sm') {
         return tile(
             <div className="flex h-full w-full flex-col justify-between p-3.5 text-white">
-                <div className={`flex gap-2 ${align === 'center' ? 'flex-col items-center' : align === 'right' ? 'flex-row-reverse items-start' : 'items-start justify-between'}`}>
+                <div className={`flex gap-2 ${align === 'center' ? 'items-center justify-center' : align === 'right' ? 'flex-row-reverse items-start' : 'items-start justify-between'}`}>
                     <div className={`flex min-w-0 flex-col ${al}`}>
                         <div className="truncate text-[13px] font-semibold leading-tight opacity-95">
                             {t('weather.losSantos', 'Los Santos')}
@@ -100,7 +100,7 @@ export function WeatherWidget({ size, width, height, align = 'left' }: {
     const big = size === 'lg';
     return tile(
         <div className="flex h-full w-full flex-col p-4 text-white">
-            <div className={`flex shrink-0 gap-3 ${align === 'center' ? 'flex-col items-center' : align === 'right' ? 'flex-row-reverse items-start' : 'items-start justify-between'}`}>
+            <div className={`flex shrink-0 gap-3 ${align === 'center' ? 'items-center justify-center' : align === 'right' ? 'flex-row-reverse items-start' : 'items-start justify-between'}`}>
                 <div className={`flex min-w-0 flex-col ${al}`}>
                     <div className="truncate font-semibold leading-tight opacity-95" style={{ fontSize: big ? 17 : 14 }}>
                         {t('weather.losSantos', 'Los Santos')}

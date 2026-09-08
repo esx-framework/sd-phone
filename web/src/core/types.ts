@@ -56,20 +56,6 @@ export interface OpenPayload {
     sim?: SimStatePush;
 }
 
-export interface FindMyLostPush {
-    kind:       string;
-    on:         boolean;
-    message?:   string;
-    contact?:   string;
-    unlock?:    'passcode' | 'face' | 'blocked';
-    pinLength?: number;
-}
-
-export interface FindMySoundPush {
-    kind:    string;
-    seconds: number;
-}
-
 /** Unique-phones SIM snapshot: enabled=false means the feature is off (stock behaviour). */
 export interface SimStatePush {
     enabled: boolean;
@@ -334,8 +320,6 @@ export type NuiMessage =
     | { action: 'sd-phone:open';    data: OpenPayload }
     | { action: 'sd-phone:apps';    data: { installedApps?: string[]; homeLayout?: string | null } }
     | { action: 'sd-phone:simState'; data: SimStatePush }
-    | { action: 'sd-phone:findmy:lost';  data: FindMyLostPush }
-    | { action: 'sd-phone:findmy:sound'; data: FindMySoundPush }
     | { action: 'sd-phone:frameColor'; data: { color: string } }
     | { action: 'sd-phone:music:receive'; data: MusicSharePush }
     | { action: 'sd-phone:nowPlaying:set';   data: { appId: string; track: ExternalNowPlayingTrack } }

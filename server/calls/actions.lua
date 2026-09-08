@@ -10,8 +10,6 @@ local config   = require 'configs.config'
 local badges   = require 'server.badges.init'
 ---@type table Admin mute registry (server.admin.moderation): scope guard for dialing out.
 local moderation = require 'server.admin.moderation'
----@type table Find My handlers (server.findmy.actions): the Lost Mode flag an outgoing call reads.
-local findmy   = require 'server.findmy.actions'
 ---@type table Payphone persistence (server.payphone.store): booth number -> location lookups.
 local payphones = require 'server.payphone.store'
 ---@type table Cell service (server.service): authoritative signal level per player.
@@ -578,7 +576,6 @@ function actions.dial(source, payload)
     if sessionForSource(source) or ringForSource(source) or boothRingForSource(source) then return fail('calls.alreadyCall', 'You are already on a call') end
     if not util.rateLimit(cid, 'call:dial', DIAL_WINDOW, DIAL_PER_WINDOW) then return fail('calls.slowDown', 'Slow down') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
-    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
     local muted = moderation.guard(cid, 'calls'); if muted then return muted end
 
@@ -765,7 +762,6 @@ function actions.addCall(source, payload)
     if dialed == '' then return fail('calls.noNumberDialed', 'No number dialed') end
     if not util.rateLimit(cid, 'call:dial', DIAL_WINDOW, DIAL_PER_WINDOW) then return fail('calls.slowDown', 'Slow down') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
-    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
     local muted = moderation.guard(cid, 'calls'); if muted then return muted end
 
@@ -914,7 +910,6 @@ function actions.callGroup(source, targets, displayName, displayNumber)
     if not cid then return fail('calls.playerNotFound', 'Player not found') end
     if sessionForSource(source) or ringForSource(source) then return fail('calls.alreadyCall', 'You are already on a call') end
     if settings.isAirplane(cid) then return fail('calls.airplaneMode', 'Airplane Mode is on') end
-    if findmy.isLost(cid) then return fail('calls.lostMode', 'This phone is in Lost Mode') end
     if not service.allows(source, 'call') then return fail('calls.noService', 'No Service') end
 
     local myNumber = digits(settings.ensurePhoneNumber(cid))

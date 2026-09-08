@@ -54,7 +54,6 @@ import { onOpenMail, onOpenMaps, onOpenMessages, requestOpenMail } from '@/shell
 import { fetchNui, isFiveM } from '@/core/nui';
 import { usePhoneReset, type PhoneResetScope } from '@/core/phoneReset';
 import { resetAuth } from '@/stores/authStore';
-import { useFindMyStore } from '@/stores/findMyStore';
 import { setMailDomain } from '@/core/accountsApi';
 import { setCasinoGames } from '@/apps/casino/casinoApi';
 import { setMusicSources } from '@/apps/music/data';
@@ -75,7 +74,7 @@ import { useNoServiceArea, useServiceBars, useServiceStore } from '@/stores/serv
 import { useWifiConnected, useWifiStore } from '@/stores/wifiStore';
 import { useBluetoothStore } from '@/stores/bluetoothStore';
 import { resetContacts, syncSimNumber } from '@/stores/contactsStore';
-import { playOnce, startRingtone } from '@/apps/settings/tonePlayer';
+import { playOnce } from '@/apps/settings/tonePlayer';
 import { resolveTone, toneUrl } from '@/apps/settings/tones';
 import { AlarmRinging, AlarmPeekBanner } from '@/apps/clock/AlarmRinging';
 import { alarmsSnapshot, disableAlarm, hydrateAlarms, onTestAlarm } from '@/stores/alarmStore';
@@ -326,26 +325,6 @@ function AppContent() {
             setCcOpen(false);
         }
     }, [noSim]);
-
-    const lostMode = useFindMyStore(s => s.lost);
-    useEffect(() => {
-        if (lostMode) {
-            setLocked(true);
-            setCurrentApp(null);
-            setSwitcherOpen(false);
-            setSwitcherClosing(false);
-            setCcOpen(false);
-        }
-    }, [lostMode]);
-
-    useNuiEvent('sd-phone:findmy:sound', useCallback((data) => {
-        const tones = useThemeStore.getState();
-        const stop = startRingtone(
-            resolveTone('ringtone', tones.ringtone, tones.customRingtones).url,
-            Math.max(0.35, Math.min(1, tones.ringtoneVol / 100)),
-        );
-        window.setTimeout(stop, Math.max(1, data?.seconds ?? 5) * 1000);
-    }, []));
 
     const [setup, setSetup] = useState<SetupSaved>(() => loadSetup());
     // Server-side twin of the localStorage flag (phone_settings.setup_done): survives a cleared

@@ -902,6 +902,18 @@ input[type='number'] {
     0%   { opacity: 0; transform: translateY(10px); }
     100% { opacity: 1; transform: translateY(0);    }
 }
+@keyframes folder-close {
+    0%   { opacity: 1; transform: translateY(0) scale(1);      }
+    100% { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+@keyframes folder-fade-in {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+@keyframes folder-fade-out {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+}
 @keyframes cookie-rain {
     0%   { opacity: 0;    transform: translateY(0)           rotate(0deg); }
     12%  { opacity: 0.92; }

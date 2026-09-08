@@ -100,6 +100,15 @@ interface Photo {
 
 const MODE_OPTIONS = ['VIDEO', 'PHOTO', 'LANDSCAPE'] as const;
 
+const KEY_ACTIONS: Record<string, string> = {
+    Enter:       'shutter',
+    NumpadEnter: 'shutter',
+    ArrowUp:     'flip',
+    KeyE:        'flash',
+    ArrowLeft:   'modePrev',
+    ArrowRight:  'modeNext',
+};
+
 function modeLabel(mode: typeof MODE_OPTIONS[number]): string {
     switch (mode) {
         case 'VIDEO':     return t('camera.modeVideo', 'VIDEO');
@@ -360,8 +369,8 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
         setFacingCam(false);
     }, [selfie]);
 
-    useNuiEvent('sd-phone:camera:key', (data) => {
-        switch (data?.key) {
+    function runKeyAction(key: string) {
+        switch (key) {
             case 'shutter':  handleShutter(); break;
             case 'flip': {
                 const next = !selfie;
@@ -377,6 +386,12 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
             case 'modePrev': if (!photoOnly) setMode(m => MODE_OPTIONS[(MODE_OPTIONS.indexOf(m) + MODE_OPTIONS.length - 1) % MODE_OPTIONS.length]); break;
             case 'modeNext': if (!photoOnly) setMode(m => MODE_OPTIONS[(MODE_OPTIONS.indexOf(m) + 1) % MODE_OPTIONS.length]); break;
         }
+    }
+    const runKeyRef = useRef(runKeyAction);
+    runKeyRef.current = runKeyAction;
+
+    useNuiEvent('sd-phone:camera:key', (data) => {
+        if (data?.key) runKeyRef.current(data.key);
     });
 
     useEffect(() => {
@@ -384,7 +399,15 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
             if (e.code === 'AltLeft' || e.key === 'Alt') {
                 e.preventDefault();
                 void fetchNui('sd-phone:camera:cursor', { on: false });
+                return;
             }
+            if (e.repeat) return;
+            const el = e.target as HTMLElement | null;
+            if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+            const action = KEY_ACTIONS[e.code];
+            if (!action) return;
+            e.preventDefault();
+            runKeyRef.current(action);
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
