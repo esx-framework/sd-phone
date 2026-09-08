@@ -2,6 +2,12 @@
 
 # sd-phone
 
+<a href="https://www.youtube.com/watch?v=65EoH00dlhw">
+  <img width="760" alt="Watch the sd-phone preview" src="https://img.youtube.com/vi/65EoH00dlhw/maxresdefault.jpg">
+</a>
+
+<sub>▶ **[Watch the preview](https://www.youtube.com/watch?v=65EoH00dlhw)**</sub>
+
 ### Try it right now, in your browser
 
 [![Open the live demo](https://img.shields.io/badge/%E2%96%B6%20%20OPEN%20THE%20LIVE%20DEMO-fivem.samueldev.shop%2Fphone-F0E155?style=for-the-badge&labelColor=101114&logoColor=F0E155)](https://fivem.samueldev.shop/phone)
@@ -25,7 +31,7 @@ If sd-phone is useful to you, please ⭐ the repo. Issues and pull requests are 
 [![Discord](https://img.shields.io/discord/842045164951437383?label=Discord&logo=discord&logoColor=white)](https://discord.gg/FzPehMQaBQ)
 [![Documentation](https://img.shields.io/badge/Docs-docs.samueldev.shop-94DD0C)](https://docs.samueldev.shop/resources/phone/)
 
-![Framework](https://img.shields.io/badge/Framework-QBCore%20%7C%20QBox%20%7C%20ESX%20%7C%20ox__core%20(beta)%20%7C%20ND%20(beta)-3b82f6)
+![Framework](https://img.shields.io/badge/Framework-QBCore%20%7C%20QBox%20%7C%20ESX%20%7C%20ox__core%20%7C%20ND-3b82f6)
 ![Voice](https://img.shields.io/badge/Voice-pma--voice-3b82f6)
 ![Compatibility](https://img.shields.io/badge/Drop--in%20compatible-lb--phone%2C%20qs%2C%20gks%2C%20road%2C%20YSeries-3b82f6)
 
@@ -34,14 +40,6 @@ If sd-phone is useful to you, please ⭐ the repo. Issues and pull requests are 
 </div>
 
 ---
-
-> [!IMPORTANT]
-> **This is production ready.** sd-phone is ready to run on a live server — there should be
-> no blatant issues with the phone as it stands today.
->
-> The version number is not a warning about stability. It sits below 1.0.0 because 1.0.0 is
-> a scope target rather than a quality one: there is more I want in the initial 1.0.0 release
-> than what is here today. That is the only thing holding the number back.
 
 > [!IMPORTANT]
 > **Coming from lb-phone or YSeries? Run the import when you are ready for it.**

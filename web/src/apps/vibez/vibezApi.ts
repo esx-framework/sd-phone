@@ -83,7 +83,28 @@ export async function apiPost(id: string): Promise<{ post: VPost; comments: VCom
     return r ? { post: mapPost(r.post), comments: r.comments.map(mapComment) } : null;
 }
 
-export async function apiCreate(video: string, caption: string, sound: string, thumb?: string): Promise<VPost | null> {
+export interface TtsConfig { enabled: boolean; voices: [string, string][] }
+
+const DEV_TTS_VOICES: [string, string][] = [
+    ['English (US) - Female', 'en_us_001'],
+    ['English (US) - Male 1', 'en_us_006'],
+    ['English (UK) - Male 1', 'en_uk_001'],
+    ['Ghostface (Scream)', 'en_us_ghostface'],
+];
+
+export async function apiTtsConfig(): Promise<TtsConfig> {
+    if (!isFiveM) return { enabled: true, voices: DEV_TTS_VOICES };
+    const r = await fetchNui<{ enabled?: boolean; voices?: [string, string][] }>('sd-phone:vibez:ttsConfig');
+    return { enabled: r?.enabled === true, voices: Array.isArray(r?.voices) ? r.voices : [] };
+}
+
+export async function apiTtsPreview(ttsText: string, ttsVoice: string): Promise<string | null> {
+    if (!isFiveM) return null;
+    const r = await call<{ url: string }>('sd-phone:vibez:ttsPreview', { ttsText, ttsVoice });
+    return r?.url ?? null;
+}
+
+export async function apiCreate(video: string, caption: string, sound: string, thumb?: string, ttsText?: string, ttsVoice?: string): Promise<VPost | null> {
     if (!isFiveM) {
         return {
             id: 'new-' + Date.now(), user: { id: 'dev', handle: 'dev', avatar: DEV_ME.avatar, verified: true },
@@ -92,7 +113,7 @@ export async function apiCreate(video: string, caption: string, sound: string, t
             time: t('vibez.justNow', 'Just now'),
         };
     }
-    const r = await call<{ post: SrvPost }>('sd-phone:vibez:create', { video, caption, sound, thumb });
+    const r = await call<{ post: SrvPost }>('sd-phone:vibez:create', { video, caption, sound, thumb, ttsText, ttsVoice });
     return r?.post ? mapPost(r.post) : null;
 }
 

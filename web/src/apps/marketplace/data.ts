@@ -15,6 +15,7 @@ export interface Listing {
     email?: string;
     date:   string;
     mine:   boolean;
+    publishAt?: number;
 }
 
 export interface ListingDraft {
@@ -25,6 +26,7 @@ export interface ListingDraft {
     images?: string[];
     number: string;
     email?: string;
+    publishAt?: number;
 }
 
 export const LISTINGS: Listing[] = [
@@ -37,6 +39,16 @@ export const LISTINGS: Listing[] = [
         number: '2135550107',
         date: 'Today, 09:26',
         mine: true,
+    },
+    {
+        id: 'l1b',
+        title: 'Sultan, one owner',
+        body: 'Karin Sultan kept in a garage its whole life and serviced on the button. Going up for sale properly at the weekend, so this is the early listing.',
+        price: 21_000,
+        number: '2135550107',
+        date: 'Today, 09:31',
+        mine: true,
+        publishAt: Math.floor(Date.now() / 1000) + 7200,
     },
     {
         id: 'l2',

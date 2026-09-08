@@ -11,7 +11,8 @@ import { registerRuntimeLocales, setAppLabelSource, t } from '@/i18n';
 import { CallLayer } from '@/apps/phone/CallLayer';
 import { CallPeekBanner } from '@/apps/phone/CallPeekBanner';
 import { useCallRing } from '@/apps/phone/calls/useCallRing';
-import { NotificationHost, type NotificationItem } from '@/shell/Notifications';
+import { applyNearbyRings } from '@/apps/phone/calls/nearbyRing';
+import { NotificationHost, resolveNotifText, type NotificationItem } from '@/shell/Notifications';
 import { AirShareCard, type AirShareRequest } from '@/shared/AirShare';
 import { SignRequestLayer, type SignRequestData } from '@/apps/documents/SignRequestLayer';
 import { ReceivedIdLayer } from '@/shell/ReceivedIdLayer';
@@ -960,6 +961,9 @@ function AppContent() {
     const callerNumber = useCallStore(s => s.number);
 
     useCallRing(device.calls);
+    useNuiEvent('sd-phone:ring:nearby', useCallback((data) => {
+        applyNearbyRings(data.rings ?? []);
+    }, []));
     const callOngoingRef = useRef(callOngoing);
     callOngoingRef.current = callOngoing;
     const callPeekRef = useRef(false);
@@ -997,6 +1001,7 @@ function AppContent() {
         const dnd = useThemeStore.getState().focus;
         const item: NotificationItem = {
             ...data,
+            ...resolveNotifText(data),
             id: data.id ?? `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         };
         if (phoneOpenRef.current && !lockedRef.current && !dnd) {

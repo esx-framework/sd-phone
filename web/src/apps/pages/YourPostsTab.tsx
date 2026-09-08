@@ -44,6 +44,7 @@ export function YourPostsTab({ posts, onCreate, onOpen, onDelete, onEdit, onReti
                                     body={p.body}
                                     publishAt={p.publishAt ?? 0}
                                     onOpen={() => onEdit(p)}
+                                    onEdit={() => onEdit(p)}
                                     onRetime={() => onRetime(p)}
                                     onPublishNow={() => onPublishNow(p)}
                                     onCancel={() => onDelete(p)}

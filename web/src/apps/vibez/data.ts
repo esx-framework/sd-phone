@@ -30,6 +30,8 @@ export interface VPost {
     thumb?:    string;
     caption:   string;
     sound:     string;
+    ttsUrl?:   string;
+    ttsVoice?: string;
     likes:     number;
     liked:     boolean;
     saves:     number;

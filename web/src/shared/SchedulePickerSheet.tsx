@@ -4,15 +4,13 @@ import { getLocaleTag, t } from '@/i18n';
 import { format12h } from '@/lib/time';
 import { DrumWheel } from '@/ui/DrumWheel';
 import { Sheet } from '@/ui/Sheet';
+import { SheetHeader } from '@/ui/SheetHeader';
 import { TimeWheel } from '@/ui/TimeWheel';
 
-const BAND = 34;
-const DAYS_AHEAD = 30;
-const MIN_AHEAD_SECS = 5 * 60;
-const MAX_AHEAD_SECS = DAYS_AHEAD * 86400;
+const WHEEL_BAND = 48;
 
 function pad2(n: number): string {
-    return String(n).padStart(2, '0');
+    return n < 10 ? `0${n}` : String(n);
 }
 
 function startOfDay(ms: number): Date {
@@ -34,23 +32,47 @@ export function scheduleLabel(at: number): string {
     return t('schedule.atLabel', '{day} at {time}', { day, time });
 }
 
-export function SchedulePickerSheet({ at, accent, forceDark = false, onPick, onClose }: {
+export function countdownLabel(at: number, now: number = Date.now()): string {
+    const secs = at - Math.floor(now / 1000);
+    if (secs <= 0) return t('schedule.countdownNow', 'any moment now');
+    if (secs < 60) return t('schedule.countdownUnderMinute', 'under a minute');
+
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) {
+        return mins === 1
+            ? t('schedule.countdownMinute', '1 minute')
+            : t('schedule.countdownMinutes', '{n} minutes', { n: mins });
+    }
+
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) {
+        return hours === 1
+            ? t('schedule.countdownHour', '1 hour')
+            : t('schedule.countdownHours', '{n} hours', { n: hours });
+    }
+
+    const days = Math.floor(hours / 24);
+    return days === 1
+        ? t('schedule.countdownDay', '1 day')
+        : t('schedule.countdownDays', '{n} days', { n: days });
+}
+
+export function TimePickerSheet({ at, title, daySpan, minAhead, maxAhead, forceDark = false, zIndex, onPick, onClose }: {
     at:         number | null;
-    accent?:    string;
+    title:      string;
+    daySpan:    number;
+    minAhead?:  number;
+    maxAhead?:  number;
     forceDark?: boolean;
+    zIndex?:    number;
     onPick:     (at: number) => void;
     onClose:    () => void;
 }) {
     const today = useMemo(() => startOfDay(Date.now()), []);
-    const days = useMemo(() => {
-        const out: Date[] = [];
-        for (let i = 0; i <= DAYS_AHEAD; i += 1) {
-            const d = new Date(today);
-            d.setDate(d.getDate() + i);
-            out.push(d);
-        }
-        return out;
-    }, [today]);
+    const days = useMemo(() => Array.from(
+        { length: daySpan },
+        (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i),
+    ), [today, daySpan]);
     const labels = useMemo(() => days.map(d => dayLabel(d, today.getTime())), [days, today]);
 
     const seed = useMemo(() => {
@@ -61,7 +83,8 @@ export function SchedulePickerSheet({ at, accent, forceDark = false, onPick, onC
     }, [at]);
 
     const [dayIndex, setDayIndex] = useState(() => {
-        const found = days.findIndex(d => d.getTime() === startOfDay(seed.getTime()).getTime());
+        const target = startOfDay(seed.getTime()).getTime();
+        const found = days.findIndex(d => d.getTime() === target);
         return found < 0 ? 0 : found;
     });
     const [time, setTime] = useState(() => `${pad2(seed.getHours())}:${pad2(seed.getMinutes())}`);
@@ -74,39 +97,42 @@ export function SchedulePickerSheet({ at, accent, forceDark = false, onPick, onC
     }, [days, dayIndex, time]);
 
     const now = Math.floor(Date.now() / 1000);
-    const tooSoon = picked < now + MIN_AHEAD_SECS;
-    const tooFar = picked > now + MAX_AHEAD_SECS;
+    const tooSoon = minAhead !== undefined && picked < now + minAhead;
+    const tooFar = maxAhead !== undefined && picked > now + maxAhead;
     const valid = !tooSoon && !tooFar;
 
     const hint = tooSoon
         ? t('schedule.tooSoon', 'Pick a time at least 5 minutes from now.')
         : tooFar
             ? t('schedule.tooFar', 'Pick a time within the next 30 days.')
-            : t('schedule.goesLive', 'Goes live {when}.', { when: scheduleLabel(picked) });
+            : null;
 
     return (
-        <Sheet
-            onClose={onClose}
-            fit="content"
-            forceDark={forceDark}
-            title={t('schedule.title', 'Schedule')}
-            className="bg-base font-sf"
-        >
+        <Sheet onClose={onClose} fit="content" forceDark={forceDark} zIndex={zIndex} className="bg-base font-sf">
             {({ close }) => (
                 <>
+                    <SheetHeader
+                        cancelLabel={t('common.cancel', 'Cancel')}
+                        onCancel={close}
+                        title={title}
+                        doneLabel={t('common.done', 'Done')}
+                        doneDisabled={!valid}
+                        onDone={() => { onPick(picked); close(); }}
+                    />
+
                     <div className="relative px-4 pt-1">
                         <div
                             className="pointer-events-none absolute inset-x-4 rounded-[8px] bg-[rgba(120,120,128,0.16)] dark:bg-[rgba(120,120,128,0.24)]"
-                            style={{ top: 4 + BAND, height: BAND }}
+                            style={{ top: 4 + WHEEL_BAND, height: WHEEL_BAND }}
                         />
                         <div className="relative flex justify-center">
                             <DrumWheel
                                 values={labels}
                                 index={dayIndex}
                                 onChange={setDayIndex}
-                                width={264}
-                                bandHeight={BAND}
-                                fontSize={20}
+                                width={300}
+                                bandHeight={WHEEL_BAND}
+                                fontSize={25}
                                 fontWeight={400}
                                 showBand={false}
                                 forceDark={forceDark}
@@ -114,32 +140,41 @@ export function SchedulePickerSheet({ at, accent, forceDark = false, onPick, onC
                         </div>
                     </div>
 
-                    <TimeWheel value={time} onChange={setTime} open />
+                    <div className="mx-4 my-2 h-[0.5px] bg-hairline/25" />
 
-                    <p className={`px-6 pt-1 text-center text-[14px] leading-snug ${valid ? 'text-ios-gray' : 'text-ios-red'}`}>
-                        {hint}
-                    </p>
+                    <TimeWheel value={time} onChange={setTime} open itemHeight={44} fontSize={28} columnWidth={74} />
 
-                    <div className="flex items-center gap-3 px-5 pb-1 pt-4">
-                        <button
-                            type="button"
-                            onClick={close}
-                            className="flex-1 rounded-[12px] bg-black/[0.06] py-3 text-[17px] font-medium text-black active:opacity-60 dark:bg-white/[0.12] dark:text-white"
-                        >
-                            {t('common.cancel', 'Cancel')}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={!valid}
-                            onClick={() => { onPick(picked); close(); }}
-                            className={`flex-1 rounded-[12px] py-3 text-[17px] font-semibold text-white active:opacity-80 disabled:opacity-40 ${accent ? '' : 'bg-ios-blue'}`}
-                            style={accent ? { background: accent } : undefined}
-                        >
-                            {t('schedule.set', 'Set time')}
-                        </button>
-                    </div>
+                    {hint && (
+                        <p className="px-6 pb-2 pt-1 text-center text-[14px] leading-snug text-ios-red">{hint}</p>
+                    )}
                 </>
             )}
         </Sheet>
+    );
+}
+
+const SCHEDULE_DAYS = 31;
+const MIN_AHEAD_SECS = 5 * 60;
+const MAX_AHEAD_SECS = 30 * 86400;
+
+export function SchedulePickerSheet({ at, forceDark = false, zIndex, onPick, onClose }: {
+    at:         number | null;
+    forceDark?: boolean;
+    zIndex?:    number;
+    onPick:     (at: number) => void;
+    onClose:    () => void;
+}) {
+    return (
+        <TimePickerSheet
+            at={at}
+            title={t('schedule.title', 'Schedule')}
+            daySpan={SCHEDULE_DAYS}
+            minAhead={MIN_AHEAD_SECS}
+            maxAhead={MAX_AHEAD_SECS}
+            forceDark={forceDark}
+            zIndex={zIndex}
+            onPick={onPick}
+            onClose={onClose}
+        />
     );
 }

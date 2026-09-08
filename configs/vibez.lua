@@ -32,4 +32,50 @@ return {
         -- onto the wire without slamming the net thread.
         RelayBytesPerSec  = 512 * 1024,
     },
+
+    -- Text to speech on a Clout upload. The composer offers a text box and a voice; the
+    -- server turns them into an audio clip and plays it over the video, the way TikTok does.
+    -- Needs the same media upload key the app already uses to store videos (Fivemanage or
+    -- Qbox). The endpoint is a free public relay, so it can rate limit or go down; a failure
+    -- is soft, the post still uploads, just without the voiceover.
+    TTS = {
+        -- Whether the composer offers text to speech at all. With this off the field is hidden
+        -- and the server ignores any TTS a client sends.
+        Enabled  = true,
+
+        -- Where the text is turned into audio. The default is the community TikTok-TTS relay.
+        -- Swap it for your own if you self-host one that answers the same {text, voice} shape.
+        Endpoint = 'https://tiktok-tts.weilnet.workers.dev/api/generation',
+
+        -- The voices offered, as { label shown to the player, voice code sent to the endpoint }.
+        Voices = {
+            { 'English (US) - Female',   'en_us_001' },
+            { 'English (US) - Male 1',   'en_us_006' },
+            { 'English (US) - Male 2',   'en_us_007' },
+            { 'English (US) - Male 3',   'en_us_009' },
+            { 'English (US) - Male 4',   'en_us_010' },
+            { 'English (UK) - Male 1',   'en_uk_001' },
+            { 'English (UK) - Male 2',   'en_uk_003' },
+            { 'English (AU) - Female',   'en_au_001' },
+            { 'English (AU) - Male',     'en_au_002' },
+            { 'French - Male 1',         'fr_001' },
+            { 'French - Male 2',         'fr_002' },
+            { 'German - Female',         'de_001' },
+            { 'German - Male',           'de_002' },
+            { 'Spanish - Male',          'es_002' },
+            { 'Spanish (MX) - Male',     'es_mx_002' },
+            { 'Portuguese (BR) - Female','br_003' },
+            { 'Portuguese (BR) - Male',  'br_005' },
+            { 'Japanese - Female',       'jp_001' },
+            { 'Korean - Male',           'kr_002' },
+            { 'Ghostface (Scream)',      'en_us_ghostface' },
+            { 'Chewbacca (Star Wars)',   'en_us_chewbacca' },
+            { 'C3PO (Star Wars)',        'en_us_c3po' },
+            { 'Stitch (Lilo & Stitch)',  'en_us_stitch' },
+            { 'Stormtrooper (Star Wars)','en_us_stormtrooper' },
+            { 'Rocket (Guardians)',      'en_us_rocket' },
+            { 'Singing - Alto',          'en_female_f08_salut_damour' },
+            { 'Singing - Tenor',         'en_male_m03_lobby' },
+        },
+    },
 }

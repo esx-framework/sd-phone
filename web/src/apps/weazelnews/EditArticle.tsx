@@ -248,7 +248,6 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
             {timePicker && (
                 <SchedulePickerSheet
                     at={publishAt}
-                    accent={WEAZEL_RED}
                     forceDark={dark}
                     onPick={setPublishAt}
                     onClose={() => setTimePicker(false)}

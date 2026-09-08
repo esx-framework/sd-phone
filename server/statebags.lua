@@ -1,7 +1,13 @@
 ---@type table Player bridge (bridge.server.player): identity resolution for airplane state.
 local player = require 'bridge.server.player'
----@type table Settings persistence layer (server.settings.store): airplane mode reads.
+---@type table Settings persistence layer (server.settings.store): airplane mode, Do Not Disturb
+---and saved-ringtone reads.
 local settings = require 'server.settings.store'
+---@type table sd-phone config root (configs.config): Phone.AudibleRing governs the ring broadcast.
+local config = require 'configs.config'
+---@type table Audible-ring helpers (shared.callring): whose phone rings out loud, and which tone a
+---bystander is able to play.
+local callring = require 'shared.callring'
 
 ---@type table State bag module; the table returned at end of file. Publishes the phone's live
 ---per-player state onto FiveM player state bags, where any resource can read it without an export
@@ -88,11 +94,18 @@ local function applyCall(call, status)
     if type(call) ~= 'table' then return end
 
     local parties = { call.caller, call.callee }
-    for _, list in ipairs({ call.merged, call.targets }) do
-        if type(list) == 'table' then
-            for _, party in ipairs(list) do parties[#parties + 1] = party end
-        end
+
+    ---Appends every party in one of the payload's party lists, which may be absent. Appended one
+    ---list at a time: a group ring carries targets but no merged parties, and gathering them with
+    ---ipairs over a table holding a nil would stop at the hole and drop the targets entirely.
+    ---@param list table|nil
+    local function addAll(list)
+        if type(list) ~= 'table' then return end
+        for _, party in ipairs(list) do parties[#parties + 1] = party end
     end
+
+    addAll(call.merged)
+    addAll(call.targets)
 
     for _, party in ipairs(parties) do
         local src = party and tonumber(party.source or party.src)
@@ -102,9 +115,40 @@ local function applyCall(call, status)
     end
 end
 
-AddEventHandler('sd-phone:server:call:started', function(call) applyCall(call, 'ringing') end)
-AddEventHandler('sd-phone:server:call:answered', function(call) applyCall(call, 'active') end)
-AddEventHandler('sd-phone:server:call:ended', function(call) applyCall(call, nil) end)
+---Publishes the tone each ringing party's phone should be heard playing by players standing near
+---them, and clears the key once the call stops ringing. The caller is never included: they hear
+---ringback in their ear, and their own handset makes no sound for anyone to overhear.
+---@param call table eventCall/eventRing payload from server.calls.actions
+---@param ringing boolean whether the call is currently ringing
+local function applyAudibleRing(call, ringing)
+    if type(call) ~= 'table' then return end
+    local cfg = config.Phone.AudibleRing
+    if type(cfg) ~= 'table' or cfg.Enabled == false then return end
+
+    for _, src in ipairs(callring.ringRecipients(call)) do
+        local tone
+        if ringing then
+            local cid = player.getIdentifier(src)
+            if cid and not (cfg.RespectDnd ~= false and settings.isDnd(cid)) then
+                tone = callring.playableTone(settings.getTones(cid).ringtone)
+            end
+        end
+        put(src, 'phoneRinging', tone)
+    end
+end
+
+AddEventHandler('sd-phone:server:call:started', function(call)
+    applyCall(call, 'ringing')
+    applyAudibleRing(call, true)
+end)
+AddEventHandler('sd-phone:server:call:answered', function(call)
+    applyCall(call, 'active')
+    applyAudibleRing(call, false)
+end)
+AddEventHandler('sd-phone:server:call:ended', function(call)
+    applyCall(call, nil)
+    applyAudibleRing(call, false)
+end)
 
 ---Clears every key for a dropping player so a recycled source never inherits the last one's state.
 AddEventHandler('playerDropped', function()
@@ -114,6 +158,7 @@ AddEventHandler('playerDropped', function()
     put(src, 'phoneOpen', false)
     put(src, 'softOpen', false)
     put(src, 'phoneDisabled', false)
+    put(src, 'phoneRinging', nil)
 end)
 
 ---Client-reported shell state: open/soft-open/battery are only knowable on the client, so it

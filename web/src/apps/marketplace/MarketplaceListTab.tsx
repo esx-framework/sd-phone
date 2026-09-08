@@ -19,12 +19,13 @@ export function MarketplaceListTab({ listings, onCreate, onOpen, onMessage, onCa
     const [query, setQuery] = useSessionState('marketplace:search', '');
 
     const q = query.trim().toLowerCase();
+    const listed = listings.filter(l => l.publishAt == null);
     const list = q
-        ? listings.filter(l =>
+        ? listed.filter(l =>
             l.title.toLowerCase().includes(q) ||
             l.body.toLowerCase().includes(q) ||
             l.number.replace(/\D/g, '').includes(q.replace(/\D/g, '')))
-        : listings;
+        : listed;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">

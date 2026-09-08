@@ -7,6 +7,8 @@ local store   = require 'server.vibez.store'
 local actions = require 'server.vibez.actions'
 ---@type table Vibez Live module (server.vibez.live): in-memory livestream sessions + host-media relay.
 local live    = require 'server.vibez.live'
+---@type table Clout TTS module (server.vibez.tts): drops a leaver's remembered preview clip.
+local tts     = require 'server.vibez.tts'
 ---@type table Watcher registry (server.watchers): shared with the broadcasts in actions and live.
 local watchers = require('server.watchers').of('vibez')
 ---@type table Shared server helpers (server.util): disconnect sweep registration.
@@ -34,6 +36,7 @@ register('feed',              function(src, payload) return actions.feed(src, pa
 register('discover',          function(src) return actions.discover(src) end)
 register('post',              function(src, payload) return actions.post(src, payload) end)
 register('create',            function(src, payload) return actions.create(src, payload) end)
+register('ttsPreview',        function(src, payload) return actions.ttsPreview(src, payload) end)
 register('deletePost',        function(src, payload) return actions.deletePost(src, payload) end)
 register('toggleLike',        function(src, payload) return actions.toggleLike(src, payload) end)
 register('toggleSave',        function(src, payload) return actions.toggleSave(src, payload) end)
@@ -65,7 +68,7 @@ register('watch', function(src, payload)
 end)
 
 -- Drops a departing watcher's entry.
-util.onCleanup(function(src) watchers.drop(src) end)
+util.onCleanup(function(src) watchers.drop(src); tts.forget(src) end)
 
 -- Live session callbacks: thin delegates into server.vibez.live.
 register('lives',             function(src) return actions.lives(src) end)

@@ -29,6 +29,29 @@ export interface NotificationItem {
 
 const SHOW_MS = 5000;
 
+export interface NotifText {
+    titleKey?:  string;
+    title:      string;
+    titleVars?: Record<string, string | number>;
+    bodyKey?:   string;
+    body?:      string;
+    bodyVars?:  Record<string, string | number>;
+}
+
+export function resolveNotifText(data: NotifText): { title: string; body?: string } {
+    const title = data.titleKey ? t(data.titleKey, data.title, data.titleVars) : fill(data.title, data.titleVars);
+    if (data.body === undefined) return { title };
+    const body = data.bodyKey ? t(data.bodyKey, data.body, data.bodyVars) : fill(data.body, data.bodyVars);
+    return { title, body };
+}
+
+function fill(text: string, vars?: Record<string, string | number>): string {
+    if (!vars) return text;
+    let out = text;
+    for (const k in vars) out = out.split('{' + k + '}').join(String(vars[k]));
+    return out;
+}
+
 export function NotifIcon({ item, size = 38 }: { item: NotificationItem; size?: number }) {
     const style = { width: size, height: size };
     if (item.emergency) {
@@ -45,9 +68,10 @@ export function NotifIcon({ item, size = 38 }: { item: NotificationItem; size?: 
             </span>
         );
     }
-    // Pocket buzzes label the SOURCE as "<Color> Phone" in `app`; the glyph must still be the
-    // originating app's, so they resolve via appId first.
-    const icon = item.otherPhone ? (item.appId ?? item.app) : item.app;
+    // `app` is a display label ("Weazel News", or "<Color> Phone" on a pocket buzz) while `appId`
+    // is the registry id the icon set is keyed by, so the id wins wherever a sender supplies one.
+    // The lowercase fold catches senders that pass only a label matching an id.
+    const icon = item.appId ?? item.app?.toLowerCase();
     if (icon) {
         return (
             <span className="squircle shrink-0" style={style}>

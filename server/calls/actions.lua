@@ -69,6 +69,11 @@ local boothRings = {}
 ---no session or ring behind it, so this is the only record that it exists.
 local devFake = {}
 
+---@type table<number, table> Dev-only fake incoming rings from /fakering, keyed by the ringing
+---source: { channel, number, name }. Answering one turns it into a devFake entry; declining,
+---hanging up or the timer ends it.
+local devRings = {}
+
 local util = require 'server.util'
 local ok, fail, digits = util.ok, util.fail, util.digits
 
@@ -385,6 +390,35 @@ local function eventRing(ring)
         caller  = eventParty(ring.caller),
         targets = targets,
     }
+end
+
+---Lifecycle payload for a dev fake call or ring. The far end has no source, so the state-bag
+---publisher and the compat bridges have nothing to write for it, while the local player is a
+---normal callee: their own phone rings and the phoneRinging bag tells bystanders which tone.
+---@param src number the player being rung
+---@param info table { channel, number, name }
+---@return table
+local function devEvent(src, info)
+    return {
+        channel = info.channel,
+        caller  = { name = info.name, number = info.number },
+        callee  = { source = src, citizenid = player.getIdentifier(src), name = player.getName(src), number = info.number },
+    }
+end
+
+---Ends a fake ring: clears it, tells the phone, and fires call:ended so the bags clear.
+---@param src number
+---@param reason string
+---@return boolean ended false when no fake ring was up
+local function endDevRing(src, reason)
+    local ring = devRings[src]
+    if not ring then return false end
+    devRings[src] = nil
+    TriggerClientEvent('sd-phone:client:call:ended', src, { channel = ring.channel, reason = reason })
+    local call = devEvent(src, ring)
+    call.answered, call.duration, call.reason = false, 0, reason
+    TriggerEvent('sd-phone:server:call:ended', call, src)
+    return true
 end
 
 ---@type table<string, boolean> Teardown reasons that leave the caller free to record a message.
@@ -965,6 +999,17 @@ function actions.accept(source, payload)
     if type(payload) ~= 'table' then payload = {} end
     local channel = tonumber(payload.channel)
 
+    local dev = devRings[source]
+    if dev and channel == dev.channel then
+        devRings[source] = nil
+        devFake[source] = { channel = dev.channel, number = dev.number, name = dev.name, startedAt = os.time() }
+        TriggerClientEvent('sd-phone:client:call:connected', source, { channel = dev.channel })
+        local call = devEvent(source, dev)
+        call.startedAt = os.time()
+        TriggerEvent('sd-phone:server:call:answered', call)
+        return ok({ channel = dev.channel })
+    end
+
     local ring = channel and groupRings[channel]
     if ring then
         local t = ring.targets[source]
@@ -1073,6 +1118,11 @@ function actions.decline(source, payload)
     if type(payload) ~= 'table' then payload = {} end
     local channel = tonumber(payload.channel)
 
+    if devRings[source] and channel == devRings[source].channel then
+        endDevRing(source, 'declined')
+        return ok()
+    end
+
     local ring = channel and groupRings[channel]
     if ring then
         if ring.targets[source] then
@@ -1151,8 +1201,18 @@ end
 ---@return table
 function actions.hangup(source, payload)
     if type(payload) ~= 'table' then payload = {} end
-    devFake[source] = nil
     local channel = tonumber(payload.channel)
+
+    if endDevRing(source, 'hangup') then return ok() end
+
+    local fake = devFake[source]
+    devFake[source] = nil
+    if fake and channel == fake.channel then
+        local call = devEvent(source, fake)
+        call.answered, call.duration, call.reason = true, os.time() - fake.startedAt, 'hangup'
+        TriggerEvent('sd-phone:server:call:ended', call, source)
+        return ok()
+    end
 
     local ring = channel and groupRings[channel]
     if ring then
@@ -1229,8 +1289,12 @@ function actions.current(source)
                         number = ring.caller.number,
                         name   = contactNameFor(player.getIdentifier(source), ring.caller.number), elapsed = 0 })
         end
-        -- /fakecall has no session or ring behind it, so without this a reconcile would answer
-        -- "no call" and wipe the panel the moment the phone is closed and reopened.
+        -- /fakecall and /fakering have no session or ring behind them, so without this a reconcile
+        -- would answer "no call" and wipe the panel the moment the phone is closed and reopened.
+        local dring = devRings[source]
+        if dring then
+            return ok({ channel = dring.channel, phase = 'incoming', number = dring.number, name = dring.name, elapsed = 0 })
+        end
         local fake = devFake[source]
         if fake then
             return ok({
@@ -1327,6 +1391,26 @@ function actions.devFake(src, info)
     devFake[src] = info
 end
 
+---Starts a dev fake incoming ring: the phone gets a normal incoming-call push and the lifecycle
+---event fires exactly as for a real ring, so state bags and the audible ring behave the same.
+---Ends on its own after `info.seconds` unless answered, declined or hung up first.
+---@param src number
+---@param info table { channel, number, name, seconds }
+---@return boolean started false while the player is already on a call or another fake
+function actions.devRing(src, info)
+    if sessionForSource(src) or ringForSource(src) or devRings[src] or devFake[src] then return false end
+    devRings[src] = { channel = info.channel, number = info.number, name = info.name }
+    TriggerClientEvent('sd-phone:client:call:incoming', src, {
+        channel = info.channel, name = info.name, number = info.number, video = false,
+    })
+    TriggerEvent('sd-phone:server:call:started', devEvent(src, devRings[src]))
+    SetTimeout(math.floor(info.seconds * 1000), function()
+        local ring = devRings[src]
+        if ring and ring.channel == info.channel then endDevRing(src, 'no-answer') end
+    end)
+    return true
+end
+
 ---Relays a WebRTC signaling blob to the call peer. Dropped silently when the sender isn't in a
 ---live call, when the blob isn't the shape a peer sends, or when it is over budget.
 ---
@@ -1407,6 +1491,7 @@ end
 ---@param src number
 function actions.onDrop(src)
     devFake[src] = nil
+    devRings[src] = nil
     local channel, s = sessionForSource(src)
     if channel and s then
         -- A merged third party or a pending invite dropping takes only their own leg with them;

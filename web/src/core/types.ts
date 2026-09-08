@@ -408,6 +408,7 @@ export type NuiMessage =
     | { action: 'sd-phone:call:connected'; data: { channel: number } }
     | { action: 'sd-phone:call:ended';     data: CallEndedPush }
     | { action: 'sd-phone:call:dropped';   data: { lost: boolean } }
+    | { action: 'sd-phone:ring:nearby';    data: { rings: { id: number; tone: string; volume: number }[] } }
     | { action: 'sd-phone:call:roster';    data: { channel?: number; others?: { name?: string; number: string }[]; pending?: { name?: string; number: string } | null } }
     | { action: 'sd-phone:payphone:open';     data: { number: string; anonymous: boolean; myNumber?: string | null; favorites: { name: string; phone: string }[]; connected?: boolean; callerName?: string; coin?: { enabled: boolean; cost: number }; credited?: boolean } }
     | { action: 'sd-phone:payphone:outgoing'; data: { channel: number; number: string } }
@@ -536,7 +537,7 @@ export type NuiMessage =
     | { action: 'wordle:start';        data: { gameId: string; color: string; opponent: string; pot: number } }
     | { action: 'wordle:move';         data: { gameId: string; move: { rows: string[][]; solved: boolean; failed: boolean; tries: number; finishMs: number } } }
     | { action: 'wordle:ended';        data: { reason: string } }
-    | { action: 'sd-phone:notification';       data: { id?: string; app?: string; image?: string; title: string; body?: string; time?: string; appId?: string; quietInApp?: boolean; emergency?: boolean; otherPhone?: boolean; phoneColor?: string; profileKey?: string; link?: Record<string, unknown> } }
+    | { action: 'sd-phone:notification';       data: { id?: string; app?: string; image?: string; titleKey?: string; title: string; titleVars?: Record<string, string | number>; bodyKey?: string; body?: string; bodyVars?: Record<string, string | number>; time?: string; appId?: string; quietInApp?: boolean; emergency?: boolean; otherPhone?: boolean; phoneColor?: string; profileKey?: string; link?: Record<string, unknown> } }
     | { action: 'sd-phone:badges';             data: Record<string, number> }
     | { action: 'sd-phone:badges:patch';       data: Record<string, number> }
     | { action: 'sd-phone:airshare';           data: { id: string; kind: string; fromName: string } }

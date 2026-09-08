@@ -182,6 +182,7 @@ local function setSelfie(on)
     frontCam = on and true or false
     if phonecam.active() then
         phonecam.setSelfie(frontCam)
+        pose.reassert()
     else
         CellFrontCamActivate(frontCam)
     end

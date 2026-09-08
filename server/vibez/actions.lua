@@ -12,6 +12,8 @@ local moderation = require 'server.admin.moderation'
 local mediaGuard = require 'server.media.guard'
 ---@type table Vibez Live module (server.vibez.live): in-memory livestream sessions.
 local live       = require 'server.vibez.live'
+---@type table Clout TTS module (server.vibez.tts): turns a line of text into a hosted audio clip.
+local tts        = require 'server.vibez.tts'
 ---@type table Watcher registry (server.watchers): shared with server.vibez.live and init.
 local watchers   = require('server.watchers').of('vibez')
 
@@ -32,10 +34,11 @@ local TOGGLE_KINDS = { like = true, follow = true }
 ---per day }. Both sit far above real play; they exist so a scripted client cannot mint rows,
 ---notifications or broadcasts faster than a person can tap.
 local WRITE_BUDGET = {
-    create  = { 2000, 100 },
-    comment = { 800, 500 },
-    like    = { 250, 3000 },
-    follow  = { 400, 500 },
+    create     = { 2000, 100 },
+    comment    = { 800, 500 },
+    like       = { 250, 3000 },
+    follow     = { 400, 500 },
+    ttsPreview = { 1500, 200 },
 }
 
 ---@type integer Rolling window the per-day half of WRITE_BUDGET is measured over (ms).
@@ -150,6 +153,8 @@ local function serializePost(row)
         views     = tonumber(row.views) or 0,
         following = (tonumber(row.following_author) or 0) > 0,
         createdAt = (tonumber(row.created_at) or 0) * 1000,
+        ttsUrl    = (row.tts_url and row.tts_url ~= '') and row.tts_url or nil,
+        ttsVoice  = (row.tts_voice and row.tts_voice ~= '') and row.tts_voice or nil,
     }
 end
 
@@ -356,8 +361,20 @@ function actions.create(src, payload)
     local sound   = trim(payload.sound):sub(1, 120)
     if sound == '' then sound = ('original sound — %s'):format(acc.username) end
 
+    -- Optional voiceover: turn the composer's text into an audio clip and store its URL on the
+    -- post. A failure here is soft, so the video still uploads without the voice.
+    local ttsUrl, ttsVoice
+    local ttsText = trim(payload.ttsText or '')
+    if ttsText ~= '' and tts.enabled() and tts.voiceValid(payload.ttsVoice) then
+        -- Reuse the clip the composer already previewed when it matches, so the same voice is
+        -- not generated and uploaded a second time; otherwise make it now.
+        local url = tts.cachedFor(src, ttsText, payload.ttsVoice) or tts.generate(ttsText, payload.ttsVoice)
+        if url then ttsUrl, ttsVoice = url, payload.ttsVoice end
+    end
+    tts.forget(src)
+
     local id = store.newId()
-    store.insertPost(id, acc.username, video, thumb, caption, sound, os.time())
+    store.insertPost(id, acc.username, video, thumb, caption, sound, os.time(), ttsUrl, ttsVoice)
 
     local mentions  = mentionsIn(caption, acc.username)
     local followers = store.followerUsernames(acc.username)
@@ -385,6 +402,28 @@ function actions.create(src, payload)
     end
     broadcast('feedChanged', {})
     return ok({ post = serializePost(store.getPost(acc.username, id)) })
+end
+
+---Generates a voiceover for the composer's preview, without creating a post. The clip is kept so
+---the eventual post reuses it rather than generating twice.
+---@param src integer player server id
+---@param payload table { text: string, voice: string }
+---@return table result { success, data = { url } } or a failure envelope
+function actions.ttsPreview(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+    if not tts.enabled() then return fail('vibez.ttsUnavailable', 'Text to speech is turned off') end
+    local acc = viewerAccount(src)
+    if not acc then return fail('vibez.notSigned', 'Not signed in') end
+    local text = trim(payload.ttsText or payload.text or '')
+    if text == '' then return fail('vibez.ttsEmpty', 'Type something for the voice to say') end
+    if not tts.voiceValid(payload.ttsVoice or payload.voice) then return fail('vibez.ttsBadVoice', 'Pick a voice') end
+    local voice = payload.ttsVoice or payload.voice
+    local slow = throttle(src, 'ttsPreview'); if slow then return slow end
+
+    local url = tts.generate(text, voice)
+    if not url then return fail('vibez.ttsFailed', 'Could not generate the voice, try again') end
+    tts.remember(src, text, voice, url)
+    return ok({ url = url })
 end
 
 ---Deletes one of the viewer's own posts, ownership-checked against the signed-in handle.

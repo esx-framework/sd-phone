@@ -255,6 +255,31 @@ return {
     -- (only you see your own prop).
     PropVisibleToOthers = true,
 
+    -- Let nearby players HEAR your phone ring. Your ringtone is played by each nearby player's own
+    -- phone UI at a volume set by how far away they are, so no audio is streamed and no extra
+    -- resource is needed: every client already has the bundled ringtones in its build.
+    --
+    -- Only the eight bundled ringtones can be heard this way. A custom (YouTube) ringtone falls
+    -- back to the default tone for bystanders, because those play through a shared player that the
+    -- listener's own ringtone is already using.
+    AudibleRing = {
+        Enabled = true,
+
+        -- Metres at which the ring becomes inaudible. Falloff is squared, so it fades fast.
+        Range = 15.0,
+
+        -- Loudest a nearby ring can get (0-1), reached only right next to the ringing player.
+        Volume = 0.5,
+
+        -- Multiplier applied when there's no line of sight to the ringing player, so a phone
+        -- through a wall is muffled rather than as loud as one in the open. 1.0 disables it.
+        Occlusion = 0.35,
+
+        -- Don't broadcast a ring from a phone whose owner has Do Not Disturb on. Their own phone
+        -- stays silent for them, so it stays silent for the street too.
+        RespectDnd = true,
+    },
+
     -- Flashlight beam emitted forward from the phone (lockscreen torch button).
     -- A spotlight cast from the player's hand in the direction they're looking.
     Flashlight = {

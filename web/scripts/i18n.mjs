@@ -228,10 +228,17 @@ export function scanAll() {
         if (values.length > 1) collisions.push({ key, values, sites });
     }
 
-    // These three resolve a key supplied at runtime rather than declaring one: t() itself,
-    // failText() resolving a server's messageKey, and the custom-app SDK bridge forwarding a
-    // third-party app's own key. None of them is a source of catalogue keys.
-    const RESOLVERS = ['web/src/i18n/index.ts', 'web/src/core/api.ts', 'web/src/shell/CustomAppFrame.tsx'];
+    // These four resolve a key supplied at runtime rather than declaring one: t() itself,
+    // failText() resolving a server's messageKey, the custom-app SDK bridge forwarding a
+    // third-party app's own key, and the notification banner resolving the titleKey/bodyKey a
+    // server sent alongside its English. None of them is a source of catalogue keys; the
+    // notification keys enter the catalogue from the Lua side, through luaKeys().
+    const RESOLVERS = [
+        'web/src/i18n/index.ts',
+        'web/src/core/api.ts',
+        'web/src/shell/CustomAppFrame.tsx',
+        'web/src/shell/Notifications.tsx',
+    ];
     const undeclared = dynamicSites.filter(d =>
         !RESOLVERS.includes(d.file) &&
         !(d.prefix && [...byKey.keys()].some(k => k.startsWith(d.prefix))));

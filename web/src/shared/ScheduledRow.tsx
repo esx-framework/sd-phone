@@ -1,20 +1,24 @@
 import type { ComponentType } from 'react';
-import { Clock, Send, Trash2 } from 'lucide-react';
+import { Clock, Pencil, Send, Trash2 } from 'lucide-react';
 
+import { useClock } from '@/hooks/useClock';
 import { t } from '@/i18n';
-import { scheduleLabel } from './SchedulePickerSheet';
+import { countdownLabel, scheduleLabel } from './SchedulePickerSheet';
 
-export function ScheduledRow({ title, eyebrow, body, publishAt, accent, onOpen, onRetime, onPublishNow, onCancel }: {
+export function ScheduledRow({ title, eyebrow, body, publishAt, accent, onOpen, onEdit, onRetime, onPublishNow, onCancel }: {
     title:         string;
     eyebrow?:      string;
     body?:         string;
     publishAt:     number;
     accent?:       string;
     onOpen:        () => void;
+    onEdit:        () => void;
     onRetime:      () => void;
     onPublishNow:  () => void;
     onCancel:      () => void;
 }) {
+    const now = useClock().getTime();
+
     return (
         <div className="rounded-[16px] bg-surface p-3.5 shadow-sm">
             <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 text-left active:opacity-80">
@@ -37,13 +41,20 @@ export function ScheduledRow({ title, eyebrow, body, publishAt, accent, onOpen, 
                         {title}
                     </span>
                     {body && <span className="mt-1 line-clamp-2 block text-[15px] leading-snug text-black/70 dark:text-white/70">{body}</span>}
-                    <span className="mt-1.5 block text-[13.5px] font-medium text-ios-gray">
-                        {t('schedule.publishes', 'Publishes {when}', { when: scheduleLabel(publishAt) })}
+                    <span
+                        className={`mt-1.5 block text-[13.5px] font-semibold ${accent ? '' : 'text-ios-blue'}`}
+                        style={accent ? { color: accent } : undefined}
+                    >
+                        {t('schedule.publishingIn', 'Publishing in {when}', { when: countdownLabel(publishAt, now) })}
+                    </span>
+                    <span className="mt-0.5 block text-[13px] text-ios-gray">
+                        {scheduleLabel(publishAt)}
                     </span>
                 </span>
             </button>
 
-            <div className="mt-3 flex items-center gap-2 border-t border-hairline/10 pt-3">
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-hairline/10 pt-3">
+                <RowAction icon={Pencil} label={t('schedule.edit', 'Edit')} onClick={onEdit} />
                 <RowAction icon={Clock} label={t('schedule.changeTime', 'Change time')} onClick={onRetime} />
                 <RowAction icon={Send} label={t('schedule.publishNow', 'Publish now')} onClick={onPublishNow} />
                 <RowAction icon={Trash2} label={t('schedule.cancel', 'Cancel')} destructive onClick={onCancel} />
@@ -62,7 +73,7 @@ function RowAction({ icon: Icon, label, destructive = false, onClick }: {
         <button
             type="button"
             onClick={onClick}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13.5px] font-semibold active:opacity-60 ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-[13.5px] font-semibold active:opacity-60 ${
                 destructive ? 'bg-ios-red/10 text-ios-red' : 'bg-black/[0.05] text-black dark:bg-white/[0.12] dark:text-white'
             }`}
         >

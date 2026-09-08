@@ -55,8 +55,8 @@ export function PhotoTile({ photo, selectable, selected, showFavorite, defer, on
                     <Heart className="h-[18px] w-[18px] fill-ios-red text-ios-red drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]" />
                 </span>
             )}
-            {photo.video && !selectable && (
-                <span className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/45">
+            {photo.video && (
+                <span className={`pointer-events-none absolute flex h-5 w-5 items-center justify-center rounded-full bg-black/45 ${selectable ? 'left-1 top-1' : 'bottom-1 right-1'}`}>
                     <Play className="h-3 w-3 fill-white text-white" />
                 </span>
             )}

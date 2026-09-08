@@ -117,6 +117,11 @@ function store.ensureSchema()
     -- Comments predate GIF replies, so servers built before this carry no column for one.
     util.ensureColumns('phone_vibez_comments', { gif_url = 'gif_url VARCHAR(512) NULL' })
 
+    util.ensureColumns('phone_vibez_posts', {
+        tts_url   = 'tts_url VARCHAR(512) NULL',
+        tts_voice = 'tts_voice VARCHAR(64) NULL',
+    })
+
     util.ensureForeignKey('phone_vibez_comments', 'post_id', 'phone_vibez_posts', 'id', 'fk_vibez_comments_post')
     util.ensureForeignKey('phone_vibez_likes', 'post_id', 'phone_vibez_posts', 'id', 'fk_vibez_likes_post')
     util.ensureForeignKey('phone_vibez_saves', 'post_id', 'phone_vibez_posts', 'id', 'fk_vibez_saves_post')
@@ -261,7 +266,7 @@ end
 ---the viewer's own liked/saved/following flags. Binds the viewer THREE times up front (liked,
 ---saved, following_author); every caller passes viewer, viewer, viewer first, then its own params.
 local POST_SELECT = [[
-    SELECT p.id, p.author, p.video, p.thumb, p.caption, p.sound, p.views, p.created_at,
+    SELECT p.id, p.author, p.video, p.thumb, p.caption, p.sound, p.views, p.created_at, p.tts_url, p.tts_voice,
            pr.display_name, pr.avatar, pr.verified,
            (SELECT COUNT(*) FROM phone_vibez_likes l WHERE l.post_id = p.id) AS like_count,
            (SELECT COUNT(*) FROM phone_vibez_comments cc WHERE cc.post_id = p.id) AS comment_count,
@@ -281,12 +286,13 @@ local POST_SELECT = [[
 ---@param caption string caption text
 ---@param sound string sound label
 ---@param createdAt integer unix seconds
----@param gifUrl string|nil GIF reply url, nil for a plain text comment
-function store.insertPost(id, author, video, thumb, caption, sound, createdAt)
+---@param ttsUrl string|nil hosted text-to-speech audio URL, nil when the post has no voiceover
+---@param ttsVoice string|nil the voice code the voiceover was made with, nil when none
+function store.insertPost(id, author, video, thumb, caption, sound, createdAt, ttsUrl, ttsVoice)
     MySQL.insert.await([[
-        INSERT INTO phone_vibez_posts (id, author, video, thumb, caption, sound, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ]], { id, author, video, thumb, caption, sound, createdAt })
+        INSERT INTO phone_vibez_posts (id, author, video, thumb, caption, sound, created_at, tts_url, tts_voice)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ]], { id, author, video, thumb, caption, sound, createdAt, ttsUrl, ttsVoice })
 end
 
 ---One post through the viewer projection (nil when the id doesn't exist). Read-only.

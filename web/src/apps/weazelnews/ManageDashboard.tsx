@@ -94,6 +94,7 @@ export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn =
                                     publishAt={a.publishAt ?? 0}
                                     accent={WEAZEL_RED}
                                     onOpen={() => setEditing(a)}
+                                    onEdit={() => setEditing(a)}
                                     onRetime={() => setRetiming(a)}
                                     onPublishNow={() => void publishNow(a)}
                                     onCancel={() => setPendingDelete(a)}
@@ -208,7 +209,6 @@ export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn =
             {retiming && (
                 <SchedulePickerSheet
                     at={retiming.publishAt ?? null}
-                    accent={WEAZEL_RED}
                     forceDark={dark}
                     onPick={at => void pickTime(retiming, at)}
                     onClose={() => setRetiming(null)}

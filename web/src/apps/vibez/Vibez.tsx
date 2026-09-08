@@ -21,7 +21,7 @@ import { SlideOver } from '@/ui/SlideOver';
 import { ACCENT, type VLive, type VPost, type VProfile } from './data';
 import {
     apiAddView, apiCounts, apiDeletePost, apiFeed, apiLives, apiPost, apiProfile, apiToggleFollow,
-    apiToggleLike, apiToggleSave, apiWatch, type FeedTab,
+    apiToggleLike, apiToggleSave, apiTtsConfig, apiWatch, type FeedTab, type TtsConfig,
 } from './vibezApi';
 import { Feed, type FeedHandlers } from './Feed';
 import { TAB_H, TabBar } from './TabBar';
@@ -64,12 +64,17 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
     const [adding,        setAdding]        = useState(false);
     const [me,            setMe]            = useState<VProfile | null>(null);
     const [liveEnabled,   setLiveEnabled]   = useState(!isFiveM);
+    const [tts,           setTts]           = useState<TtsConfig>({ enabled: false, voices: [] });
 
     useEffect(() => {
         if (!isFiveM) return;
         void fetchNui<{ enabled?: boolean }>('sd-phone:vibez:liveEnabled')
             .then(r => setLiveEnabled(r?.enabled === true))
             .catch(() => setLiveEnabled(false));
+    }, []);
+
+    useEffect(() => {
+        void apiTtsConfig().then(setTts).catch(() => setTts({ enabled: false, voices: [] }));
     }, []);
 
     const viewedRef = useRef(new Set<string>());
@@ -276,6 +281,7 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                         myHandle={me?.username}
                         loading={feedLoading}
                         handlers={handlers}
+                        paused={upload || !!viewer || liveHost || !!liveJoin || switching || adding}
                     />
                 )}
                 {tab === 'discover' && (
@@ -357,6 +363,7 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                                 myHandle={me?.username}
                                 handlers={handlers}
                                 initialIndex={viewer.index}
+                                paused={upload || liveHost || !!liveJoin || switching || adding}
                             />
                             <button
                                 type="button"
@@ -399,6 +406,8 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                     }}
                     onGoLive={() => { setUpload(false); setLiveHost(true); }}
                     liveEnabled={liveEnabled}
+                    ttsEnabled={tts.enabled}
+                    ttsVoices={tts.voices}
                 />
             )}
 

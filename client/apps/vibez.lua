@@ -11,6 +11,15 @@ RegisterNUICallback('sd-phone:vibez:liveEnabled', function(_, cb)
     cb({ success = true, enabled = LIVE_ENABLED })
 end)
 
+---@type table Clout TTS config (configs.vibez TTS): whether the composer offers a voiceover, and
+---the voice list it shows.
+local TTS_CFG = type(VIBEZ_CFG.TTS) == 'table' and VIBEZ_CFG.TTS or {}
+
+---React -> Lua: the text-to-speech options for the upload composer. Read-only.
+RegisterNUICallback('sd-phone:vibez:ttsConfig', function(_, cb)
+    cb({ success = true, enabled = TTS_CFG.Enabled == true, voices = TTS_CFG.Voices or {} })
+end)
+
 ---@type string[] Every pure-proxy Vibez action: NUI 'sd-phone:vibez:<name>' forwards to server
 ---'sd-phone:server:vibez:<name>' with no client-side logic in between.
 local ACTIONS = {
@@ -19,7 +28,7 @@ local ACTIONS = {
     'savedPosts', 'updateProfile', 'toggleFollow', 'followList', 'search',
     'activity', 'counts', 'dismissNotification', 'deleteAccount', 'watch',
     'lives', 'liveStart', 'liveJoin', 'liveLeave', 'liveEnd', 'liveComment', 'liveHeart',
-    'liveTransport',
+    'liveTransport', 'ttsPreview',
 }
 
 -- Thin delegates: each action proxies straight into its server callback.

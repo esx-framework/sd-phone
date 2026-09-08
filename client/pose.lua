@@ -113,10 +113,13 @@ end
 local function currentClip()
     -- One camera pose covers both lenses: the native cell cam swapped pose on flip, but no
     -- outward-facing clip outside that native is verified to exist. Landscape is the exception:
-    -- it turns the phone on its side, so it gets its own clip.
+    -- it turns the phone on its side, so it gets its own clip. Not while the selfie lens is up,
+    -- though: that clip holds the phone in front of the face, and the selfie lens sits 0.75 m out
+    -- looking straight back at it, so the player photographs their own hand and handset. The
+    -- selfie clip keeps the arm stretched toward the lens, where it stays out of frame.
     local action = 'default'
     if cameraOn and phonecam.active() then
-        action = landscape and 'landscape' or 'camera'
+        action = (landscape and not phonecam.selfieActive()) and 'landscape' or 'camera'
     elseif typing then
         action = "typing"
     elseif inCall and (callUi or not phoneOpen) then
@@ -295,6 +298,12 @@ function pose.setLandscape(wide)
     if landscape == wide then return end
     landscape = wide
     pose.reweld()
+    if pose.shouldHold() then play() end
+end
+
+---Re-asserts whichever clip the current state calls for, without changing any of that state. For
+---a flip between lenses, which the pose otherwise only notices on the watchdog's next tick.
+function pose.reassert()
     if pose.shouldHold() then play() end
 end
 

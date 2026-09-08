@@ -439,4 +439,10 @@ function phonecam.active() return cam ~= nil end
 ---@return boolean
 function phonecam.rearActive() return cam ~= nil and not selfie end
 
+---Whether the scripted cam is up AND the selfie lens is the one framing. The pose reads this to
+---keep the outstretched selfie clip through a landscape flip: the landscape clip holds the phone
+---right in front of the face, which is exactly where the selfie lens is looking.
+---@return boolean
+function phonecam.selfieActive() return cam ~= nil and selfie end
+
 return phonecam

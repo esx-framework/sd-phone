@@ -24,7 +24,7 @@ export interface FeedHandlers {
     onDelete?:      (id: string) => void;
 }
 
-export function Feed({ posts, tab, onTab, lives, onOpenLive, myHandle, loading, handlers, initialIndex }: {
+export function Feed({ posts, tab, onTab, lives, onOpenLive, myHandle, loading, handlers, initialIndex, paused = false }: {
     posts:         VPost[];
     tab?:          FeedTab;
     onTab?:        (tab: FeedTab) => void;
@@ -34,6 +34,7 @@ export function Feed({ posts, tab, onTab, lives, onOpenLive, myHandle, loading, 
     loading?:      boolean;
     handlers:      FeedHandlers;
     initialIndex?: number;
+    paused?:       boolean;
 }) {
     const [active, setActive] = useState(initialIndex ?? 0);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,7 @@ export function Feed({ posts, tab, onTab, lives, onOpenLive, myHandle, loading, 
                             <PostFrame
                                 post={p}
                                 isActive={i === active}
+                                paused={paused}
                                 isMine={!!myHandle && p.user.handle === myHandle}
                                 handlers={handlers}
                             />
@@ -182,8 +184,9 @@ function TopTab({ active, onClick, children }: { active: boolean; onClick: () =>
     );
 }
 
-function Media({ post, isActive }: { post: VPost; isActive: boolean }) {
+function Media({ post, isActive, paused = false }: { post: VPost; isActive: boolean; paused?: boolean }) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const ttsRef = useRef<HTMLAudioElement>(null);
     const deckActive = useDeckActive();
     const isVideo = isVideoUrl(post.video);
 
@@ -191,7 +194,7 @@ function Media({ post, isActive }: { post: VPost; isActive: boolean }) {
         const v = videoRef.current;
         if (!v) return;
 
-        if (isActive && deckActive) {
+        if (isActive && deckActive && !paused) {
             v.muted = false;
             void v.play().catch(() => {
                 v.muted = true;
@@ -201,28 +204,64 @@ function Media({ post, isActive }: { post: VPost; isActive: boolean }) {
         }
 
         v.pause();
-        if (!isActive) v.currentTime = 0;
-    }, [isActive, deckActive, post.video]);
+        if (!isActive) {
+            v.currentTime = 0;
+            const a = ttsRef.current;
+            if (a) { a.pause(); a.currentTime = 0; }
+        } else if (paused) {
+            ttsRef.current?.pause();
+        }
+    }, [isActive, deckActive, paused, post.video]);
+
+    useEffect(() => {
+        const v = videoRef.current;
+        const a = ttsRef.current;
+        if (!v || !a || !post.ttsUrl) return;
+
+        let last = 0;
+        const onPlay = () => { a.muted = v.muted; a.currentTime = v.currentTime < 0.3 ? 0 : Math.min(v.currentTime, a.duration || v.currentTime); void a.play().catch(() => {}); };
+        const onPause = () => a.pause();
+        const onVol = () => { a.muted = v.muted; };
+        const onTime = () => {
+            if (v.currentTime < last - 0.3) { a.currentTime = 0; if (!v.paused) void a.play().catch(() => {}); }
+            last = v.currentTime;
+        };
+        v.addEventListener('play', onPlay);
+        v.addEventListener('pause', onPause);
+        v.addEventListener('volumechange', onVol);
+        v.addEventListener('timeupdate', onTime);
+        return () => {
+            v.removeEventListener('play', onPlay);
+            v.removeEventListener('pause', onPause);
+            v.removeEventListener('volumechange', onVol);
+            v.removeEventListener('timeupdate', onTime);
+            a.pause();
+        };
+    }, [post.ttsUrl, isVideo]);
 
     if (!isVideo) {
         return <img src={post.video} alt="" draggable={false} className="h-full w-full object-cover" />;
     }
     return (
-        <video
-            ref={videoRef}
-            src={post.video}
-            poster={post.thumb}
-            loop
-            playsInline
-            preload="metadata"
-            className="h-full w-full object-cover"
-        />
+        <>
+            <video
+                ref={videoRef}
+                src={post.video}
+                poster={post.thumb}
+                loop
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover"
+            />
+            {post.ttsUrl && <audio ref={ttsRef} src={post.ttsUrl} preload="auto" />}
+        </>
     );
 }
 
-function PostFrame({ post, isActive, isMine, handlers }: {
+function PostFrame({ post, isActive, paused, isMine, handlers }: {
     post:     VPost;
     isActive: boolean;
+    paused?:  boolean;
     isMine:   boolean;
     handlers: FeedHandlers;
 }) {
@@ -243,7 +282,7 @@ function PostFrame({ post, isActive, isMine, handlers }: {
     return (
         <>
             <div className="absolute inset-0" onClick={handleTap}>
-                <Media post={post} isActive={isActive} />
+                <Media post={post} isActive={isActive} paused={paused} />
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 

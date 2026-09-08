@@ -408,6 +408,8 @@ end)
 ---@type integer Channel the fake call uses. Far above anything the real allocator hands out, so
 ---a test call can never collide with a live one.
 local FAKE_CALL_CHANNEL = 990001
+---@type integer Channel every /fakering ring uses; the same far-out range as /fakecall.
+local FAKE_RING_CHANNEL = 990002
 
 ---/fakecall [name] - DEV TOOL: drops the caller straight into the in-call panel, talking to
 ---themselves. The client drives the panel directly, so nothing on the server is
@@ -445,4 +447,35 @@ lib.addCommand('fakecall', {
     })
 
     print(('^2[sd-phone]^0 /fakecall opened the call panel for %s as "%s"'):format(cid, display))
+end)
+
+---/fakering [seconds] [name] - DEV TOOL: rings your own phone as if a call were coming in, and
+---publishes the ring exactly as a real call does, so a second client standing next to you hears
+---your ringtone through the audible-ring path. Answering drops you into the /fakecall panel;
+---declining, hanging up or waiting it out ends it. Admin-gated.
+---@param source integer player server id
+---@param args table { seconds?: number, name?: string }
+lib.addCommand('fakering', {
+    help = 'Dev: ring your own phone so you (and anyone nearby) can hear an incoming call',
+    restricted = 'group.admin',
+    params = {
+        { name = 'seconds', type = 'number',     help = 'How long it rings before giving up, default 30', optional = true },
+        { name = 'name',    type = 'longString', help = 'Caller name to show',                            optional = true },
+    },
+}, function(source, args)
+    local seconds = math.max(5, math.min(120, tonumber(args.seconds) or 30))
+    local display = args.name
+    if type(display) ~= 'string' or display == '' then display = 'Test Call' end
+
+    local started = callActions.devRing(source, {
+        channel = FAKE_RING_CHANNEL,
+        number  = '5550100',
+        name    = display,
+        seconds = seconds,
+    })
+    if started then
+        print(('^2[sd-phone]^0 /fakering is ringing %s as "%s" for %ds'):format(source, display, seconds))
+    else
+        print(('^3[sd-phone]^0 /fakering: %s is already on a call'):format(source))
+    end
 end)
