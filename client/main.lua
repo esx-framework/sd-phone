@@ -601,11 +601,14 @@ local function OpenPhone()
     CreateThread(PushInstalledApps)
 end
 
----Fetches the acting profile's installed apps + home layout and pushes them into the open NUI.
----Runs as the open follow-up and again after a cloud-backup restore replaces the profile data.
+---Fetches the acting profile's installed apps + home layout and pushes them into the NUI of
+---whichever device is on screen. Runs as the open follow-up and again after a cloud-backup
+---restore replaces the profile data.
 function PushInstalledApps()
     local installedRes = lib.callback.await('sd-phone:server:apps:list', false)
-    if not phoneState.open then return end
+    -- Re-checked after the round-trip: the device may have been put away while the server
+    -- answered, and a push into a screen nobody is looking at reopens it on stale apps.
+    if not (phoneState.open or companion.companionOpen) then return end
     SendNUIMessage({
         action = 'sd-phone:apps',
         data   = {
@@ -754,9 +757,9 @@ RegisterNetEvent('sd-phone:client:openFromItem', function(color, sim, simPending
     OpenPhone()
 end)
 
----Live SIM state push (SIM inserted/ejected/moved). Keeps the local snapshot fresh and, while
----the phone is open, swaps the NUI's "No SIM" screen in or out immediately.
----@param state { enabled: boolean, hasSim: boolean, number: string|nil, device: boolean|nil, profile: string|nil }
+---Live SIM state push (SIM inserted/ejected/moved). Keeps the local snapshot fresh and, while a
+---device is on screen, swaps the NUI's "No SIM" screen in or out immediately.
+---@param state { enabled: boolean, hasSim: boolean, number: string|nil, device: boolean|nil, profile: string|nil, color: string|nil }
 RegisterNetEvent('sd-phone:client:simState', function(state)
     if type(state) ~= 'table' then return end
     currentSimState = state.enabled and {
@@ -780,7 +783,10 @@ RegisterNetEvent('sd-phone:client:simState', function(state)
         -- so a skipped forward leaves closed-shell peeks wearing the wrong frame.
         SendNUIMessage({ action = 'sd-phone:frameColor', data = { color = state.color } })
     end
-    if phoneState.open then
+    -- A companion counts as on screen: with DataOwner 'sim' the SIM decides whose data the
+    -- device shows, so a swap made while only the tablet is up has to reach it too - otherwise
+    -- it keeps the old identity's "No SIM" wall, number and cached app data.
+    if phoneState.open or companion.companionOpen then
         SendNUIMessage({
             action = 'sd-phone:simState',
             data   = {
@@ -797,10 +803,11 @@ end)
 ---Cloud-backup restore replaced the acting profile's data in place: the NUI drops every cached
 ---trace (kept-alive apps, hydrated settings, data stores) and rehydrates. Forwarded even while
 ---the phone is closed - the NUI keeps running hidden and would otherwise reopen on stale state.
----The installed-apps follow-up re-runs too, since the restore changes apps + home layout.
+---The installed-apps follow-up re-runs too, since the restore changes apps + home layout, and it
+---goes to a companion on screen on the same terms as to our own frame.
 RegisterNetEvent('sd-phone:client:profileReset', function()
     SendNUIMessage({ action = 'sd-phone:profileReset' })
-    if phoneState.open then CreateThread(PushInstalledApps) end
+    if phoneState.open or companion.companionOpen then CreateThread(PushInstalledApps) end
 end)
 
 ---Admin wipe (server /wipemyphone): closes the phone and tells the React app to clear its local

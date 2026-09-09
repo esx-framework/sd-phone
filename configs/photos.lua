@@ -36,6 +36,26 @@ return {
     MinAlbumNameLength = 1,
     MaxAlbumNameLength = 40,
 
+    -- How fast a capture is pushed to the server, in BYTES per second, per player.
+    --
+    -- This is the throttle on the latent event carrying the media, and it is deliberately well
+    -- under a home connection's upload speed. It shares that connection with the player's own
+    -- game traffic, and the game's packets are the ones that matter: saturate the uplink and
+    -- their packet loss climbs until the server times them out. Slower here is a longer upload
+    -- and a player who stays connected, which is the right trade.
+    --
+    -- 262144 (256 KB/s = 2 Mbit/s) leaves headroom on a modest connection. A one-minute clip is
+    -- roughly 12 MB, so it lands in about 45 seconds in the background - the player can put the
+    -- phone away and keep playing while it finishes. Raise it only if your players are on
+    -- connections you know are fast, and lower it if you see packet loss during uploads.
+    UploadBytesPerSec = 262144,
+
+    -- Logs each capture upload to the server console: the size, the slice count, how long it
+    -- took and the throughput it actually achieved. Off by default because it is one line per
+    -- capture; turn it on when you are diagnosing upload problems and want real numbers rather
+    -- than an impression.
+    LogUploads = false,
+
     -- Player URL import (the Import button in Photos). Imported URLs are stored and rendered
     -- as-is, NOT re-hosted, so every phone that shows the picture fetches it from that host. A
     -- hostile host would learn the IP address of each viewer, which is why only the hosts in

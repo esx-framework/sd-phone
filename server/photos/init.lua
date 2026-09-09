@@ -1,3 +1,5 @@
+---@type table sd-phone config root (configs/config.lua): Photos.LogUploads.
+local config = require 'configs.config'
 ---@type table Boot reporter (server.boot): one console summary instead of per-module prints.
 local boot = require 'server.boot'
 
@@ -11,7 +13,8 @@ local uploader = require 'server.photos.uploader'
 local player   = require 'bridge.server.player'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
 local mediaLimit = require 'server.photos.mediaLimit'
----@type table Shared server helpers (server.util): finite-number guard for the export boundary.
+---@type table Shared server helpers (server.util): finite-number guard for the export boundary,
+---string bounds and the player-drop cleanup hook for the clip assembler.
 local util     = require 'server.util'
 ---@type table AirShare core (server.share.core): per-kind delivery handler registry.
 local share    = require 'server.share.core'
@@ -63,16 +66,39 @@ local function uploadFailed(src, code, detail)
     TriggerClientEvent('sd-phone:client:photos:uploadFailed', src, { code = code })
 end
 
----Receives the Camera app's captured media as a base64 data-URL over a latent event: validates
----the data-URL shape and byte cap, uploads to Fivemanage, saves the row, and pushes photos:added
----or, on any failure, photos:uploadFailed with the reason.
----One upload per source may be in flight; the flag clears once the upload settles.
----@param image string base64 data-URL (data:image/... or data:video/...)
----@param kind string 'video' for clips; anything else is treated as a photo
-RegisterNetEvent('sd-phone:server:photos:upload', function(image, kind)
-    local src     = source
-    local isVideo = kind == 'video'
+---@type boolean Whether to report each upload's size and throughput (configs/photos.lua LogUploads).
+local LOG_UPLOADS = (config.Photos or require 'configs.photos').LogUploads == true
 
+---One console line per capture, for diagnosing uploads that cost players packet loss. Reports what
+---actually crossed the wire and how fast, so a report comes back as numbers rather than an
+---impression of slowness.
+---@param src number
+---@param kind string 'photo' or 'clip'
+---@param bytes integer data-URL size that arrived
+---@param slices integer slice count, 1 for a photo
+---@param startedAt integer|nil GetGameTimer() when the clip was announced, nil for a photo
+local function logUpload(src, kind, bytes, slices, startedAt)
+    if not LOG_UPLOADS then return end
+    -- A photo arrives in one event with nothing to time it against, so it reports size only
+    -- rather than a throughput figure invented from a single instant.
+    if not startedAt then
+        print(('^5[sd-phone:photos]^0 [UPLOAD] src=%s %s %.2f MB'):format(tostring(src), kind, bytes / 1048576))
+        return
+    end
+    local ms   = math.max(1, GetGameTimer() - startedAt)
+    local kbps = (bytes / 1024) / (ms / 1000)
+    print(('^5[sd-phone:photos]^0 [UPLOAD] src=%s %s %.2f MB in %d slice(s), %d ms, %.0f KB/s')
+        :format(tostring(src), kind, bytes / 1048576, slices, ms, kbps))
+end
+
+---Takes one complete capture: validates the data-URL shape and byte cap, uploads it, saves the
+---row, and pushes photos:added - or, on any failure, photos:uploadFailed with the reason. Reached
+---directly by a photo and by the last slice of a clip, so both arrive here already whole.
+---One upload per source may be in flight; the flag clears once the upload settles.
+---@param src number player the capture came from
+---@param image string base64 data-URL (data:image/... or data:video/...)
+---@param isVideo boolean whether the payload is a clip rather than a still
+local function startUpload(src, image, isVideo)
     local prefix  = isVideo and 'data:video/' or 'data:image/'
     if type(image) ~= 'string' or image:sub(1, #prefix) ~= prefix then
         uploadFailed(src, 'bad-data', ('not a %s data-URL'):format(isVideo and 'video' or 'image'))
@@ -117,6 +143,127 @@ RegisterNetEvent('sd-phone:server:photos:upload', function(image, kind)
 
         TriggerClientEvent('sd-phone:client:photos:added', src, saveRes.data.photo)
     end)
+end
+
+---Receives a captured PHOTO as a base64 data-URL over a single latent event. Small enough that
+---one event is fine; clips take the sliced path below.
+---@param image string base64 data-URL (data:image/...)
+RegisterNetEvent('sd-phone:server:photos:upload', function(image)
+    local src = source
+    if type(image) == 'string' then logUpload(src, 'photo', #image, 1, nil) end
+    startUpload(src, image, false)
+end)
+
+-- Sliced clip upload. A whole clip is megabytes, and one latent event that size blocks the net
+-- thread for as long as it takes to reassemble - every player's packet loss climbing while one
+-- of them saves a video. The Camera app cuts the clip into slices and sends them one at a time;
+-- this is where they are put back together. Same shape as the MDT bodycam uploader.
+---@type integer Max slices one clip may be cut into, bounding the assembly table.
+local MAX_SLICES <const> = 256
+---@type integer Milliseconds an assembly may sit without a new slice before it is abandoned.
+local ASSEMBLY_TTL_MS <const> = 120000
+---@type integer How often the abandoned-assembly sweep runs.
+local SWEEP_MS <const> = 30000
+
+---@type table<number, { total: integer, received: integer, bytes: integer, slices: table<integer, string>, mime: string, at: integer, started: integer }>
+---Clip assemblies in flight, keyed by source.
+local assembling = {}
+
+---Joins a finished assembly back into one data-URL and hands it to the ordinary upload path.
+---@param src number
+local function finishClip(src)
+    local job = assembling[src]
+    assembling[src] = nil
+    if not job then return end
+
+    local parts = {}
+    for seq = 1, job.total do
+        if not job.slices[seq] then
+            uploadFailed(src, 'bad-data', ('clip missing slice %d of %d'):format(seq, job.total))
+            return
+        end
+        parts[seq] = job.slices[seq]
+    end
+
+    -- Every slice but the last is the base64 of a byte run whose length divides by 3, so none of
+    -- them carries padding and concatenating the strings reproduces the base64 of the whole file.
+    local dataUrl = ('data:%s;base64,%s'):format(job.mime, table.concat(parts))
+    logUpload(src, 'clip', #dataUrl, job.total, job.started)
+    startUpload(src, dataUrl, true)
+end
+
+---React -> server: a finished clip is coming, and how many slices it is split into.
+---@param payload table { mime: string, total: integer }
+RegisterNetEvent('sd-phone:server:photos:uploadBegin', function(payload)
+    local src = source
+    payload = type(payload) == 'table' and payload or {}
+
+    if uploading[src] then
+        uploadFailed(src, 'busy', 'an upload is already in progress')
+        return
+    end
+
+    local total = math.floor(tonumber(payload.total) or 0)
+    if total < 1 or total > MAX_SLICES then
+        uploadFailed(src, 'too-large', ('clip announced %s slices'):format(tostring(payload.total)))
+        return
+    end
+
+    local mime = util.limitedString(payload.mime, 64) or 'video/webm'
+    if not mime:find('^video/') then mime = 'video/webm' end
+
+    local now = GetGameTimer()
+    assembling[src] = { total = total, received = 0, bytes = 0, slices = {}, mime = mime, at = now, started = now }
+end)
+
+---React -> server: one slice of a finished clip. Latent events are not guaranteed to arrive in
+---order, so each slice is filed by its own sequence number rather than appended.
+---@param payload table { seq: integer, part: string }
+RegisterNetEvent('sd-phone:server:photos:uploadSlice', function(payload)
+    local src = source
+    local job = assembling[src]
+    if not job then return end
+
+    payload = type(payload) == 'table' and payload or {}
+    local seq  = math.floor(tonumber(payload.seq) or 0)
+    local part = payload.part
+    if seq < 1 or seq > job.total or type(part) ~= 'string' or part == '' then return end
+    if job.slices[seq] ~= nil then return end
+
+    job.bytes = job.bytes + #part
+    if job.bytes > MAX_VIDEO_BYTES then
+        assembling[src] = nil
+        uploadFailed(src, 'too-large', ('clip over the byte cap (%d bytes)'):format(job.bytes))
+        return
+    end
+
+    job.slices[seq] = part
+    job.received    = job.received + 1
+    job.at          = GetGameTimer()
+
+    if job.received >= job.total then finishClip(src) end
+end)
+
+---React -> server: abandon a clip that was part-way sent.
+RegisterNetEvent('sd-phone:server:photos:uploadCancel', function()
+    assembling[source] = nil
+end)
+
+-- Abandons assemblies whose sender stopped part-way, so a dropped upload cannot hold its slices
+-- in memory until the resource restarts.
+CreateThread(function()
+    while true do
+        Wait(SWEEP_MS)
+        local now = GetGameTimer()
+        for src, job in pairs(assembling) do
+            if (now - job.at) > ASSEMBLY_TTL_MS then assembling[src] = nil end
+        end
+    end
+end)
+
+util.onCleanup(function(src)
+    assembling[src] = nil
+    uploading[src]  = nil
 end)
 
 ---Clears a departing player's in-flight upload flag so a disconnect mid-upload can't leave them

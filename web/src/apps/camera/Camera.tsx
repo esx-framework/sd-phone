@@ -18,6 +18,7 @@ import shutterSfx from '@/assets/camera/shutter.mp3';
 import { useSessionState } from '@/hooks/useSessionState';
 import { HINT_DEFAULTS, KeyHints, type HintConfig } from '@/ui/KeyHints';
 import { clampZoom, ZOOM_KEY_STEP, ZOOM_PRESETS, ZOOM_WHEEL_RATE, zoomLabel } from '@/shared/lens';
+import { encodeSlice, sliceCount, SLICE_BYTES } from '@/shared/mediaSlice';
 import { CAMERA_FILTERS, filterCss, filterLabel } from './filters';
 import { FilterDefs } from './FilterDefs';
 
@@ -136,15 +137,6 @@ const VIDEO_TIMEOUT_MS   = 45000;
 
 const MAX_REC_MS         = 60000;
 const VIDEO_BITRATE      = 1_200_000;
-
-function blobToDataURL(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-    });
-}
 
 export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = false, onCapture }: {
     onClose: () => void;
@@ -616,11 +608,23 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
         const blob = new Blob(chunks, { type });
         setPending(true);
         try {
-            const dataUrl = await blobToDataURL(blob);
-            const res = await apiCall<void>('sd-phone:camera:capture', { image: dataUrl, kind: 'video' });
-            if (!res.success) { setPending(false); return; }
+            const total = sliceCount(blob.size);
+            const begun = await apiCall<void>('sd-phone:camera:captureBegin', { mime: type, total });
+            if (!begun.success) { setPending(false); return; }
+
+            for (let seq = 1; seq <= total; seq++) {
+                const from = (seq - 1) * SLICE_BYTES;
+                const part = await encodeSlice(blob.slice(from, Math.min(blob.size, from + SLICE_BYTES)));
+                if (!part || !mountedRef.current) {
+                    void apiCall('sd-phone:camera:captureCancel', {});
+                    setPending(false);
+                    return;
+                }
+                await apiCall('sd-phone:camera:captureSlice', { seq, part });
+            }
             captureTimer.current = setTimeout(() => setPending(false), VIDEO_TIMEOUT_MS);
         } catch {
+            void apiCall('sd-phone:camera:captureCancel', {});
             setPending(false);
         }
     }
