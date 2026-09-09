@@ -4,6 +4,8 @@ local CFG = require 'configs.bodycam'
 local locale = require 'bridge.shared.locale'
 ---@type table Notify bridge (bridge.client.notify): backend-agnostic toast notifications.
 local notify = require 'bridge.client.notify'
+---@type fun(nuiAction: string, serverEvent: string) NUI -> server callback proxy (client.nui).
+local proxyCallback = require 'client.nui'
 ---@type fun(raw: any): VehicleModel Stored model value to hash/spawn/display (client.vehiclename).
 ---A watch answers with the model as a hash, because only a client can turn one back into words,
 ---and this callback is registered by hand rather than through the proxy that names the grid's.
@@ -787,6 +789,14 @@ if ENABLED then
         TriggerServerEvent('sd-phone:server:mdt:recCancel')
         cb({ success = true })
     end)
+
+    -- Direct upload. A recording is the largest payload this phone moves - minutes of video, some
+    -- fifty times a camera clip - and the sliced path above puts all of it on the game network,
+    -- where it costs the recording officer packet loss until it finishes. These two put it on
+    -- ordinary HTTPS instead: the server mints a slot and checks what comes back, the terminal
+    -- does the transfer, and the sliced path stays as the fallback for whenever that cannot run.
+    proxyCallback('sd-phone:mdt:recSlot', 'sd-phone:server:mdt:recSlot')
+    proxyCallback('sd-phone:mdt:recDone', 'sd-phone:server:mdt:recDone')
 
     ---Server push: a recording was hosted and filed.
     RegisterNetEvent('sd-phone:client:mdt:recSaved', function(row)

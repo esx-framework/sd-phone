@@ -76,7 +76,7 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
 
     const send = useCallback(async (rec: AudioRecording, number: string) => {
         setStage('sending');
-        const hosted = await uploadVoicemail(rec.dataUrl);
+        const hosted = await uploadVoicemail(rec.dataUrl, rec.blob);
         if (!hosted.success || !hosted.data?.url) {
             setFailure(failText(hosted, t('phone.voicemailUploadFailed', 'Could not send that message.')));
             setStage('error');

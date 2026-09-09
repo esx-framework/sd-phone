@@ -15,6 +15,10 @@ local uploader = require 'server.photos.uploader'
 local player   = require 'bridge.server.player'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
 local mediaLimit = require 'server.photos.mediaLimit'
+---@type table Presigned upload slots (server.photos.presign): mint + claim for the direct path.
+local presign  = require 'server.photos.presign'
+---@type table Shared server helpers (server.util): the player-drop cleanup hook.
+local util     = require 'server.util'
 ---@type table AirShare core (server.share.core): per-kind delivery handler registry.
 local share    = require 'server.share.core'
 
@@ -46,6 +50,69 @@ lib.callback.register('sd-phone:server:voice:list',   function(src)          ret
 lib.callback.register('sd-phone:server:voice:rename', function(src, payload) payload = type(payload) == 'table' and payload or {}; return actions.rename(src, payload.id, payload.name) end)
 lib.callback.register('sd-phone:server:voice:delete', function(src, payload) payload = type(payload) == 'table' and payload or {}; return actions.delete(src, payload.id) end)
 lib.callback.register('sd-phone:server:voice:share',  function(src, payload) payload = type(payload) == 'table' and payload or {}; return actions.requestShare(src, payload.target, payload.id) end)
+
+-- Direct upload. The path below sends the whole recording to the server in ONE ordinary event -
+-- not a latent one - so a long memo blocks the net thread for everybody while it arrives. That is
+-- the same stall the camera's sliced upload was written to fix. Uploading to the CDN over HTTPS
+-- keeps it off the game network entirely, and the event path stays as the fallback.
+
+---@type integer Largest object a claim may point at, in raw bytes. MaxAudioBytes caps the base64,
+---and base64 is four bytes for every three, so the file itself is three-quarters of it.
+local MAX_DIRECT_BYTES = math.floor(VM.MaxAudioBytes * 0.75)
+
+---@type table<number, { name: string|nil, duration: number|nil }> What each pending slot is for.
+local pendingDirect = {}
+
+---React -> server: mint a slot for a memo the phone will upload itself. The name and duration are
+---settled here and kept, so the claim that follows cannot restate them.
+lib.callback.register('sd-phone:server:voice:uploadSlot', function(src, payload)
+    if not presign.available() then return { success = false, code = 'unavailable' } end
+    if uploading[src] then return { success = false, code = 'busy' } end
+
+    payload = type(payload) == 'table' and payload or {}
+
+    local p = promise.new()
+    presign.mint(src, function(url, code) p:resolve({ url = url, code = code }) end)
+    local res = Citizen.Await(p)
+    if not res.url then return { success = false, code = res.code or 'provider' } end
+
+    pendingDirect[src] = { name = payload.name, duration = payload.duration }
+    return { success = true, data = { url = res.url } }
+end)
+
+---React -> server: the phone finished its upload and reports where it landed. Audio only: a memo
+---claim that accepted a clip would put a video in the voice library.
+lib.callback.register('sd-phone:server:voice:uploadDone', function(src, payload)
+    local meta = pendingDirect[src]
+    pendingDirect[src] = nil
+    if not meta then return { success = false, code = 'no-slot' } end
+
+    payload = type(payload) == 'table' and payload or {}
+
+    local p = promise.new()
+    presign.claim(src, payload.url, { maxBytes = MAX_DIRECT_BYTES, kinds = { audio = true } },
+        function(url, code, bytes) p:resolve({ url = url, code = code, bytes = bytes }) end)
+    local res = Citizen.Await(p)
+    if not res.url then
+        print(('^1[sd-phone:voice]^0 direct claim refused (%s) for %s')
+            :format(tostring(res.code), tostring(payload.url)))
+        return { success = false, code = res.code }
+    end
+
+    local okLimit, why = mediaLimit.check(player.getIdentifier(src), res.bytes)
+    if not okLimit then
+        return { success = false, code = 'rate-limit',
+            message = why == 'cooldown' and 'Slow down a moment' or 'Upload limit reached, try again later' }
+    end
+
+    local memo = actions.saveUploaded(src, res.url, meta.name, meta.duration)
+    if not memo then return { success = false, code = 'save-failed' } end
+
+    TriggerClientEvent('sd-phone:client:voice:added', src, memo)
+    return { success = true }
+end)
+
+util.onCleanup(function(src) pendingDirect[src] = nil end)
 
 ---Audio upload: the client sends a base64 audio data-URL, pushed to Fivemanage and persisted via
 ---actions.saveUploaded. Gated: data:audio/ prefix, VM.MaxAudioBytes cap, one upload per src.

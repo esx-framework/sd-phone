@@ -1,5 +1,6 @@
 
 import { fetchNui, isFiveM } from '@/core/nui';
+import { uploadDirect } from '@/shared/mediaUpload';
 import { colorFor, digits, initialsFor } from '@/lib/format';
 import { formatPhone } from '@/apps/phone/data';
 import { isServiceShortCode } from '@/lib/phone';
@@ -115,8 +116,17 @@ export async function sendMessageApi(input: SendInput): Promise<SendResult> {
     return { data: null, error: res.message };
 }
 
-export async function uploadVoiceMessage(audio: string): Promise<string | null> {
+export async function uploadVoiceMessage(audio: string, blob?: Blob): Promise<string | null> {
     if (!isFiveM) return audio;
+
+    if (blob) {
+        const hosted = await uploadDirect(blob, `sdphone-msgvoice-${Date.now()}.webm`, {
+            slot: 'sd-phone:messages:voiceSlot',
+            done: 'sd-phone:messages:voiceDone',
+        });
+        if (hosted) return hosted;
+    }
+
     return (await apiData<{ url: string }>('sd-phone:messages:uploadVoice', { audio }))?.url ?? null;
 }
 

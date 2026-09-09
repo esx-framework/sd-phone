@@ -28,3 +28,10 @@ end)
 RegisterNetEvent('sd-phone:client:voice:uploadFailed', function(message)
     SendNUIMessage({ action = 'sd-phone:voice:uploadFailed', data = { message = message } })
 end)
+
+-- Direct upload. The event path above hands the whole recording to the server in one ordinary
+-- event, which blocks the net thread for everyone while it arrives; these two let the phone put
+-- it on the CDN itself over HTTPS instead. The server mints the slot and checks what comes back,
+-- and the event path stays as the fallback for whenever that cannot run.
+proxy('sd-phone:voice:uploadSlot', 'sd-phone:server:voice:uploadSlot')
+proxy('sd-phone:voice:uploadDone', 'sd-phone:server:voice:uploadDone')

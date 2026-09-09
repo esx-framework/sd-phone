@@ -1,4 +1,5 @@
 import { fetchNui, isFiveM } from '@/core/nui';
+import { uploadDirect } from '@/shared/mediaUpload';
 import { t } from '@/i18n';
 import { apiCall, apiData } from '@/core/api';
 import { formatClockTime } from '@/lib/time';
@@ -30,6 +31,16 @@ export function uploadMemo(audioBase64: string, name: string, duration: number, 
         devMemos.unshift(memo);
         return memo;
     }
+    if (blob) {
+        void uploadDirect(blob, `sdphone-voice-${Date.now()}.webm`, {
+            slot: 'sd-phone:voice:uploadSlot',
+            done: 'sd-phone:voice:uploadDone',
+        }, { name, duration }).then(hosted => {
+            if (!hosted) void fetchNui('sd-phone:voice:upload', { audio: audioBase64, name, duration });
+        });
+        return null;
+    }
+
     void fetchNui('sd-phone:voice:upload', { audio: audioBase64, name, duration });
     return null;
 }

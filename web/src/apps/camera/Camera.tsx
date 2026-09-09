@@ -19,6 +19,7 @@ import { useSessionState } from '@/hooks/useSessionState';
 import { HINT_DEFAULTS, KeyHints, type HintConfig } from '@/ui/KeyHints';
 import { clampZoom, ZOOM_KEY_STEP, ZOOM_PRESETS, ZOOM_WHEEL_RATE, zoomLabel } from '@/shared/lens';
 import { encodeSlice, sliceCount, SLICE_BYTES } from '@/shared/mediaSlice';
+import { uploadDirect } from '@/shared/mediaUpload';
 import { CAMERA_FILTERS, filterCss, filterLabel } from './filters';
 import { FilterDefs } from './FilterDefs';
 
@@ -134,6 +135,7 @@ function uploadFailureText(code: string | undefined): string {
 
 const CAPTURE_TIMEOUT_MS = 8000;
 const VIDEO_TIMEOUT_MS   = 45000;
+const DIRECT_UPLOAD = { slot: 'sd-phone:camera:uploadSlot', done: 'sd-phone:camera:uploadDone' };
 
 const MAX_REC_MS         = 60000;
 const VIDEO_BITRATE      = 1_200_000;
@@ -608,6 +610,13 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
         const blob = new Blob(chunks, { type });
         setPending(true);
         try {
+            const ext = type === 'video/mp4' ? 'mp4' : 'webm';
+            const hosted = await uploadDirect(blob, `sdphone-${Date.now()}.${ext}`, DIRECT_UPLOAD);
+            if (hosted) {
+                captureTimer.current = setTimeout(() => setPending(false), VIDEO_TIMEOUT_MS);
+                return;
+            }
+
             const total = sliceCount(blob.size);
             const begun = await apiCall<void>('sd-phone:camera:captureBegin', { mime: type, total });
             if (!begun.success) { setPending(false); return; }

@@ -18,6 +18,8 @@ local player   = require 'bridge.server.player'
 ---@type table Photo library (server.photos.store): where a shared clip lands when it is sent to
 ---somebody's handset rather than their terminal.
 local photos   = require 'server.photos.store'
+---@type table Presigned upload slots (server.photos.presign): mint + claim for the direct path.
+local presign  = require 'server.photos.presign'
 ---@type table Notifications (server.notifications.init): the banner a recipient sees on the phone
 ---itself, so footage sent to somebody who is not looking at their terminal is still noticed.
 local notifications = require 'server.notifications.init'
@@ -342,10 +344,50 @@ local function finish(src)
     end)
 end
 
+---Settles everything the row will carry, from the camera the terminal is actually holding rather
+---than from what it claims to have filmed. Both upload paths go through this and neither may
+---re-derive any of it: the sliced path and the direct path differ only in how the bytes travel,
+---so a second copy of these checks would be a second place for "which camera is this?" to be
+---answered, and only one of them would get fixed.
+---@param src integer uploading terminal
+---@param payload table client-supplied announcement, untrusted
+---@return table|nil meta, string|nil reason a player-facing sentence when it is refused
+local function buildMeta(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+
+    local id = util.limitedString(payload.cameraId, 96)
+    if not id or not cameras.isWatching(src, id) then
+        return nil, 'That camera is not open'
+    end
+
+    local kind, officerCid = cameras.split(id)
+    if not kind or not officerCid then
+        return nil, 'That camera is not open'
+    end
+
+    local duration = math.floor(tonumber(payload.duration) or 0)
+    if duration < 1 then duration = 1 end
+    if duration > MAX_SECONDS then duration = MAX_SECONDS end
+
+    local mime = util.limitedString(payload.mime, 64) or 'video/webm'
+    if not mime:find('^video/') then mime = 'video/webm' end
+
+    return {
+        cameraId   = id,
+        kind       = kind,
+        officerCid = officerCid,
+        officer    = util.limitedString(payload.officer, 96) or officerCid,
+        callsign   = util.limitedString(payload.callsign, 16),
+        plate      = util.limitedString(payload.plate, 16),
+        model      = util.limitedString(payload.model, 64),
+        mime       = mime,
+        duration   = duration,
+    }
+end
+
 if ENABLED then
     ---React -> server: a terminal announcing a finished recording and how many slices it is about
-    ---to send. Everything the row will carry is settled here, from the camera the terminal is
-    ---holding rather than from what it claims to have filmed.
+    ---to send.
     ---@param payload table { cameraId, mime, duration, total }
     RegisterNetEvent('sd-phone:server:mdt:recBegin', function(payload)
         local src = source
@@ -356,15 +398,9 @@ if ENABLED then
             return
         end
 
-        local id = util.limitedString(payload.cameraId, 96)
-        if not id or not cameras.isWatching(src, id) then
-            TriggerClientEvent('sd-phone:client:mdt:recFailed', src, 'That camera is not open')
-            return
-        end
-
-        local kind, officerCid = cameras.split(id)
-        if not kind or not officerCid then
-            TriggerClientEvent('sd-phone:client:mdt:recFailed', src, 'That camera is not open')
+        local meta, reason = buildMeta(src, payload)
+        if not meta then
+            TriggerClientEvent('sd-phone:client:mdt:recFailed', src, reason)
             return
         end
 
@@ -374,30 +410,13 @@ if ENABLED then
             return
         end
 
-        local duration = math.floor(tonumber(payload.duration) or 0)
-        if duration < 1 then duration = 1 end
-        if duration > MAX_SECONDS then duration = MAX_SECONDS end
-
-        local mime = util.limitedString(payload.mime, 64) or 'video/webm'
-        if not mime:find('^video/') then mime = 'video/webm' end
-
         assembling[src] = {
             total    = total,
             received = 0,
             bytes    = 0,
             slices   = {},
             at       = GetGameTimer(),
-            meta     = {
-                cameraId   = id,
-                kind       = kind,
-                officerCid = officerCid,
-                officer    = util.limitedString(payload.officer, 96) or officerCid,
-                callsign   = util.limitedString(payload.callsign, 16),
-                plate      = util.limitedString(payload.plate, 16),
-                model      = util.limitedString(payload.model, 64),
-                mime       = mime,
-                duration   = duration,
-            },
+            meta     = meta,
         }
     end)
 
@@ -433,6 +452,85 @@ if ENABLED then
     ---React -> server: abandon whatever was being assembled, for a terminal that gave up midway.
     RegisterNetEvent('sd-phone:server:mdt:recCancel', function()
         forget(source)
+    end)
+
+    -- Direct upload. A recording is the largest thing this phone ever moves - five minutes at the
+    -- configured bitrate is around 94 MB, some fifty times a camera clip - and the sliced path
+    -- puts every byte of it on the ENet reliable channel, where it costs the uploading officer
+    -- packet loss for as long as it runs. The terminal uploads to the CDN itself instead and
+    -- reports back where it landed; the sliced path below stays as the fallback.
+
+    ---@type integer Largest object a claim may point at, in raw bytes. MAX_BYTES is the ceiling on
+    ---the base64 payload, and base64 is four bytes for every three, so the file itself is
+    ---three-quarters of it. Deriving it keeps the two paths accepting the same recordings.
+    local MAX_DIRECT_BYTES <const> = math.floor(MAX_BYTES * 0.75)
+
+    ---@type table<integer, table> Meta settled at slot time, waiting for the claim that follows.
+    ---One per terminal, replaced by a later slot, and dropped when the terminal leaves.
+    local pendingDirect = {}
+
+    ---React -> server: a terminal is about to upload a finished recording itself and wants a slot.
+    ---Everything the row will carry is settled and kept HERE, at the moment the terminal is known
+    ---to hold the camera - not read back off the claim. A claim that carried its own meta would
+    ---let a terminal film one camera and file it against another.
+    lib.callback.register('sd-phone:server:mdt:recSlot', function(src, payload)
+        if not presign.available() then return { success = false, code = 'unavailable' } end
+        if uploading[src] or assembling[src] then return { success = false, code = 'busy' } end
+
+        local meta, reason = buildMeta(src, payload)
+        if not meta then return { success = false, code = 'refused', message = reason } end
+
+        local p = promise.new()
+        presign.mint(src, function(url, code) p:resolve({ url = url, code = code }) end)
+        local res = Citizen.Await(p)
+        if not res.url then return { success = false, code = res.code or 'provider' } end
+
+        pendingDirect[src] = meta
+        return { success = true, data = { url = res.url } }
+    end)
+
+    ---React -> server: the terminal finished its upload and reports where it landed. The URL is
+    ---untrusted until presign.claim has proved it is a fresh object in this server's own bucket;
+    ---the meta comes from the slot, never from this call.
+    lib.callback.register('sd-phone:server:mdt:recDone', function(src, payload)
+        local meta = pendingDirect[src]
+        pendingDirect[src] = nil
+        if not meta then return { success = false, code = 'no-slot' } end
+
+        payload = type(payload) == 'table' and payload or {}
+
+        local p = promise.new()
+        presign.claim(src, payload.url,
+            { maxBytes = MAX_DIRECT_BYTES, kinds = { video = true } },
+            function(url, code, bytes)
+            p:resolve({ url = url, code = code, bytes = bytes })
+        end)
+        local res = Citizen.Await(p)
+        if not res.url then
+            print(('^1[sd-phone:mdt]^0 direct bodycam claim refused (%s) for %s')
+                :format(tostring(res.code), tostring(payload.url)))
+            return { success = false, code = res.code }
+        end
+
+        -- The same budget the sliced path is charged, so moving a recording off the game network
+        -- does not move it out of the per-character ceiling on sustained upload.
+        local okLimit, why = mediaLimit.check(player.getIdentifier(src), res.bytes)
+        if not okLimit then
+            return { success = false, code = 'rate-limit',
+                message = why == 'cooldown' and 'Slow down a moment' or 'Upload limit reached, try again later' }
+        end
+
+        -- The true file size. The sliced path stores #dataUrl, which is the base64 and so about a
+        -- third larger than the recording; older rows keep that figure rather than being rewritten.
+        local row = saveRow(src, res.url, meta, res.bytes)
+        if not row then return { success = false, code = 'save-failed' } end
+
+        TriggerClientEvent('sd-phone:client:mdt:recSaved', src, row)
+        return { success = true }
+    end)
+
+    util.onCleanup(function(src)
+        pendingDirect[src] = nil
     end)
 
     -- Abandons assemblies whose terminal stopped sending, so a dropped upload cannot hold its

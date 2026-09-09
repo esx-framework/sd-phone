@@ -9,6 +9,10 @@ local store    = require 'server.photos.store'
 local actions  = require 'server.photos.actions'
 ---@type table Fivemanage uploader (server.photos.uploader): server-side base64 media upload.
 local uploader = require 'server.photos.uploader'
+---@type table Presigned upload slots (server.photos.presign): mint + claim for the direct path.
+local presign  = require 'server.photos.presign'
+---@type table Media URL ledger (server.media.ledger): schema + one-time backfill at boot.
+local ledger   = require 'server.media.ledger'
 ---@type table Player bridge (bridge.server.player): citizenid for the shared upload budget.
 local player   = require 'bridge.server.player'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
@@ -30,11 +34,18 @@ if not uploader.configured() then
         or '^3[sd-phone]^0 set FivemanageMedia in configs/server/apikeys.lua (free at fivemanage.com, token type "Media").')
 end
 
----Bootstraps the schema in a thread, pcall-guarded.
+---Bootstraps the schema in a thread, pcall-guarded. The URL ledger goes up with it: presign
+---refuses to mint a slot until the ledger can say what this server has already hosted, so the
+---direct-upload path is simply off until this has run.
 CreateThread(function()
     local ok, err = pcall(store.ensureSchema)
     if not ok then
         boot.schemaFailed('photos', err)
+        return
+    end
+    local okLedger, ledgerErr = pcall(ledger.ensureSchema)
+    if not okLedger then
+        boot.schemaFailed('media ledger', ledgerErr)
         return
     end
     boot.schemaReady()
@@ -66,6 +77,16 @@ local function uploadFailed(src, code, detail)
     TriggerClientEvent('sd-phone:client:photos:uploadFailed', src, { code = code })
 end
 
+---Same console line without the client event. The direct-upload path answers its caller through a
+---callback and the page falls back to the sliced path on any failure, so pushing uploadFailed
+---there too would show the player an error for something that is about to succeed.
+---@param src number
+---@param code string
+---@param detail string
+local function logFailure(src, code, detail)
+    print(('^1[sd-phone:photos]^0 [UPLOAD] src=%s failed (%s): %s'):format(tostring(src), code, detail))
+end
+
 ---@type boolean Whether to report each upload's size and throughput (configs/photos.lua LogUploads).
 local LOG_UPLOADS = (config.Photos or require 'configs.photos').LogUploads == true
 
@@ -89,6 +110,29 @@ local function logUpload(src, kind, bytes, slices, startedAt)
     local kbps = (bytes / 1024) / (ms / 1000)
     print(('^5[sd-phone:photos]^0 [UPLOAD] src=%s %s %.2f MB in %d slice(s), %d ms, %.0f KB/s')
         :format(tostring(src), kind, bytes / 1048576, slices, ms, kbps))
+end
+
+---Writes an already-hosted URL into the caller's gallery and pushes the new row. Both upload
+---paths end here: the sliced one once the server has finished the upload itself, the direct one
+---once a claim has proved the URL is this server's own. Everything past the transfer - the row,
+---the retention prune inside saveFromUrl, the photos:added push - is the same either way, which
+---is the whole reason it lives on its own rather than inside the uploader's callback.
+---@param src number player the capture came from
+---@param url string hosted media URL
+---@param report fun(src: number, code: string, detail: string) how a failure reaches the caller
+---@return boolean saved
+local function saveHosted(src, url, report)
+    -- The upload landed but the row did not, which used to report nothing on either end: the
+    -- player waited on a photo that was hosted yet unreachable, and the console stayed quiet.
+    local saveRes = actions.saveFromUrl(src, url, true)
+    if not (saveRes and saveRes.success and saveRes.data and saveRes.data.photo) then
+        report(src, 'save-failed', ('uploaded to %s but the row would not save: %s')
+            :format(url, tostring(saveRes and saveRes.message or 'no reason given')))
+        return false
+    end
+
+    TriggerClientEvent('sd-phone:client:photos:added', src, saveRes.data.photo)
+    return true
 end
 
 ---Takes one complete capture: validates the data-URL shape and byte cap, uploads it, saves the
@@ -132,16 +176,7 @@ local function startUpload(src, image, isVideo)
             return
         end
 
-        -- The upload landed but the row did not, which used to report nothing on either end: the
-        -- player waited on a photo that was hosted yet unreachable, and the console stayed quiet.
-        local saveRes = actions.saveFromUrl(src, url, true)
-        if not (saveRes and saveRes.success and saveRes.data and saveRes.data.photo) then
-            uploadFailed(src, 'save-failed', ('uploaded to %s but the row would not save: %s')
-                :format(url, tostring(saveRes and saveRes.message or 'no reason given')))
-            return
-        end
-
-        TriggerClientEvent('sd-phone:client:photos:added', src, saveRes.data.photo)
+        saveHosted(src, url, uploadFailed)
     end)
 end
 
@@ -264,12 +299,100 @@ end)
 util.onCleanup(function(src)
     assembling[src] = nil
     uploading[src]  = nil
+    presign.forget(src)
+end)
+
+-- Direct upload. The sliced path above still puts the whole clip on the ENet reliable channel,
+-- which costs the uploading player packet loss for as long as it runs - roughly 4% to 12% on the
+-- measurements this replaced. Pacing only trades the height of that spike against its length, so
+-- the fix is to keep the media off the game network entirely: the page POSTs it to the CDN over
+-- ordinary HTTPS using a slot minted here, then reports back the URL it landed on.
+--
+-- Nothing below deletes the sliced path. It is the fallback for a server on the Qbox provider,
+-- for a Fivemanage outage, and for a client whose upload is blocked, so every rejection here ends
+-- with the Camera quietly taking the old route.
+
+---@type integer Minimum gap between slot mints from one source (ms). A slot is single-flight
+---already, so this is not about concurrency: it stops a modified client spending this server's
+---Fivemanage API quota in a loop. The upload's real cost is charged to the shared media budget on
+---the claim instead, once the CDN has said how big the object actually is - charging it here with
+---no byte count would burn the budget's one-second gap and make the claim moments later look like
+---a flood.
+local SLOT_COOLDOWN_MS <const> = 1000
+
+---@type table<number, integer> GetGameTimer() when each source last asked for a slot.
+local lastSlotAt = {}
+
+---React -> server: mint an upload slot. Only the URL to POST to crosses back; the bucket and the
+---expiry it is later measured against stay on the server, because handing a client the thing its
+---own claim is checked against would leave nothing to check.
+lib.callback.register('sd-phone:server:photos:uploadSlot', function(src)
+    if not presign.available() then return { success = false, code = 'unavailable' } end
+    if uploading[src] or assembling[src] then return { success = false, code = 'busy' } end
+
+    local now = GetGameTimer()
+    if lastSlotAt[src] and (now - lastSlotAt[src]) < SLOT_COOLDOWN_MS then
+        return { success = false, code = 'cooldown' }
+    end
+    lastSlotAt[src] = now
+
+    local p = promise.new()
+    presign.mint(src, function(url, code) p:resolve({ url = url, code = code }) end)
+    local res = Citizen.Await(p)
+
+    if not res.url then return { success = false, code = res.code or 'provider' } end
+    return { success = true, data = { url = res.url } }
+end)
+
+---React -> server: the page finished its upload and reports where it landed. The URL is entirely
+---untrusted until presign.claim has proved it is an object in this server's own bucket, against a
+---slot minted for this player, that nobody else already holds, and that the CDN serves as media
+---of the kind its name promises.
+lib.callback.register('sd-phone:server:photos:uploadDone', function(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+
+    -- The sliced path caps a clip at 32 MB of base64, which is 24 MB of file. The direct path
+    -- must never be the more permissive of the two, or turning the fallback on would start
+    -- rejecting captures that used to save.
+    local p = promise.new()
+    presign.claim(src, payload.url,
+        { maxBytes = math.floor(MAX_VIDEO_BYTES * 0.75), kinds = { image = true, video = true } },
+        function(url, code, bytes)
+        p:resolve({ url = url, code = code, bytes = bytes })
+    end)
+    local res = Citizen.Await(p)
+
+    if not res.url then
+        logFailure(src, res.code or 'bad-data', ('direct-upload claim refused for %s')
+            :format(tostring(payload.url)))
+        return { success = false, code = res.code }
+    end
+
+    -- The same budget the sliced path is charged, so moving a clip off the game network does not
+    -- also move it out of the per-character ceiling on sustained upload.
+    local okLimit, why = mediaLimit.check(player.getIdentifier(src), res.bytes)
+    if not okLimit then
+        logFailure(src, 'rate-limit', ('rate limit (%s)'):format(tostring(why)))
+        return { success = false, code = 'rate-limit' }
+    end
+
+    -- Reported like the sliced path so the two are comparable in one log, and so the check the
+    -- direct path exists for - that no slices crossed the wire at all - is visible rather than
+    -- inferred from an absence.
+    if LOG_UPLOADS then
+        print(('^5[sd-phone:photos]^0 [UPLOAD] src=%s clip %.2f MB direct, 0 slice(s) over the wire')
+            :format(tostring(src), (res.bytes or 0) / 1048576))
+    end
+
+    if not saveHosted(src, res.url, logFailure) then return { success = false, code = 'save-failed' } end
+    return { success = true }
 end)
 
 ---Clears a departing player's in-flight upload flag so a disconnect mid-upload can't leave them
 ---permanently unable to upload after reconnecting on the same source id.
 AddEventHandler('playerDropped', function()
-    uploading[source] = nil
+    uploading[source]  = nil
+    lastSlotAt[source] = nil
 end)
 
 ---Saves an already-hosted media URL for the caller and pushes photos:added with the new row.

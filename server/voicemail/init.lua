@@ -9,6 +9,8 @@ local actions    = require 'server.voicemail.actions'
 local uploader   = require 'server.photos.uploader'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
 local mediaLimit = require 'server.photos.mediaLimit'
+---@type table Presigned upload slots (server.photos.presign): mint + claim for the direct path.
+local presign    = require 'server.photos.presign'
 ---@type table Media trust boundary: remembers uploader-returned voicemail URLs for delivery.
 local mediaGuard = require 'server.media.guard'
 ---@type table Player bridge (bridge.server.player): citizenid for the shared upload budget.
@@ -51,10 +53,54 @@ lib.callback.register('sd-phone:server:voicemail:enabled', function()
     return util.ok({ enabled = uploader.configured() })
 end)
 
+-- Direct upload. The base64 route below carries the whole recording in one ordinary callback, and
+-- a callback is an ordinary event underneath - not a latent one - so an 8 MB voicemail blocks the
+-- net thread for every player while it arrives. These two put it on HTTPS instead. Nothing is
+-- settled at slot time because no row is written here: the answer is a trusted URL the caller
+-- attaches to the voicemail it is leaving.
+
+---React -> server: mint a slot for a voicemail the phone will upload itself.
+lib.callback.register('sd-phone:server:voicemail:uploadSlot', function(src)
+    if not presign.available() then return util.fail('voicemail.uploadFailed', 'Upload failed') end
+    if uploading[src] then return util.fail('voicemail.uploadInProgress', 'Upload already in progress') end
+
+    local p = promise.new()
+    presign.mint(src, function(url) p:resolve(url) end)
+    local url = Citizen.Await(p)
+    if not url then return util.fail('voicemail.uploadFailed', 'Upload failed') end
+    return util.ok({ url = url })
+end)
+
+---React -> server: claim the uploaded voicemail and hand back the trusted URL. Audio only.
+lib.callback.register('sd-phone:server:voicemail:uploadDone', function(src, payload)
+    payload = type(payload) == 'table' and payload or {}
+
+    local p = promise.new()
+    presign.claim(src, payload.url,
+        { maxBytes = math.floor(MAX_AUDIO_BYTES * 0.75), kinds = { audio = true } },
+        function(url, code, bytes) p:resolve({ url = url, code = code, bytes = bytes }) end)
+    local res = Citizen.Await(p)
+    if not res.url then
+        print(('^1[sd-phone:voicemail]^0 direct claim refused (%s)'):format(tostring(res.code)))
+        return util.fail('voicemail.uploadFailed', 'Upload failed')
+    end
+
+    local okLimit, why = mediaLimit.check(player.getIdentifier(src), res.bytes)
+    if not okLimit then
+        return why == 'cooldown'
+            and util.fail('voicemail.slowDownMoment', 'Slow down a moment')
+            or util.fail('voicemail.uploadLimitReached', 'Upload limit reached, try again later')
+    end
+
+    local trustedUrl = mediaGuard.rememberVoice(player.getIdentifier(src), res.url)
+    if not trustedUrl then return util.fail('voicemail.uploadFailed', 'Upload failed') end
+    return util.ok({ url = trustedUrl })
+end)
+
 ---Hosts a finished voicemail recording and hands the caller back its URL, which they then pass to
 ---`voicemail:leave`. Split in two rather than uploading and delivering in one call because the
 ---URL is what makes a message re-sendable: a delivery refused for a full mailbox or a rate limit
----does not have to pay for the upload twice.
+---does not have to pay for the upload twice. Kept as the fallback for the direct pair above.
 ---@param src number player server id
 ---@param payload table { audio: string } base64 audio data-URL from the NUI recorder
 ---@return table result { success, message?, data = { url } }

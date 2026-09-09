@@ -7,6 +7,8 @@ local hints = require 'client.hints'
 local phonecam = require 'client.phonecam'
 ---@type table Hold pose and hand prop (client.pose): the landscape grip is a prop transform.
 local pose = require 'client.pose'
+---@type fun(nuiAction: string, serverEvent: string) NUI -> server callback proxy (client.nui).
+local proxyCallback = require 'client.nui'
 
 ---Flips the active cellphone camera between rear and front (selfie).
 ---The old raw hash (0x2491A93618B7D838) is stale on current builds and threw "invalid native",
@@ -342,6 +344,14 @@ RegisterNUICallback('sd-phone:camera:captureCancel', function(_, cb)
     TriggerServerEvent('sd-phone:server:photos:uploadCancel')
     cb({ success = true })
 end)
+
+-- Direct upload. The page asks for a slot, POSTs the clip to the CDN itself over ordinary HTTPS,
+-- then reports where it landed - so none of the media crosses the game network and there is no
+-- rate to pace it at. Both are plain proxies: the server decides whether a slot may be minted and
+-- whether the URL that comes back may be saved, and the page falls back to the sliced path above
+-- the moment either says no.
+proxyCallback('sd-phone:camera:uploadSlot', 'sd-phone:server:photos:uploadSlot')
+proxyCallback('sd-phone:camera:uploadDone', 'sd-phone:server:photos:uploadDone')
 
 ---Resource-stop cleanup: stops the flash and exits the cell-cam view.
 ---@param res string name of the resource that stopped

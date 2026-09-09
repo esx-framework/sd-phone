@@ -27,3 +27,9 @@ end)
 RegisterNetEvent('sd-phone:client:callrec:failed', function(message)
     SendNUIMessage({ action = 'sd-phone:callrec:failed', data = { message = message } })
 end)
+
+-- Direct upload. Same reasoning as the voice memo pair: the event path above carries the whole
+-- recording in one ordinary event, and at a 24 MB ceiling that is a long stall for every player
+-- on the server. These put it on ordinary HTTPS instead, with the event path as the fallback.
+proxy('sd-phone:callrec:uploadSlot', 'sd-phone:server:callrec:uploadSlot')
+proxy('sd-phone:callrec:uploadDone', 'sd-phone:server:callrec:uploadDone')

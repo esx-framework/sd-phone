@@ -144,7 +144,7 @@ export function VoicePanel({ onSend, onClose, forceDark = false }: Props) {
         setUploading(true);
         try {
             const base64 = await blobToDataURL(blob);
-            const url    = await uploadVoiceMessage(base64);
+            const url    = await uploadVoiceMessage(base64, blob);
             if (!url) { setUploading(false); setError(t('messages.uploadFailedTryAgain', 'Upload failed. Try again.')); return; }
             onSend(duration, url, waveform);
         } catch {

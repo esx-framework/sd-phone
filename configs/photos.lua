@@ -50,6 +50,20 @@ return {
     -- connections you know are fast, and lower it if you see packet loss during uploads.
     UploadBytesPerSec = 262144,
 
+    -- Lets the phone upload a captured clip straight to Fivemanage over HTTPS, instead of pushing
+    -- it to the server over the game network first.
+    --
+    -- UploadBytesPerSec above only decides how a clip is paced onto the ENet channel, and pacing
+    -- is a trade, not a fix: the uploading player's packet loss climbs for as long as the transfer
+    -- runs whatever rate you pick. With this on, the media never touches the game network at all,
+    -- so there is nothing to pace. The server still mints the upload slot and still checks what
+    -- comes back before it is saved, so the media key stays server-side as it always has.
+    --
+    -- Set false to force every capture back through the server. That also happens on its own when
+    -- Provider is 'qbox' (there is no presigned equivalent) or when Fivemanage cannot be reached,
+    -- so turning it off changes nothing except making the choice permanent.
+    DirectUpload = true,
+
     -- Logs each capture upload to the server console: the size, the slice count, how long it
     -- took and the throughput it actually achieved. Off by default because it is one line per
     -- capture; turn it on when you are diagnosing upload problems and want real numbers rather

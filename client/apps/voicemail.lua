@@ -16,3 +16,9 @@ proxyCallback('sd-phone:voicemail:enabled', 'sd-phone:server:voicemail:enabled')
 RegisterNetEvent('sd-phone:client:voicemail:new', function(vm)
     SendNUIMessage({ action = 'sd-phone:voicemail:new', data = vm })
 end)
+
+-- Direct upload. The base64 route above carries the whole recording in one ordinary callback,
+-- which is an un-paced event underneath and stalls the net thread for everyone while it arrives.
+-- These put it on HTTPS instead, with that route kept as the fallback.
+proxyCallback('sd-phone:voicemail:uploadSlot', 'sd-phone:server:voicemail:uploadSlot')
+proxyCallback('sd-phone:voicemail:uploadDone', 'sd-phone:server:voicemail:uploadDone')

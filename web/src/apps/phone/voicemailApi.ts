@@ -1,4 +1,5 @@
 import { isFiveM } from '@/core/nui';
+import { uploadDirect } from '@/shared/mediaUpload';
 import { apiCall, apiData, type Envelope } from '@/core/api';
 
 export interface Voicemail {
@@ -63,8 +64,17 @@ export async function deleteVoicemail(id: string): Promise<boolean> {
     return (await apiCall<unknown>('sd-phone:voicemail:delete', { id })).success;
 }
 
-export async function uploadVoicemail(audio: string): Promise<Envelope<{ url: string }>> {
+export async function uploadVoicemail(audio: string, blob?: Blob): Promise<Envelope<{ url: string }>> {
     if (!isFiveM) return { success: true, data: { url: SAMPLE } };
+
+    if (blob) {
+        const hosted = await uploadDirect(blob, `sdphone-voicemail-${Date.now()}.webm`, {
+            slot: 'sd-phone:voicemail:uploadSlot',
+            done: 'sd-phone:voicemail:uploadDone',
+        });
+        if (hosted) return { success: true, data: { url: hosted } };
+    }
+
     return await apiCall<{ url: string }>('sd-phone:voicemail:upload', { audio });
 }
 

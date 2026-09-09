@@ -12,6 +12,8 @@ local banking       = require 'server.banking.actions'
 local uploader      = require 'server.photos.uploader'
 ---@type table Shared media-upload budget (server.photos.mediaLimit): cooldown + rolling byte cap.
 local mediaLimit    = require 'server.photos.mediaLimit'
+---@type table Presigned upload slots (server.photos.presign): mint + claim for the direct path.
+local presign = require 'server.photos.presign'
 ---@type table Messages persistence layer (server.messages.store): mailbox rows, groups, reactions.
 local store         = require 'server.messages.store'
 ---@type table Badge engine (server.badges.init): server-authoritative home-screen unread counts.
@@ -1315,8 +1317,54 @@ function actions.deliverPending(source, cid, number)
     notify(source, 'Messages', ('Delivered while you were out of service: %d conversation%s.'):format(n, n == 1 and '' or 's'))
 end
 
+---Mints a slot so the phone can upload a voice message itself. Nothing is settled here: unlike a
+---photo or a bodycam recording this writes no row, so there is no meta to bind - the claim's
+---answer is simply a trusted URL the caller then attaches to a message.
+---@param source number
+---@return table
+function actions.voiceSlot(source)
+    if not presign.available() then return fail('messages.uploadFailed', 'Upload failed') end
+    local p = promise.new()
+    presign.mint(source, function(url) p:resolve(url) end)
+    local url = Citizen.Await(p)
+    if not url then return fail('messages.uploadFailed', 'Upload failed') end
+    return ok({ url = url })
+end
+
+---Claims a voice message the phone uploaded itself and hands back the trusted URL, the same
+---answer the base64 route gives. Audio only, so a claim here can never attach a video to a thread.
+---@param source number
+---@param payload { url?: string }
+---@return table
+function actions.voiceDone(source, payload)
+    payload = type(payload) == 'table' and payload or {}
+
+    local maxBytes = (config.VoiceMemos and config.VoiceMemos.MaxAudioBytes) or (8 * 1024 * 1024)
+    local p = promise.new()
+    presign.claim(source, payload.url,
+        { maxBytes = math.floor(maxBytes * 0.75), kinds = { audio = true } },
+        function(url, code, bytes) p:resolve({ url = url, code = code, bytes = bytes }) end)
+    local res = Citizen.Await(p)
+    if not res.url then
+        print(('^1[sd-phone:messages]^0 direct voice claim refused (%s)'):format(tostring(res.code)))
+        return fail('messages.uploadFailed', 'Upload failed')
+    end
+
+    local okLimit, why = mediaLimit.check(player.getIdentifier(source), res.bytes)
+    if not okLimit then
+        if why == 'cooldown' then return fail('messages.slowDownMoment', 'Slow down a moment') end
+        return fail('messages.uploadLimitReached', 'Upload limit reached')
+    end
+
+    local trustedUrl = mediaGuard.rememberVoice(player.getIdentifier(source), res.url)
+    if not trustedUrl then return fail('messages.uploadFailed', 'Upload failed') end
+    return ok({ url = trustedUrl })
+end
+
 ---Uploads a recorded voice message to Fivemanage and returns its hosted URL. The payload must
----be a data:audio/ URI within config.VoiceMemos.MaxAudioBytes.
+---be a data:audio/ URI within config.VoiceMemos.MaxAudioBytes. Kept as the fallback for whenever
+---the direct pair above cannot run; it carries the whole recording in one event, which is why it
+---is no longer the first thing tried.
 ---@param source number
 ---@param payload { audio?: string }
 ---@return table

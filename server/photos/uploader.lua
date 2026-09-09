@@ -4,6 +4,10 @@ local config = require 'configs.config'
 ---@type table Qbox CDN provider (server.photos.qbox): the multipart route through the Node helper.
 local qbox = require 'server.photos.qbox'
 
+---@type table Media URL ledger (server.media.ledger): records every URL this server hosts, so a
+---presigned-upload claim can tell a fresh object from one that already belongs to another app.
+local ledger = require 'server.media.ledger'
+
 ---@type table Uploader module; the table returned at end of file.
 local uploader = {}
 
@@ -25,6 +29,14 @@ local function mediaKey()
     local k = (config.ApiKeys or {}).FivemanageMedia
     if type(k) == 'string' and k ~= '' then return k end
     return GetConvar(CONVAR_KEY, '')
+end
+
+---The Fivemanage Media token, for the one caller that needs to authenticate a request this module
+---does not make itself: server.photos.presign mints upload slots against the same account. Kept
+---server-side like every other read of it, and never handed to a client.
+---@return string key the media token, or '' when unconfigured
+function uploader.mediaKey()
+    return mediaKey()
 end
 
 ---Which CDN this server uploads to. Anything other than 'qbox' stays on Fivemanage, so a typo
@@ -116,11 +128,20 @@ end
 ---@param filename string suggested filename stored alongside the upload
 ---@param cb fun(url: string|nil, err: string|nil, code: 'no-key'|'bad-data'|'provider'|nil)
 function uploader.uploadMedia(base64Image, filename, cb)
+    -- Every server-side upload in the resource funnels through here, whichever app asked for it,
+    -- so this is the one place that can tell the ledger about a hosted object without each caller
+    -- having to remember. A direct-upload claim is refused for anything the ledger already knows,
+    -- and a URL that never got recorded is a URL somebody else can claim as their own.
+    local function recorded(url, err, code)
+        if url then ledger.record(url) end
+        cb(url, err, code)
+    end
+
     if uploader.provider() == 'qbox' then
-        qbox.uploadMedia(base64Image, filename, cb)
+        qbox.uploadMedia(base64Image, filename, recorded)
         return
     end
-    uploadFivemanage(base64Image, filename, cb)
+    uploadFivemanage(base64Image, filename, recorded)
 end
 
 return uploader

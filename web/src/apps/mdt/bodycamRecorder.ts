@@ -2,6 +2,7 @@ import { apiCall, failText } from '@/core/api';
 import { t } from '@/i18n';
 import { getGameRender, type GameRender } from '@/render';
 import { pickVideoMime, videoStreamingSupported } from '@/shared/liveMedia';
+import { uploadDirect } from '@/shared/mediaUpload';
 
 export interface RecorderMeta {
     cameraId: string;
@@ -97,6 +98,24 @@ async function upload(blob: Blob, mime: string, duration: number, forMeta: Recor
     const total = Math.max(1, Math.ceil(blob.size / SLICE_BYTES));
 
     emit({ uploading: true, error: null });
+
+    const meta = {
+        cameraId: forMeta.cameraId,
+        kind:     forMeta.kind,
+        officer:  forMeta.officer,
+        callsign: forMeta.callsign,
+        plate:    forMeta.plate,
+        model:    forMeta.model,
+        mime,
+        duration,
+    };
+
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const hosted = await uploadDirect(blob, `sdphone-bodycam-${Date.now()}.${ext}`, {
+        slot: 'sd-phone:mdt:recSlot',
+        done: 'sd-phone:mdt:recDone',
+    }, meta);
+    if (hosted) return;
 
     const begun = await apiCall('sd-phone:mdt:recBegin', {
         cameraId: forMeta.cameraId,

@@ -55,6 +55,13 @@ function store.ensureSchema()
         MySQL.update.await('UPDATE phone_photos SET trusted = 1 WHERE trusted = 0')
     end
 
+    -- store.urlExistsAnywhere looks up by url alone, which idx_phone_photos_owner cannot serve:
+    -- its leading column is citizenid, so without this the presigned-upload claim full-scans the
+    -- table on every capture, and that table only grows. A prefix index rather than the full 512
+    -- chars, and a plain one rather than UNIQUE: two players importing the same external URL is
+    -- allowed today, so the uniqueness rule belongs to the claim path, not to the table.
+    util.ensureIndex('phone_photos', 'idx_phone_photos_url', '(url(191))')
+
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS phone_photo_albums (
             id         VARCHAR(16) NOT NULL,
@@ -92,7 +99,11 @@ end
 ---@param id string generated row id
 ---@param citizenid string owner's framework per-character id
 ---@param url string hosted media URL
----@param trusted boolean|nil true only when the server uploader or an explicit host allowlist supplied the URL
+---@param trusted boolean|nil true only when the server established the URL's provenance: the
+---server uploader produced it, an explicit host allowlist admitted it, or server.photos.presign
+---accepted a claim on it. The third is the one to be careful with - the client reports that URL -
+---and it earns the flag because the claim proves the same thing the uploader did: our own bucket,
+---against a slot we minted, serving media of the kind it is named for.
 ---@return boolean inserted
 function store.insertPhoto(id, citizenid, url, trusted)
     local affected = MySQL.insert.await(
@@ -122,6 +133,16 @@ function store.hasUrl(citizenid, url)
     return MySQL.scalar.await(
         'SELECT 1 FROM phone_photos WHERE citizenid = ? AND url = ? AND trusted = 1 LIMIT 1',
         { citizenid, url }) ~= nil
+end
+
+---Whether ANY player already holds this URL. The presigned-upload claim needs it: a URL is
+---visible to everyone a photo was shared with, so without this one player could claim another's
+---and guard.photo would honour the row as proof they own it. hasUrl above cannot answer this,
+---because it deliberately scopes to one owner. Read-only.
+---@param url string hosted media URL
+---@return boolean
+function store.urlExistsAnywhere(url)
+    return MySQL.scalar.await('SELECT 1 FROM phone_photos WHERE url = ? LIMIT 1', { url }) ~= nil
 end
 
 ---@type string Video-URL test, mirroring isVideoUrl() in web/src/core/photosApi.ts.
