@@ -991,6 +991,66 @@ exports('open',     OpenPhone)
 exports('close',    ClosePhone)
 exports('openApp',  OpenApp)
 
+---@type boolean Fold state mirror, so the toggle can report which way it went.
+local foldOpen = false
+---@type boolean Whether this phone has a hinge at all (configs/phone.lua Foldable). Off leaves the
+---NUI never told about a fold, so no rail control is drawn and nothing else changes.
+local FOLDABLE <const> = config.Phone.Foldable == true
+---@type integer Screen width unfolded. Twice the closed width, which is what makes the open state
+---two phones side by side rather than one stretched one.
+local FOLD_OPEN_W <const> = math.max(440, math.floor(tonumber(config.Phone.FoldOpenWidth) or 880))
+
+---Unfolds or folds the phone. A foldable body doubles its screen width, and the UI reflows into
+---the space rather than scaling up: more home-screen columns, and the list/detail apps showing
+---both panes at once. Dropped while the phone is away, since the fold is a thing you do to a
+---phone you are holding.
+---@param open boolean|nil true to unfold, false to fold, nil to toggle
+---@return boolean open the state it settled on
+local function SetFolded(open)
+    if not FOLDABLE or not phoneState.open then return foldOpen end
+    if open == nil then open = not foldOpen end
+    foldOpen = open == true
+    SendNUIMessage({
+        action = 'sd-phone:fold',
+        data   = { foldable = FOLDABLE, openW = FOLD_OPEN_W, open = foldOpen },
+    })
+    return foldOpen
+end
+
+-- Declares the hinge to the NUI without moving it, so the rail control is there to press the
+-- moment the phone is on screen. Folded is the state a phone is put away in, so opening always
+-- starts closed.
+local function AnnounceFold()
+    if not FOLDABLE then return end
+    foldOpen = false
+    SendNUIMessage({
+        action = 'sd-phone:fold',
+        data   = { foldable = true, openW = FOLD_OPEN_W, open = false },
+    })
+end
+
+-- The NUI outlives the shell (the keep-alive deck), so this handler is registered whether the
+-- phone is up or not and the announcement never races the mount.
+AddEventHandler('sd-phone:client:openState', function(open)
+    if open then AnnounceFold() end
+end)
+
+exports('setFolded', SetFolded)
+exports('isFolded',  function() return foldOpen end)
+
+-- Dev toggle while the fold is being built out. The shipping trigger is a hinge control on the
+-- chassis rail, which arrives with the foldable shell.
+if FOLDABLE then
+    RegisterCommand('fold', function()
+        if not phoneState.open then
+            print('^3[sd-phone]^0 open the phone first, then /fold')
+            return
+        end
+        print(('^2[sd-phone]^0 phone is now %s')
+            :format(SetFolded(nil) and ('unfolded (' .. FOLD_OPEN_W .. ')') or 'folded (440)'))
+    end, false)
+end
+
 ---Current cell service, 0 (dead zone) to 1 (standing at a mast). Always 1 when no towers are
 ---configured.
 exports('getServiceLevel', function() return service.level() end)

@@ -8,6 +8,7 @@ import { isDemo } from '@/core/demo';
 import { useTheme } from '@/stores/themeStore';
 import type { PhoneAlign } from '@/stores/themeStore';
 import { useCallStore } from '@/stores/callStore';
+import { useFoldOpen, useFoldStore, useFoldable, useScreenW } from '@/stores/foldStore';
 import { useBatteryStore } from '@/stores/batteryStore';
 import { IslandPet } from './IslandPet';
 import { fetchNui } from '@/core/nui';
@@ -410,10 +411,13 @@ function RailKey({ btn, m }: { btn: RailButton; m: ChassisMetrics }) {
 
 export function PhoneShell({ children, hidden = false, cameraActive = false, entering = false, leaving = false, landscape = false, peek, onClose, radioIsland, alarmIsland, frameColor = DEFAULT_FRAME_COLOR }: PhoneShellProps) {
     const { brightness, phoneScale, phoneAlign, phoneTilt, openAnim, ringtoneVol, setRingtoneVol, islandPet, shell } = useTheme('brightness', 'phoneScale', 'phoneAlign', 'phoneTilt', 'openAnim', 'ringtoneVol', 'setRingtoneVol', 'islandPet', 'shell');
-    const m = useMemo(() => chassisMetrics(shellFor(shell, device.id)), [shell]);
+    const foldW = useScreenW();
+    const foldable = useFoldable();
+    const foldOpen = useFoldOpen();
+    const m = useMemo(() => chassisMetrics(shellFor(shell, device.id), foldW), [shell, foldW]);
     const {
         SW, SH, W, H, SX, SY, BR, SR, SCREEN_MASK, BEZEL, hostsIsland, hasCutout, pillInCutout,
-        SCREEN_RRECT, OUTER_RRECT, softPatch,
+        SCREEN_RRECT, OUTER_RRECT, softPatch, FOLD_BTN,
         CUT_W, CUT_H, CUT_X, CUT_Y, CUT_R, CUT_PATH, CUT_LENS_X, CUT_COLLAR, CUT_OPTICS,
         DI_W, DI_H, DI_X, DI_Y, DI_R, MIP_X, PET_H, PET_TOP, petStage,
         CALL_W, CALL_X,
@@ -883,8 +887,13 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                             </g>
                         )}
 
-                        {BUTTONS.map((btn, i) => (
-                            <g key={i}>
+                        {/* The hinge key is painted only on a phone that actually has a hinge.
+                            chassisMetrics is pure geometry and reads the shell alone, so it hands
+                            back the fold key whether or not the server switched folding on; the
+                            press target below is already gated, but the moulding on the rail is
+                            not, and a dead button on the body is worse than no button. */}
+                        {BUTTONS.filter(btn => btn.role !== 'fold' || foldable).map((btn, i) => (
+                            <g key={btn.role ?? i}>
                                 <RailKey btn={btn} m={m} />
                             </g>
                         ))}
@@ -926,6 +935,16 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                             onDoubleClick={() => void takeScreenshot()}
                             className="absolute z-[300] cursor-pointer bg-transparent"
                             style={{ left: SCREENSHOT_BTN.x - 6, top: SCREENSHOT_BTN.y, width: SCREENSHOT_BTN.w + 12, height: SCREENSHOT_BTN.h }}
+                        />
+                    )}
+
+                    {FOLD_BTN && foldable && (
+                        <button
+                            type="button"
+                            aria-label={foldOpen ? t('shell.fold','Fold') : t('shell.unfold','Unfold')}
+                            onClick={() => useFoldStore.getState().toggle()}
+                            className="absolute z-[300] cursor-pointer bg-transparent"
+                            style={{ left: FOLD_BTN.x - 6, top: FOLD_BTN.y, width: FOLD_BTN.w + 12, height: FOLD_BTN.h }}
                         />
                     )}
 

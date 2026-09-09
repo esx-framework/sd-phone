@@ -28,6 +28,11 @@ export function getCardStage(id: string): HTMLElement | undefined {
     return cardStages.get(id);
 }
 
+// The second slot, present only while the phone is unfolded and split. Registered by the same
+// screen that registers the fullscreen one, so a split pane is an ordinary stage the deck can
+// re-parent into - two live apps at once costs the deck nothing beyond a second appendChild.
+let splitStage: HTMLElement | null = null;
+
 export function registerFullscreenStage(el: HTMLElement | null): void {
     fullscreenStage = el;
     for (const fn of listeners) fn();
@@ -35,6 +40,15 @@ export function registerFullscreenStage(el: HTMLElement | null): void {
 
 export function getFullscreenStage(): HTMLElement | null {
     return fullscreenStage;
+}
+
+export function registerSplitStage(el: HTMLElement | null): void {
+    splitStage = el;
+    for (const fn of listeners) fn();
+}
+
+export function getSplitStage(): HTMLElement | null {
+    return splitStage;
 }
 
 export function subscribeCardStages(fn: Listener): () => void {

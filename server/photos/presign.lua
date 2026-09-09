@@ -276,12 +276,37 @@ function presign.claim(src, url, opts, cb)
         -- a voice memo.
         local ctype = header(headers, 'content-type')
         local kind  = type(ctype) == 'string' and ctype:match('^(%a+)/') or nil
-        -- Both tests, and each catches what the other cannot. `kinds` is what this caller hosts,
-        -- so a camera claim never takes an mp3. `extKinds` is what the name can honestly be, so a
-        -- .jpg served as video/mp4 is refused rather than stored as a row store.isVideoUrl reads
-        -- as a still and renders broken.
         kind = kind and kind:lower() or nil
-        if not kind or not kinds[kind] or not extKinds[kind] then
+
+        -- What the object is allowed to be here. For an extension that can only be one thing, the
+        -- CDN's verdict has to agree with it AND with what the caller takes: that is what refuses
+        -- a .jpg served as video/mp4, which would otherwise be stored as a row store.isVideoUrl
+        -- reads as a still and renders broken.
+        --
+        -- For a dual container the CDN's verdict is not usable. Fivemanage sniffs a voice memo
+        -- recorded into a .webm as `video/webm`, because WebM is a video container and the sniff
+        -- sees the container rather than the tracks inside it. Holding audio callers to `audio/`
+        -- there refused every real voice memo. So for .webm and .ogg the claim accepts the object
+        -- when the caller takes either kind the extension could be, and leans on the extension for
+        -- what the app will render. Nothing that carries real weight rests on this - the bucket,
+        -- the slot, uniqueness and the size cap are all unaffected.
+        local ambiguous = false
+        do
+            local n = 0
+            for _ in pairs(extKinds) do n = n + 1 end
+            ambiguous = n > 1
+        end
+
+        local allowed = false
+        if ambiguous then
+            for k in pairs(extKinds) do
+                if kinds[k] then allowed = true break end
+            end
+        else
+            allowed = kind ~= nil and kinds[kind] == true and extKinds[kind] == true
+        end
+
+        if not allowed then
             print(('^1[sd-phone:photos]^0 [PRESIGN] src=%s claimed a .%s the CDN serves as %s, which this caller does not take')
                 :format(tostring(src), ext, tostring(ctype)))
             cb(nil, 'bad-type')

@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Columns2, X } from 'lucide-react';
 
 import { device } from '@device';
 import { AppIconSVG } from './AppIconSVG';
 import { AppBadge } from './AppBadge';
 import { registerCardStage } from './appDeckBridge';
 import { useBadges } from '@/stores/badgeStore';
+import { useScreenW } from '@/stores/foldStore';
 import type { AppDef } from '@/core/types';
 import { t, appLabel } from '@/i18n';
 
-const SW         = device.screen.w;
 const SH         = device.screen.h;
 const SR         = 49;   // card corner, drawn scaled - deliberately rounder than the screen's own radius
-const CARD_W     = Math.round(SW * 362 / 440);   // the card is a fraction of the screen, not a fixed width: hold the phone's 362/440
-const CARD_H     = Math.round(SH * CARD_W / SW);
-const SCALE      = CARD_W / SW;
-const CARD_STEP  = Math.round(CARD_W * 0.74);   // overlap so the focused card sits forward
-const CENTER     = (SW - CARD_W) / 2;
+
+// The card is a fraction of the screen, not a fixed width: hold the phone's 362/440. Everything
+// derived from the WIDTH has to come from the live screen instead of device.screen.w, because
+// unfolding doubles it. Reading the closed width here is what left the whole carousel centred on
+// the left half while unfolded, and had each card previewing an 880-wide app in a 440-wide frame.
+const CARD_FRAC  = 362 / 440;
+// Height and scale survive as constants: both are ratios of the width, so they come out the same
+// folded or open. SWITCHER_SCALE below is the one index.css reads, so it must not start moving.
+const CARD_H     = Math.round(SH * CARD_FRAC);
+const SCALE      = CARD_FRAC;
 const HEADER_H   = 42;
 const HEADER_TOP = 46;
 const CARD_TOP   = HEADER_TOP + HEADER_H + 8;
@@ -41,6 +46,8 @@ interface Props {
     onRemove:    (id: string) => void;
     onRemoveAll: () => void;
     onDismiss:   () => void;
+    onSplit?:      (id: string) => void;
+    splitExclude?: string | null;
 }
 
 // The live app view inside each card is NOT rendered here - a card renders only its
@@ -49,6 +56,7 @@ interface Props {
 // (and any card the deck chooses not to fill) keep showing the icon fallback beneath.
 function CardStage({ appId }: { appId: string }) {
     const ref = useRef<HTMLDivElement>(null);
+    const sw  = useScreenW();
     useEffect(() => {
         registerCardStage(appId, ref.current);
         return () => registerCardStage(appId, null);
@@ -57,15 +65,21 @@ function CardStage({ appId }: { appId: string }) {
         <div
             ref={ref}
             className="pointer-events-none absolute left-0 top-0"
-            style={{ width: SW, height: SH, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}
+            style={{ width: sw, height: SH, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}
         />
     );
 }
 
 export function AppSwitcher({
     apps, recents, closing, onDone, onReady, onOpen, onRemove, onRemoveAll, onDismiss,
+    onSplit, splitExclude,
 }: Props) {
     const badges = useBadges();
+    // Live, not device.screen.w: unfolding doubles the screen under the switcher.
+    const sw        = useScreenW();
+    const cardW     = Math.round(sw * CARD_FRAC);
+    const cardStep  = Math.round(cardW * 0.74);   // overlap so the focused card sits forward
+    const center    = (sw - cardW) / 2;
     const [focusedIdx, setFocusedIdx] = useState(0);
     const [swipeUpY,   setSwipeUpY]   = useState(0);
     const [dragX,      setDragX]      = useState(0);
@@ -165,7 +179,7 @@ export function AppSwitcher({
         if (axisRef.current === 'h') {
             const dx = dragXRef.current;
             const vx = lastMoveRef.current.vx;
-            let steps = Math.round(-dx / CARD_STEP);
+            let steps = Math.round(-dx / cardStep);
             if (steps === 0 && Math.abs(dx) > 30) steps = dx < 0 ? 1 : -1;
             if (Math.abs(vx) > 0.6) steps = vx < 0 ? Math.max(steps, 1) : Math.min(steps, -1);
             setFocusedIdx(f => Math.max(0, Math.min(recents.length - 1, f + steps)));
@@ -228,7 +242,7 @@ export function AppSwitcher({
             >
                 {recents.map((appId, idx) => {
                     const appDef    = apps.find(a => a.id === appId);
-                    const tx        = CENTER + (idx - focusedIdx) * CARD_STEP + dragX;
+                    const tx        = center + (idx - focusedIdx) * cardStep + dragX;
                     const snapping  = !isDraggingRef.current;
                     const isEjecting = ejectingId === appId;
                     const isSwiping  = idx === swipeDragIdx.current;
@@ -261,7 +275,7 @@ export function AppSwitcher({
                             style={{
                                 left:            0,
                                 top:             0,
-                                width:           CARD_W,
+                                width:           cardW,
                                 zIndex:          cz,
                                 transform:       `translateX(${tx}px) translateY(${ty}px) scale(${cScale})`,
                                 transformOrigin: '50% 0%',
@@ -306,6 +320,21 @@ export function AppSwitcher({
                                     {appDef ? appLabel(appDef) : appId}
                                 </span>
 
+                                {onSplit && appId !== splitExclude && (
+                                    <button
+                                        type="button"
+                                        aria-label={t('shell.splitBeside', 'Open {label} beside this one', { label: appDef ? appLabel(appDef) : appId })}
+                                        onClick={e => { e.stopPropagation(); onSplit(appId); }}
+                                        className="shrink-0 flex h-[30px] w-[30px] items-center justify-center rounded-full text-white transition-colors duration-200 active:bg-white/30"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.18)',
+                                            boxShadow:  'inset 0 0 0 0.5px rgba(255,255,255,0.28)',
+                                        }}
+                                    >
+                                        <Columns2 className="h-[15px] w-[15px]" strokeWidth={2.25} />
+                                    </button>
+                                )}
+
                                 {/* Close: to the RIGHT of the name, a larger
                                     circular glass button. Translucent over the switcher's own blur
                                     (no per-button backdrop-filter - it nests under the switcher blur
@@ -327,7 +356,7 @@ export function AppSwitcher({
                             <div
                                 className="relative overflow-hidden"
                                 style={{
-                                    width:        CARD_W,
+                                    width:        cardW,
                                     height:       CARD_H,
                                     borderRadius: Math.round(SR * SCALE),
                                     boxShadow:    '0 14px 44px rgba(0,0,0,0.7), 0 2px 10px rgba(0,0,0,0.45)',
@@ -359,7 +388,7 @@ export function AppSwitcher({
                                     onClick={e => {
                                         e.stopPropagation();
                                         if (suppressClick.current) return;
-                                        const cx = (tx + CARD_W / 2) / SW;
+                                        const cx = (tx + cardW / 2) / sw;
                                         const cy = (CARD_TOP + CARD_H / 2) / SH;
                                         onOpen(appId, {
                                             x: Math.max(0, Math.min(1, cx)),

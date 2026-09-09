@@ -22,7 +22,7 @@ export interface DeviceButton {
     /** Button height in frame px. */
     h: number;
     /** What tapping it does. Buttons without a role are decorative. */
-    role?: 'volumeUp' | 'volumeDown' | 'power' | 'screenshot';
+    role?: 'volumeUp' | 'volumeDown' | 'power' | 'screenshot' | 'fold';
 }
 
 /** Home-screen icon grid. All values are screen px. */

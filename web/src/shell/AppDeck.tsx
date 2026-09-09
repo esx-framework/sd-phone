@@ -3,11 +3,15 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 
 import { getAppEntry, isPreviewApp, type AppId } from './appRegistry';
-import { getCardStage, getFullscreenStage, registerFullscreenStage, subscribeCardStages } from './appDeckBridge';
+import { getCardStage, getFullscreenStage, getSplitStage, registerFullscreenStage, registerSplitStage, subscribeCardStages } from './appDeckBridge';
 import { DeckActiveProvider } from './deckActive';
 import { CustomAppFrame } from './CustomAppFrame';
 import { getCustomApp } from '@/stores/customAppsStore';
+import { useFoldOpen } from '@/stores/foldStore';
+import { SPLIT_EXIT_MS, useSplitClosing, useSplitId, useSplitSide, useSplitStore } from '@/stores/splitStore';
 import type { AppDef } from '@/core/types';
+import { ArrowLeftRight } from 'lucide-react';
+import { t } from '@/i18n';
 
 // The retained keep-alive deck. It is the ONE and ONLY place any app component is
 // instantiated, and it is mounted at the very top of the tree so it OUTLIVES the phone
@@ -16,10 +20,11 @@ import type { AppDef } from '@/core/types';
 // come back exactly where you left them after the phone is put away and taken out.
 // Each live id gets a stable host <div> (created imperatively so React never fights our
 // re-parenting); the app is portaled into that host. A layout effect moves each host
-// between three slots by plain DOM appendChild:
+// between four slots by plain DOM appendChild:
 //   - the fullscreen stage (active app, phone open) -> visible, interactive. This node
 //     lives INSIDE the phone screen and is registered via the bridge, so the deck can
 //     re-parent into it without living inside the shell that unmounts on holster.
+//   - the split stage (second app while unfolded and split) -> visible, interactive
 //   - a switcher card stage (retained preview app, switcher open) -> visible, inert
 //   - the hidden pool (backgrounded/retained/holstered but not shown) -> mounted,
 //     effects live but suspended to ~0 CPU via deckActive
@@ -42,6 +47,7 @@ export interface DeckAppCtx {
 interface AppDeckProps {
     deckIds:        AppId[];
     activeId:       AppId | null;
+    splitId:        AppId | null;
     switcherOpen:   boolean;
     switcherReady:  boolean;
     closing:        boolean;
@@ -144,7 +150,7 @@ const AppHost = memo(function AppHost({ id, ctx, active, openKey, origin, expand
 });
 
 export function AppDeck({
-    deckIds, activeId, switcherOpen, switcherReady, closing, foregroundKeys, launchOrigin, launchExpand, ctx, onCloseDone,
+    deckIds, activeId, splitId, switcherOpen, switcherReady, closing, foregroundKeys, launchOrigin, launchExpand, ctx, onCloseDone,
 }: AppDeckProps) {
     const hostsRef = useRef<Map<AppId, HTMLDivElement>>(new Map());
     const poolRef  = useRef<HTMLDivElement>(null);
@@ -205,6 +211,12 @@ export function AppDeck({
             } else if (id === activeId && fullscreen) {
                 slot = fullscreen;
                 interactive = true;
+            } else if (splitId && id === splitId && getSplitStage()) {
+                // Split view: the right pane is an ordinary stage, so the second app is live and
+                // interactive on exactly the same terms as the first. Both stay deckActive, since
+                // an app the player can see and touch must not be frozen.
+                slot = getSplitStage();
+                interactive = true;
             } else {
                 slot = poolRef.current;
             }
@@ -214,7 +226,7 @@ export function AppDeck({
             if (interactive) host.removeAttribute('inert');
             else host.setAttribute('inert', '');
         }
-    }, [deckIds, activeId, switcherOpen, switcherReady, stageVersion]);
+    }, [deckIds, activeId, splitId, switcherOpen, switcherReady, stageVersion]);
 
     return (
         <>
@@ -227,7 +239,7 @@ export function AppDeck({
                 <AppHost
                     id={id}
                     ctx={ctx}
-                    active={!switcherOpen && id === activeId}
+                    active={!switcherOpen && (id === activeId || id === splitId)}
                     openKey={foregroundKeys[id] ?? 0}
                     origin={id === activeId ? launchOrigin : null}
                     expandOpen={id === activeId && launchExpand}
@@ -246,11 +258,119 @@ export function AppDeck({
 // Because the deck lives above the shell, this node coming and going (phone open/close)
 // simply swaps the active app between "fullscreen in the phone" and "suspended in the
 // pool" without ever unmounting it.
-export function FullscreenStage() {
-    const ref = useRef<HTMLDivElement>(null);
+export function FullscreenStage({ mainAnim }: {
+    /** Reveal animation for the main half only, so it never runs over a resting split pane. */
+    mainAnim?:   string;
+}) {
+    const ref      = useRef<HTMLDivElement>(null);
+    const splitRef = useRef<HTMLDivElement>(null);
+    const unfolded = useFoldOpen();
+    const splitApp = useSplitId();
+    const side     = useSplitSide();
+    const closing  = useSplitClosing();
+    const split    = unfolded ? splitApp : null;
+
+    // Which half each stage occupies. The split app takes the side it was opened on and the main
+    // phone takes the other, so swapping sides is a straight swap of the two boxes.
+    const splitLeft = side === 'left';
+    const mainBox  = splitLeft ? { left: '50%', right: 0 } : { left: 0, right: '50%' };
+    const paneBox  = splitLeft ? { left: 0, right: '50%' } : { left: '50%', right: 0 };
+
     useLayoutEffect(() => {
         registerFullscreenStage(ref.current);
         return () => registerFullscreenStage(null);
     }, []);
-    return <div ref={ref} className="absolute inset-0 z-10" style={{ pointerEvents: 'none' }} />;
+
+    // Registered only while a pane is actually shown, so the deck's split branch cannot claim an
+    // app into a stage the player cannot see - folding shut hands the second app straight back to
+    // the pool rather than stranding it live off-screen.
+    useLayoutEffect(() => {
+        registerSplitStage(split ? splitRef.current : null);
+        return () => registerSplitStage(null);
+    }, [split]);
+
+    // The seam eases rather than jumps: the main half grows back into the space as the pane slides
+    // out of it, so closing reads as the two halves rejoining.
+    const SEAM = `left ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1), right ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1)`;
+    const held = split && !closing;
+
+    return (
+        <>
+            <div
+                ref={ref}
+                className="absolute inset-y-0 z-10 overflow-hidden"
+                style={{
+                    left:  held ? mainBox.left  : 0,
+                    right: held ? mainBox.right : 0,
+                    transition: SEAM,
+                    animation: mainAnim,
+                    pointerEvents: 'none',
+                }}
+            />
+            {split && (
+                <>
+                    <div
+                        ref={splitRef}
+                        className="absolute inset-y-0 z-10 overflow-hidden"
+                        style={{
+                            ...paneBox,
+                            pointerEvents: 'none',
+                            opacity: closing ? 0 : 1,
+                            transform: closing ? `translateX(${splitLeft ? -14 : 14}px) scale(0.97)` : 'none',
+                            transformOrigin: splitLeft ? 'right center' : 'left center',
+                            // The seam easing rides on this one too. Without it the main half slid
+                            // across on a swap while the pane jumped, so the two halves visibly
+                            // came apart instead of trading places.
+                            transition: `${SEAM}, opacity ${SPLIT_EXIT_MS}ms ease, transform ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1)`,
+                        }}
+                    />
+                    <div
+                        className="absolute inset-y-0 z-20"
+                        style={{
+                            left: '50%', width: 1, marginLeft: -0.5,
+                            background: 'rgba(0,0,0,0.35)',
+                            opacity: closing ? 0 : 1,
+                            transition: `opacity ${SPLIT_EXIT_MS}ms ease`,
+                            pointerEvents: 'none',
+                        }}
+                    />
+
+                    {/* A grip on the seam, because an invisible hit target is a secret rather than
+                        an affordance. It carries the swap arrows rather than a drag handle: a
+                        handle promises resizing, and the halves are always 50/50.
+
+                        The button's own states are paint-only - background and colour, never a
+                        filter. A layer-promoting hover sitting exactly on the boundary re-snaps
+                        the two app stages either side of it under the screen's CSS zoom. The one
+                        transform is on the icon alone, which is small and has no neighbour to
+                        disturb: it turns a half circle on every swap, so the arrows travel the way
+                        the panes do. */}
+                    <button
+                        type="button"
+                        aria-label={t('shell.splitSwap', 'Swap the two sides')}
+                        onClick={() => useSplitStore.getState().swap()}
+                        className="absolute z-30 flex items-center justify-center rounded-full bg-[rgba(28,28,30,0.78)] text-white/80 transition-colors duration-200 hover:text-white active:bg-[rgba(28,28,30,0.96)] active:text-white/60"
+                        style={{
+                            left: '50%', top: '50%',
+                            width: 30, height: 62, marginLeft: -15, marginTop: -31,
+                            boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.16), 0 1px 6px rgba(0,0,0,0.45)',
+                            opacity: closing ? 0 : 1,
+                            transition: `opacity ${SPLIT_EXIT_MS}ms ease, color 200ms ease, background-color 200ms ease`,
+                            pointerEvents: closing ? 'none' : 'auto',
+                        }}
+                    >
+                        <span
+                            className="flex items-center justify-center"
+                            style={{
+                                transform: `rotate(${splitLeft ? 180 : 0}deg)`,
+                                transition: `transform ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1)`,
+                            }}
+                        >
+                            <ArrowLeftRight className="h-[14px] w-[14px]" strokeWidth={2.4} />
+                        </span>
+                    </button>
+                </>
+            )}
+        </>
+    );
 }

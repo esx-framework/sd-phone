@@ -71,6 +71,8 @@ import { clearCustomInstalled, customToAppDef, isCustomApp, setCustomInstalled, 
 import { resolveWallpaper } from '@/shell/wallpapers';
 import { NoSimScreen } from '@/shell/NoSimScreen';
 import { useNoService, useNoSim, useSimStore } from '@/stores/simStore';
+import { useFoldOpen, useFoldStore } from '@/stores/foldStore';
+import { useSplitId, useSplitSide, useSplitStore } from '@/stores/splitStore';
 import { useNoServiceArea, useServiceBars, useServiceStore } from '@/stores/serviceStore';
 import { useWifiConnected, useWifiStore } from '@/stores/wifiStore';
 import { useBluetoothStore } from '@/stores/bluetoothStore';
@@ -165,11 +167,14 @@ const RECENTS_CAP = 10;
 function AppResumeStage({ hasApp }: { hasApp: boolean }) {
     const fxRef = useRef(hasApp);
     return (
-        <div
-            className="absolute inset-0 z-10"
-            style={{ pointerEvents: 'none', animation: fxRef.current ? 'app-resume-in 0.34s cubic-bezier(0.3,0.9,0.4,1) both' : undefined }}
-        >
-            <FullscreenStage />
+        // The reveal is handed to the main stage rather than played on this wrapper. The wrapper
+        // also contains the split pane, and an animation that means "the app that just appeared"
+        // must not run over an app that has been sitting there the whole time - which is what made
+        // opening something on the main half replay the split app's entrance alongside it.
+        <div className="absolute inset-0 z-10" style={{ pointerEvents: 'none' }}>
+            <FullscreenStage
+                mainAnim={fxRef.current ? 'app-resume-in 0.34s cubic-bezier(0.3,0.9,0.4,1) both' : undefined}
+            />
         </div>
     );
 }
@@ -551,6 +556,13 @@ function AppContent() {
         if (data?.color) setFrameColor(data.color);
     }, []));
 
+    useNuiEvent('sd-phone:fold', useCallback((data) => {
+        const fold = useFoldStore.getState();
+        if (typeof data?.openW === 'number') fold.applyShell(data.foldable !== false, data.openW);
+        if (typeof data?.open === 'boolean') fold.setOpen(data.open);
+        else fold.toggle();
+    }, []));
+
     useNuiEvent('sd-phone:music:receive', useCallback((data) => {
         if (!data) return;
         const lib = useMusicLibrary.getState();
@@ -651,6 +663,14 @@ function AppContent() {
 
     const handleSwitcherDismiss  = useCallback(() => setSwitcherClosing(true), []);
 
+    // Sends a card into the pane beside the app you are already in. Only apps the deck already
+    // holds can get here, so this is a re-parent of something mounted rather than a cold launch
+    // into half a screen.
+    const handleSplitApp = useCallback((id: string) => {
+        useSplitStore.getState().open(id);
+        setSwitcherClosing(true);
+    }, []);
+
     const escapeLadder = useCallback(() => {
         if (switcherOpen)            { setSwitcherClosing(true); return; }
         if (currentApp && !isClosing) { handleCloseApp();        return; }
@@ -711,12 +731,21 @@ function AppContent() {
 
     // The exact set of app ids the deck keeps mounted: the active app (always) plus
     // the retained preview-eligible apps. Order is active-first for reveal priority.
+    const unfolded = useFoldOpen();
+    const splitRightId = useSplitId();
+    const splitSide = useSplitSide();
+    // Folding shut drops the second app back to the pool on its own, and unfolding restores it.
+    const splitId = (unfolded && splitRightId && splitRightId !== currentApp ? splitRightId : null) as AppId | null;
+
     const deckIds = useMemo<AppId[]>(() => {
         const ids: AppId[] = [];
         if (currentApp) ids.push(currentApp);
+        // The split pane's app has to be mounted like any other, so it joins the deck set even
+        // when it was never opened fullscreen - otherwise the right pane has nothing to show.
+        if (splitId && !ids.includes(splitId)) ids.push(splitId);
         for (const id of retained) if (!ids.includes(id)) ids.push(id);
         return ids;
-    }, [currentApp, retained]);
+    }, [currentApp, splitId, retained]);
 
     const music = useMusic();
     useEffect(() => {
@@ -1467,6 +1496,7 @@ function AppContent() {
             <AppDeck
                 deckIds={deckIds}
                 activeId={deckActiveId}
+                splitId={splitId}
                 switcherOpen={switcherOpen}
                 switcherReady={switcherReady}
                 closing={isClosing}
@@ -1679,6 +1709,8 @@ function AppContent() {
                         onRemove={handleRemoveFromRecents}
                         onRemoveAll={handleRemoveAll}
                         onDismiss={handleSwitcherDismiss}
+                        onSplit={unfolded && !splitRightId ? handleSplitApp : undefined}
+                        splitExclude={currentApp}
                     />
                 )}
 
@@ -1692,6 +1724,7 @@ function AppContent() {
 
                 {!onHomescreen && !showSetup && !hideHomeIndicator && (
                     <HomeIndicator
+                        side={splitId ? (splitSide === 'left' ? 'right' : 'left') : 'full'}
                         onGoHome={
                             locked        ? () => setUnlockTrigger(n => n + 1)
                                 : currentApp  ? handleCloseApp
@@ -1699,6 +1732,18 @@ function AppContent() {
                         }
                         closing={isClosing}
                         passive={!locked && !showSetup}
+                    />
+                )}
+
+                {/* The split pane's own bar. Each half of an unfolded screen closes the app above
+                    it, so the gesture never has to guess which pane was meant - and it shows even
+                    while the left half is on the home screen, because the right one still has an
+                    app to dismiss. */}
+                {splitId && !showSetup && !hideHomeIndicator && !locked && (
+                    <HomeIndicator
+                        side={splitSide}
+                        onGoHome={() => useSplitStore.getState().close()}
+                        passive={false}
                     />
                 )}
 

@@ -128,6 +128,24 @@ return {
     -- Accessibility never see it either way.
     BootScreen = false,
 
+    -- Foldable phone. The body carries a hinge and unfolds sideways to twice the width, and the
+    -- interface uses the room rather than scaling up: two home-screen pages side by side, the
+    -- list/detail apps (Mail, Files, MDT, Settings) showing both panes at once, and split view
+    -- for running two apps together.
+    --
+    -- On by default, so players have the option without an owner having to find this setting.
+    -- Nothing is forced on them: the phone opens folded every time and stays that way until the
+    -- hinge is pressed. Set false and the hinge key is not drawn on the shell at all, split view
+    -- is unreachable, and the phone behaves exactly as it did before any of this existed.
+    Foldable = true,
+
+    -- Screen width unfolded, in the UI's own pixels. The closed screen is 440, so 880 is two
+    -- phones side by side - which is what makes an unfolded page and a split pane the same width
+    -- as an ordinary phone screen, and why no app needs its own wide layout. Change this and
+    -- split panes stop matching the closed width, so apps will be laid out at a size they have
+    -- never been designed against.
+    FoldOpenWidth = 880,
+
     -- Let the player walk around while the phone is open (the game keeps
     -- receiving input alongside the UI). Mouse-look, aiming, firing, melee and
     -- weapon switching are suppressed so the mouse only drives the on-screen

@@ -3,6 +3,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from
 import { LayoutGrid, Minus, Plus } from 'lucide-react';
 
 import { device } from '@device';
+import { useScreenW } from '@/stores/foldStore';
+import { SPLIT_EXIT_MS, useSplitPaneActive, useSplitSide } from '@/stores/splitStore';
 import { DOCK_BOTTOM, DOCK_PAD_Y, DOTS_GAP, getDensity, getGrid, stripReserve, useGrid } from '@/device/grid';
 import { APP_LABEL_CLASS, appLabelStyle } from './appLabel';
 import type { AppDef } from '@/core/types';
@@ -69,6 +71,15 @@ function cellFromCenter(cx: number, cy: number) {
     const c = Math.max(0, Math.min(g.cols - 1, Math.round((cx - g.padX - g.icon / 2) / g.colStride)));
     const r = Math.max(0, Math.min(g.rows - 1, Math.round((cy - g.rowY0 - g.icon / 2) / g.rowStride)));
     return r * g.cols + c;
+}
+
+// Which of the pages currently on screen the point is over, and the cell within it. Dragging is
+// done in page-local coordinates, so unfolded - where a second page sits beside the first - a
+// point past one page width belongs to the NEXT page. Without this the column clamp pins it to
+// the last column of the page being dragged from, which reads as the icon refusing to cross.
+function cellFromCenterPaged(cx: number, cy: number, pagesOnScreen: number) {
+    const offset = Math.max(0, Math.min(pagesOnScreen - 1, Math.floor(cx / SCREEN_W)));
+    return { offset, cell: cellFromCenter(cx - offset * SCREEN_W, cy) };
 }
 function offsetWithin(el: HTMLElement | null, root: HTMLElement | null): { x: number; y: number } {
     let x = 0, y = 0;
@@ -362,12 +373,16 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         if (!editingRef.current) return;
         e.stopPropagation();
         const s = slot(w.row * COLS + w.col);
-        dragWStart.current = { px: e.clientX, py: e.clientY, x: s.x, y: s.y, zoom: ancestorZoom(stripRef.current) };
+        // The same page-local to screen-local shift the icon drag makes: the dragged tile is drawn
+        // against the whole visible screen, so a widget on the second visible page has to be
+        // lifted at its real position rather than the first page's equivalent.
+        const sx = s.x + (w.page - pageRef.current) * SCREEN_W;
+        dragWStart.current = { px: e.clientX, py: e.clientY, x: sx, y: s.y, zoom: ancestorZoom(stripRef.current) };
         dropSpot.current = { col: w.col, row: w.row };
         dropPageRef.current = w.page;
         dragSizeRef.current = w.size;
         setDropPreview({ page: w.page, col: w.col, row: w.row });
-        setDragW({ uid: w.uid, x: s.x, y: s.y });
+        setDragW({ uid: w.uid, x: sx, y: s.y });
         // No setPointerCapture: the dragged tile is re-parented into whichever page is showing,
         // and capture does not survive that. The window listeners below own the gesture instead.
     }
@@ -389,7 +404,11 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             const x = g.x + (e.clientX - g.px) / g.zoom;
             const y = g.y + (e.clientY - g.py) / g.zoom;
             setDragW(d => (d && d.uid === uid ? { uid, x, y } : d));
-            const spot = cellFor(dragSizeRef.current, x, y);
+            // Which visible page the tile is over, so it can be dropped on the second one rather
+            // than being clamped into the first page's columns.
+            const off = Math.max(0, Math.min(pagesOnScreenRef.current - 1, Math.floor(x / SCREEN_W)));
+            dropPageRef.current = pageRef.current + off;
+            const spot = cellFor(dragSizeRef.current, x - off * SCREEN_W, y);
             dropSpot.current = spot;
             setDropPreview(p => (p && p.page === dropPageRef.current && p.col === spot.col && p.row === spot.row
                 ? p
@@ -403,13 +422,13 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             const EDGE = 44;
             const dir: 'l' | 'r' | null = px < EDGE ? 'l' : px > stripW - EDGE ? 'r' : null;
             const canFlip = dir === 'l' ? pageRef.current > 0
-                : dir === 'r' ? pageRef.current < visiblePagesRef.current - 1 : false;
+                : dir === 'r' ? pageRef.current < lastPageRef.current : false;
             if (dir && canFlip) {
                 if (edgeDir.current !== dir) {
                     clearEdge();
                     edgeDir.current = dir;
                     edgeTimer.current = window.setTimeout(() => {
-                        const next = Math.max(0, Math.min(visiblePagesRef.current - 1, pageRef.current + (dir === 'l' ? -1 : 1)));
+                        const next = Math.max(0, Math.min(lastPageRef.current, pageRef.current + (dir === 'l' ? -1 : 1)));
                         dropPageRef.current = next;
                         setPage(next);
                         setDropPreview(p => (p && p.page !== next ? { ...p, page: next } : p));
@@ -513,6 +532,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     const [dragId, setDragId] = useState<string | null>(null);
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
     const [overCell, setOverCell] = useState<number | null>(null);
+    const [overPage, setOverPage] = useState(0);
     const [dockOver, setDockOver] = useState<number | null>(null);
     const dockOverRef = useRef<number | null>(null);
     const [dragFromDock, setDragFromDock] = useState(false);
@@ -522,6 +542,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     const grabZoom = useRef(1);
     const fromCell = useRef(0);
     const overCellRef = useRef(0);
+    // The page the pointer is over, which unfolded is not always the page being dragged from.
+    const overPageRef = useRef(0);
     const [plopIds, setPlopIds] = useState<Set<string>>(() => new Set());
     const plopTimer = useRef<number | null>(null);
 
@@ -589,9 +611,27 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     const lastIconPage   = Math.floor(lastFilledIndex(slots) / itemsPerPage());
     const lastWidgetPage = widgets.reduce((m, w) => Math.max(m, w.page), -1);
     const filledPages = Math.max(lastIconPage, lastWidgetPage) + 1;
+    const foldW = useScreenW();
+    // While an app holds the other half, the home screen is the phone on THIS half and behaves
+    // like one: a single page, paged normally. Laying out for the full width would put its second
+    // page underneath the split app, where it can be scrolled to but never seen.
+    const splitPane = useSplitPaneActive();
+    const splitSide = useSplitSide();
+    const paneW = splitPane ? SCREEN_W : foldW;
     const visiblePages = editing ? Math.max(1, filledPages + 1) : Math.max(1, filledPages);
+    // A page stays one closed-screen wide however wide the device is, so unfolding does not
+    // reflow anyone's arrangement - it reveals the next page beside the current one.
+    const pagesOnScreen = Math.max(1, Math.round(paneW / SCREEN_W));
+    // Paging stops when the LAST page reaches the right edge, not when it reaches the left one:
+    // with two pages on screen, scrolling to the final page's own index would park it on the left
+    // and leave dead space beside it.
+    const lastPage = Math.max(0, visiblePages - pagesOnScreen);
     const visiblePagesRef = useRef(1);
     visiblePagesRef.current = visiblePages;
+    const pagesOnScreenRef = useRef(1);
+    pagesOnScreenRef.current = pagesOnScreen;
+    const lastPageRef = useRef(0);
+    lastPageRef.current = lastPage;
     // `pages` is chunked from the ICON array, so a widget-only page has no chunk to render into.
     // Pad with empty pages up to visiblePages so every page that exists gets a container - this
     // is also what provides the spare trailing page to drag onto in edit mode.
@@ -600,7 +640,9 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         while (out.length < visiblePages) out.push(Array<string | null>(itemsPerPage()).fill(null));
         return out;
     }, [pages, visiblePages]);
-    useEffect(() => { if (page > visiblePages - 1) setPage(visiblePages - 1); }, [visiblePages, page]);
+    // Also catches unfolding while parked on the last page: the reachable range shrinks as a
+    // second page comes on screen, so the current page has to come back with it.
+    useEffect(() => { if (page > lastPage) setPage(lastPage); }, [lastPage, page]);
 
     /**
      * True while the page strip is sliding, so glass widgets can drop their blur for the duration.
@@ -656,14 +698,14 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         if (dt > 0) velRef.current = (e.clientX - lastXRef.current) / dt;
         lastXRef.current = e.clientX; lastTRef.current = e.timeStamp;
         const pg = pageRef.current;
-        const clamped = Math.max(-(visiblePages - 1 - pg) * SCREEN_W, Math.min(pg * SCREEN_W, dx));
+        const clamped = Math.max(-(lastPage - pg) * SCREEN_W, Math.min(pg * SCREEN_W, dx));
         dragXRef.current = clamped; setDragX(clamped);
     }
     function onPointerUp() {
         if (dragId) { onIconUp(); return; }
         clearLP();
         if (lockedAxis.current === 'h') {
-            const dx = dragXRef.current, vel = velRef.current, pg = pageRef.current, last = visiblePages - 1;
+            const dx = dragXRef.current, vel = velRef.current, pg = pageRef.current, last = lastPage;
             if ((dx < -COMMIT_THRESHOLD || vel < -FLICK_VELOCITY) && pg < last) setPage(pg + 1);
             else if ((dx > COMMIT_THRESHOLD || vel > FLICK_VELOCITY) && pg > 0) setPage(pg - 1);
         }
@@ -675,15 +717,23 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         onLaunchApp(app, origin);
     }
 
-    function onIconDown(e: ReactPointerEvent, id: string, localCell: number) {
+    function onIconDown(e: ReactPointerEvent, id: string, localCell: number, fromPage: number) {
         e.stopPropagation();
+        // slot() is page-local, but the drag layer is a sibling of the paged strip and so is
+        // positioned against the whole visible screen. Unfolded, an icon on the second visible
+        // page would otherwise start its drag at the first page's coordinates and appear to jump
+        // across. Shifting by the page's offset from the current paging position puts the lifted
+        // icon exactly where the real one was.
         const s = slot(localCell);
-        grabSlot.current = s;
+        grabSlot.current = { x: s.x + (fromPage - pageRef.current) * SCREEN_W, y: s.y };
         startClient.current = { x: e.clientX, y: e.clientY };
         grabZoom.current = ancestorZoom(stripRef.current);
         fromCell.current = localCell;
-        fromPageRef.current = pageRef.current;
+        // The page the icon is actually drawn on, not the paging index: unfolded, a second page
+        // is on screen beside it and its icons must not be lifted out of the first one's slots.
+        fromPageRef.current = fromPage;
         overCellRef.current = localCell;
+        overPageRef.current = fromPage;
         fromDockRef.current = false;
         dockOverRef.current = null;
         setDragFromDock(false); setDockOver(null);
@@ -703,6 +753,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         fromCell.current = -1;
         fromPageRef.current = pageRef.current;
         overCellRef.current = 0;
+        overPageRef.current = pageRef.current;
         fromDockRef.current = true;
         dockOverRef.current = index;
         setDragFromDock(true); setDockOver(index);
@@ -732,11 +783,14 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             setOverCell(null);
             return;
         }
-        const over = cellFromCenter(x + ICON / 2, y + ICON / 2);
+        const hit = cellFromCenterPaged(x + ICON / 2, y + ICON / 2, pagesOnScreenRef.current);
+        const over = hit.cell;
+        overPageRef.current = pageRef.current + hit.offset;
         overCellRef.current = over;
         setOverCell(over);
-        const targetId = slots[pageRef.current * itemsPerPage() + over] ?? null;
-        const sameAsOrigin = pageRef.current === fromPageRef.current && over === fromCell.current;
+        setOverPage(overPageRef.current);
+        const targetId = slots[overPageRef.current * itemsPerPage() + over] ?? null;
+        const sameAsOrigin = overPageRef.current === fromPageRef.current && over === fromCell.current;
         if (!isFolderId(dragId) && !fromDockRef.current && targetId && !sameAsOrigin) {
             if (dwellCell.current !== over) {
                 dwellCell.current = over;
@@ -751,13 +805,13 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         const px = x + ICON / 2;
         const EDGE = 44;
         const dir: 'l' | 'r' | null = px < EDGE ? 'l' : px > stripW - EDGE ? 'r' : null;
-        const canFlip = dir === 'l' ? pageRef.current > 0 : dir === 'r' ? pageRef.current < visiblePagesRef.current - 1 : false;
+        const canFlip = dir === 'l' ? pageRef.current > 0 : dir === 'r' ? pageRef.current < lastPageRef.current : false;
         if (dir && canFlip) {
             if (edgeDir.current !== dir) {
                 clearEdge();
                 edgeDir.current = dir;
                 edgeTimer.current = window.setTimeout(() => {
-                    setPage(p => Math.max(0, Math.min(visiblePagesRef.current - 1, p + (dir === 'l' ? -1 : 1))));
+                    setPage(p => Math.max(0, Math.min(lastPageRef.current, p + (dir === 'l' ? -1 : 1))));
                     edgeDir.current = null; edgeTimer.current = null;
                 }, 600);
             }
@@ -773,6 +827,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     function endIconDrag() {
         dockOverRef.current = null;
         fromDockRef.current = false;
+        overPageRef.current = pageRef.current;
         setDragId(null); setOverCell(null); setDockOver(null); setDragFromDock(false);
     }
     function applyDockPlan(plan: DockPlan) {
@@ -788,10 +843,10 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         const fromDock = fromDockRef.current;
         const onDock = dockOverRef.current;
         const from = fromPageRef.current * itemsPerPage() + fromCell.current;
-        const to   = pageRef.current * itemsPerPage() + overCellRef.current;
+        const to   = overPageRef.current * itemsPerPage() + overCellRef.current;
 
         if (onDock !== null && !isFolderId(dragged)) {
-            const plan = planDockDrag(dockDragOf(dragged, onDock, fromDock, from, pageRef.current, overCellRef.current, armed));
+            const plan = planDockDrag(dockDragOf(dragged, onDock, fromDock, from, overPageRef.current, overCellRef.current, armed));
             if (plan) {
                 applyDockPlan(plan);
                 if (!fromDock) plop([dragged, plan.displaced]);
@@ -820,7 +875,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         }
 
         if (fromDock) {
-            const plan = planDockDrag(dockDragOf(dragged, null, true, from, pageRef.current, overCellRef.current, armed));
+            const plan = planDockDrag(dockDragOf(dragged, null, true, from, overPageRef.current, overCellRef.current, armed));
             if (plan && plan.landedCell !== null) {
                 applyDockPlan(plan);
                 plop([dragged, plan.intoDock]);
@@ -835,7 +890,9 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             return;
         }
 
-        const dest = landingCell(slots, coveredByPage.get(pageRef.current), pageRef.current, overCellRef.current, itemsPerPage());
+        // The page the pointer settled over, which unfolded may be the second one on screen.
+        const dropPage = overPageRef.current;
+        const dest = landingCell(slots, coveredByPage.get(dropPage), dropPage, overCellRef.current, itemsPerPage());
         if (dest === null) { endIconDrag(); return; }
 
         if (dest !== from) {
@@ -896,7 +953,19 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
 
     return (
-        <div ref={rootRef} className="absolute inset-0 select-none">
+        // Confined to its own half while an app holds the other one. Everything the home screen
+        // draws - wallpaper, page strip, page dots, dock - is positioned against this box, so
+        // giving it the pane's width is what stops that furniture spanning the whole device and
+        // centring itself on the seam.
+        <div
+            ref={rootRef}
+            className="absolute inset-y-0 left-0 select-none"
+            style={{
+                left:  splitPane && splitSide === 'left'  ? '50%' : 0,
+                right: splitPane && splitSide === 'right' ? '50%' : 0,
+                transition: `left ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1), right ${SPLIT_EXIT_MS}ms cubic-bezier(0.32,0.72,0,1)`,
+            }}
+        >
             <div
                 className="wallpaper absolute inset-0"
                 style={{
@@ -963,7 +1032,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                 >
                     {renderPages.map((cells, pi) => (
                         <div key={pi} style={{ width: SCREEN_W, flexShrink: 0, position: 'relative', height: ROWS * ROW_STRIDE + ROW_Y0 }}>
-                            {editing && dragId && pi === page && padCell !== null && !(pi === fromPageRef.current && padCell === fromCell.current) && (
+                            {editing && dragId && pi === overPage && padCell !== null && !(pi === fromPageRef.current && padCell === fromCell.current) && (
                                 <div
                                     className="pointer-events-none absolute rounded-[18px] border border-white/40 bg-white/15"
                                     style={{ left: 0, top: 0, width: ICON, height: ICON, transform: `translate(${slot(padCell).x}px, ${slot(padCell).y}px)` }}
@@ -1110,15 +1179,15 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                 if (id === dragId) return null;
 
                                 if (folder) {
-                                    const isMergeTarget = mergeCell !== null && pi === page && li === mergeCell;
-                                    const isSwapTarget = !!dragId && pi === page && overCell !== null && li === overCell
+                                    const isMergeTarget = mergeCell !== null && pi === overPage && li === mergeCell;
+                                    const isSwapTarget = !!dragId && pi === overPage && overCell !== null && li === overCell
                                         && !(pi === fromPageRef.current && overCell === fromCell.current) && !isMergeTarget;
                                     const slidePreview = isSwapTarget && page === fromPageRef.current && fromCell.current >= 0;
                                     const pos = slidePreview ? slot(fromCell.current) : s;
                                     return (
                                         <div
                                             key={id}
-                                            onPointerDown={e => onIconDown(e, id, li)}
+                                            onPointerDown={e => onIconDown(e, id, li, pi)}
                                             style={{ position: 'absolute', left: 0, top: 0, width: ICON, transform: `translate(${pos.x}px, ${pos.y}px)`, transition: 'transform 0.26s cubic-bezier(0.2,0.8,0.3,1)', zIndex: isMergeTarget ? 2 : 1 }}
                                         >
                                             <div className="animate-app-jiggle" style={{ animationDelay: `${jiggleDelay(id)}ms` }}>
@@ -1127,8 +1196,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                         </div>
                                     );
                                 }
-                                const isMergeTarget = mergeCell !== null && pi === page && li === mergeCell;
-                                const isSwapTarget = !!dragId && pi === page && overCell !== null && li === overCell
+                                const isMergeTarget = mergeCell !== null && pi === overPage && li === mergeCell;
+                                const isSwapTarget = !!dragId && pi === overPage && overCell !== null && li === overCell
                                     && !(pi === fromPageRef.current && overCell === fromCell.current) && !isMergeTarget;
                                 const isDisplaced = dockPlan?.displacedCell === pi * itemsPerPage() + li;
                                 const slidePreview = isSwapTarget && page === fromPageRef.current && fromCell.current >= 0;
@@ -1136,7 +1205,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                 return (
                                     <div
                                         key={id}
-                                        onPointerDown={e => onIconDown(e, id, li)}
+                                        onPointerDown={e => onIconDown(e, id, li, pi)}
                                         style={{
                                             position: 'absolute', left: 0, top: 0, width: ICON,
                                             transform: `translate(${pos.x}px, ${pos.y}px)`,
@@ -1211,10 +1280,17 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             )}
 
             <div className="absolute left-0 right-0 z-10 flex justify-center" style={{ bottom: DOTS_BOTTOM }}>
-                {visiblePages > 1 && (
+                {lastPage > 0 && (
                     <div className="flex items-center gap-[7px] rounded-full bg-black/35 px-2.5 py-[7px] shadow-sm backdrop-blur-md">
                         {renderPages.map((_, i) => {
-                            const dist = Math.min(1, Math.abs(i - (page - dragX / SCREEN_W)));
+                            // Unfolded, the screen is two page-widths wide, so two pages are on
+                            // screen at once and both read as current - a dot is measured against
+                            // whichever of them it is nearer.
+                            const frac = page - dragX / SCREEN_W;
+                            const dist = Math.min(1, ...Array.from(
+                                { length: pagesOnScreen },
+                                (_u, k) => Math.abs(i - (frac + k)),
+                            ));
                             return <div key={i} style={{ opacity: 1 - dist * 0.62, transition: isDraggingRef.current ? 'none' : 'opacity 0.3s ease' }} className="h-[7px] w-[7px] rounded-full bg-white" />;
                         })}
                     </div>

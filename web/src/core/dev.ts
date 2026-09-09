@@ -1,8 +1,15 @@
 import type { OpenPayload } from './types';
 import { isDemo } from './demo';
+import { device } from '@device';
+import { useFoldStore } from '@/stores/foldStore';
 
 
 export function devInjectMockData(): () => void {
+    // In game the hinge is announced by client/main.lua when the phone opens. There is no Lua
+    // here, so declare it directly - otherwise the fold control never appears in the browser and
+    // the foldable cannot be worked on outside the game at all.
+    useFoldStore.getState().applyShell(true, device.screen.w * 2);
+
     // The dev server needs a dark canvas to see the phone against. The demo
     // build is embedded in a page that draws its own, so painting one here
     // would show as a black slab around the device.

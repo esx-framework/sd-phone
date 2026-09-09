@@ -97,6 +97,7 @@ export interface ChassisMetrics {
     BUTTONS: RailButton[];
     VOL_UP_BTN?: RailButton; VOL_DOWN_BTN?: RailButton;
     POWER_BTN?: RailButton;  SCREENSHOT_BTN?: RailButton;
+    FOLD_BTN?: RailButton;
 }
 
 const CUTOUT_INSET = 2.5;
@@ -296,7 +297,7 @@ export function shellHostsPet(shell: Shell | null): boolean {
     return chassisMetrics(shell).pillInCutout;
 }
 
-export function chassisMetrics(shell: Shell | null): ChassisMetrics {
+export function chassisMetrics(shell: Shell | null, screenW?: number): ChassisMetrics {
     const bez = shell?.bezel ?? device.screen.bezel;
     const BS = typeof bez === 'number' ? bez : bez.side;
     const BT = typeof bez === 'number' ? bez : bez.top;
@@ -309,7 +310,7 @@ export function chassisMetrics(shell: Shell | null): ChassisMetrics {
     const finish: FrameFinish = shell?.finish ?? device.screen.finish ?? 'polished';
     const railButtons: readonly ShellButton[] = shell?.buttons ?? device.screen.buttons;
 
-    const SW = device.screen.w;
+    const SW = screenW && screenW > 0 ? screenW : device.screen.w;
     const SH = device.screen.h;
     const W  = SW + BS * 2;
     const H  = SH + BT + BB;
@@ -455,5 +456,6 @@ export function chassisMetrics(shell: Shell | null): ChassisMetrics {
         VOL_DOWN_BTN:   BUTTONS.find(b => b.role === 'volumeDown'),
         POWER_BTN:      BUTTONS.find(b => b.role === 'power'),
         SCREENSHOT_BTN: BUTTONS.find(b => b.role === 'screenshot'),
+        FOLD_BTN:       BUTTONS.find(b => b.role === 'fold'),
     };
 }

@@ -136,7 +136,7 @@ export const SHELLS: readonly Shell[] = [
             { side: 'left',  y: 252, h: 64, role: 'volumeUp' },
             { side: 'left',  y: 346, h: 64, role: 'volumeDown' },
             { side: 'right', y: 217, h: 80, role: 'power' },
-            { side: 'right', y: 566, h: 60 },
+            { side: 'right', y: 566, h: 60, role: 'fold' },
         ],
     },
     {
