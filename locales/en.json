@@ -2393,6 +2393,7 @@
     "copied": "Copied!",
     "copyWaypointCode": "Copy Waypoint Code",
     "couldNotSendRequest": "Could not send request",
+    "currentlyUnavailable": "Currently unavailable",
     "decline": "Decline",
     "declineRequestMessage": "{name} won't see your location, and you won't see theirs.",
     "declineRequestTitle": "Decline Request?",

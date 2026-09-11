@@ -133,15 +133,72 @@ local function currentClip()
     return CLIPS[action][IsPedInAnyVehicle(cache.ped, true) and 'inCar' or 'onFoot']
 end
 
----Where the prop sits in the hand. Landscape lays the phone on its side for the wide viewfinder.
+---@type boolean Whether this phone has a hinge at all (configs/phone.lua Foldable). Off resolves
+---the prop through PropPrefix, so the original sd_phone_<colour> models are what gets welded.
+local FOLDABLE <const> = config.Phone.Foldable == true
+---@type boolean Whether a shut foldable is held as the plain phone model rather than the hinged one
+---(configs/phone.lua FoldPlainShutProp).
+local PLAIN_SHUT <const> = config.Phone.FoldPlainShutProp == true
+---@type boolean Whether an unfolded foldable is still held as the plain phone model rather than the
+---open fold model (configs/phone.lua FoldPlainOpenProp).
+local PLAIN_OPEN <const> = config.Phone.FoldPlainOpenProp == true
+---@type boolean Whether the body in hand is currently unfolded. Only ever true on a foldable.
+local foldOpen = false
+
+---Whether the model welded for this body state is one of the fold models, which is what decides
+---both the model name and whether the fold grip offsets apply.
+---@param open boolean|nil true for the unfolded body
+---@return boolean
+local function usesFoldModel(open)
+    if not FOLDABLE then return false end
+    if open then return not PLAIN_OPEN end
+    return not PLAIN_SHUT
+end
+
+---Whether folding or unfolding changes the prop in hand at all. False when both body states resolve
+---to the plain model, so a hinge press has nothing to re-weld and nothing to tell watchers about.
+---@return boolean
+function pose.foldChangesProp()
+    return usesFoldModel(true) or usesFoldModel(false)
+end
+
+---The prop model for a frame colour in the current body state. Both fold models share the closed
+---phone's origin and axes, so the grip transform is the same one either way.
+---@param frame string frame colour; must be a key of FRAME_COLORS
+---@param open boolean|nil true for the unfolded body
+---@return string model
+local function propModel(frame, open)
+    if not usesFoldModel(open) then return config.Phone.PropPrefix .. frame end
+    return (config.Phone.FoldPropPrefix or 'sd_phone_fold_') .. frame
+        .. (open and (config.Phone.FoldOpenSuffix or '_open') or '')
+end
+
+---Whether the body in hand is unfolded right now.
+---@return boolean
+function pose.isFolded()
+    return foldOpen
+end
+
+---Where the prop sits in the hand. Landscape lays the phone on its side for the wide viewfinder,
+---and the unfolded body slides off-centre so the hand grips its corner rather than its middle.
 ---@param wide boolean|nil
+---@param open boolean|nil true when the unfolded body is the one being welded
 ---@return vector3 offset, vector3 rotation
-local function propTransform(wide)
+local function propTransform(wide, open)
+    local off, rot
     if wide then
-        return config.Phone.PropLandscapeOffset or config.Phone.PropOffset,
-               config.Phone.PropLandscapeRot or config.Phone.PropRot
+        off = config.Phone.PropLandscapeOffset or config.Phone.PropOffset
+        rot = config.Phone.PropLandscapeRot or config.Phone.PropRot
+    else
+        off, rot = config.Phone.PropOffset, config.Phone.PropRot
     end
-    return config.Phone.PropOffset, config.Phone.PropRot
+    -- PropRot is zero on these models, so the bone axes the offset is measured in line up with
+    -- the prop's own - which is what lets a flat vec3 read as "along the screen" here.
+    if usesFoldModel(open) then
+        local fold = open and config.Phone.FoldOpenPropOffset or config.Phone.FoldPropOffset
+        if fold then off = off + fold end
+    end
+    return off, rot
 end
 
 ---Creates a colour-matched local phone prop, disables its collision, and rigidly welds it to the
@@ -155,9 +212,10 @@ end
 ---@param ped integer ped to attach the prop to
 ---@param frame string frame colour; must be a key of FRAME_COLORS
 ---@param wide boolean|nil weld it in the landscape grip
+---@param open boolean|nil weld the unfolded body instead of the shut one
 ---@return integer? prop the welded prop entity, or nil if the model wouldn't stream
-function pose.createProp(ped, frame, wide)
-    local model = joaat(config.Phone.PropPrefix .. frame)
+function pose.createProp(ped, frame, wide, open)
+    local model = joaat(propModel(frame, open))
     if unavailableModels[model] then return nil end
 
     if not pcall(lib.requestModel, model, 1000) then
@@ -169,7 +227,7 @@ function pose.createProp(ped, frame, wide)
     local coords = GetEntityCoords(ped)
     local obj = CreateObject(model, coords.x, coords.y, coords.z, false, true, true)
     SetEntityCollision(obj, false, false)
-    local off, rot = propTransform(wide)
+    local off, rot = propTransform(wide, open)
     AttachEntityToEntity(obj, ped, GetPedBoneIndex(ped, config.Phone.PropBone),
         off.x, off.y, off.z, rot.x, rot.y, rot.z, false, false, false, false, 2, true)
     SetModelAsNoLongerNeeded(model)
@@ -184,7 +242,7 @@ local function attachProp(ped)
 
     weldSeq = weldSeq + 1
     local seq = weldSeq
-    local obj = pose.createProp(ped, color, landscape)
+    local obj = pose.createProp(ped, color, landscape, foldOpen)
     if not obj then return end
 
     if seq ~= weldSeq or not pose.shouldHold() or (prop and DoesEntityExist(prop)) then
@@ -288,6 +346,17 @@ function pose.reweld()
     if not pose.shouldHold() then return end
     pose.removeProp()
     attachProp(cache.ped)
+end
+
+---Swaps the shut body for the unfolded one in hand, or back. The two models share an origin, so
+---this is a re-weld and nothing else - no offset to re-derive, no clip to change. When both states
+---hold the plain model the prop in hand is already right, so nothing is torn down and rebuilt.
+---@param open any truthy to hold the unfolded body
+function pose.setFolded(open)
+    open = open and true or false
+    if not FOLDABLE or foldOpen == open then return end
+    foldOpen = open
+    if pose.foldChangesProp() then pose.reweld() end
 end
 
 ---Turns the phone on its side for the landscape viewfinder, or stands it back up. Swaps the held

@@ -19,6 +19,16 @@ function util.appEnabled(id)
     return not DISABLED_APPS[id]
 end
 
+---Whether a player is carrying a phone right now. A server that gates the phone behind an item
+---answers from the inventory; one with no phone items configured has no item to lose, so everyone
+---carries one. Read on demand, never cached, so a dropped phone counts the moment it leaves.
+---@param src number player server id
+---@return boolean carrying
+function util.carriesPhone(src)
+    if #((config.Phone or {}).Items or {}) == 0 then return true end
+    return exports['sd-phone']:hasPhone(src) ~= nil
+end
+
 ---Success response envelope - the shape every callback/action returns on the happy path. `data`
 ---is optional and passed straight through to the React side.
 ---@param data? any payload the caller wants the frontend to receive

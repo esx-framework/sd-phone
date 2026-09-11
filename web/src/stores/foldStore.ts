@@ -2,25 +2,15 @@ import { create } from 'zustand';
 
 import { device } from '@device';
 
-const FOLD_MS = 460;
-const TICK_MS = 16;
-const EASE: readonly [number, number, number, number] = [0.32, 0.72, 0, 1];
+export const FOLD_LEAF_MS = 880;
+export const FOLD_BOOK_MS = 780;
+const FOLD_SETTLE_MS = FOLD_LEAF_MS + 60;
 
-function bezierAxis(a: number, b: number, s: number): number {
-    const inv = 1 - s;
-    return 3 * inv * inv * s * a + 3 * inv * s * s * b + s * s * s;
-}
+export type FoldDir = 'open' | 'close';
 
-function ease(t: number): number {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
-    let lo = 0;
-    let hi = 1;
-    for (let i = 0; i < 24; i++) {
-        const mid = (lo + hi) / 2;
-        if (bezierAxis(EASE[0], EASE[2], mid) < t) lo = mid; else hi = mid;
-    }
-    return bezierAxis(EASE[1], EASE[3], (lo + hi) / 2);
+export interface FoldSwing {
+    dir: FoldDir;
+    id:  number;
 }
 
 interface FoldStore {
@@ -28,15 +18,18 @@ interface FoldStore {
     openW:    number;
     open:     boolean;
     w:        number;
-    applyShell: (foldable: boolean, openW: number) => void;
+    swing:    FoldSwing | null;
+    applyShell: (foldable: boolean, openW: number, open?: boolean) => void;
     setOpen:  (open: boolean) => void;
     toggle:   () => void;
+    endSwing: (id: number) => void;
 }
 
-let timer: ReturnType<typeof setInterval> | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
+let nextId = 1;
 
 function stopTimer(): void {
-    if (timer !== null) { clearInterval(timer); timer = null; }
+    if (timer !== null) { clearTimeout(timer); timer = null; }
 }
 
 function targetW(s: Pick<FoldStore, 'foldable' | 'open' | 'openW'>): number {
@@ -44,18 +37,14 @@ function targetW(s: Pick<FoldStore, 'foldable' | 'open' | 'openW'>): number {
 }
 
 export const useFoldStore = create<FoldStore>()((set, get) => {
-    function animateTo(to: number): void {
-        stopTimer();
-        const from = get().w;
-        if (from === to) return;
-        if (typeof window === 'undefined') { set({ w: to }); return; }
+    function swingTo(dir: FoldDir): void {
+        const to = targetW(get());
+        if (get().w === to) return;
 
-        const started = Date.now();
-        timer = setInterval(() => {
-            const p = Math.min(1, (Date.now() - started) / FOLD_MS);
-            if (p >= 1) { stopTimer(); set({ w: to }); }
-            else set({ w: from + (to - from) * ease(p) });
-        }, TICK_MS);
+        stopTimer();
+        const id = nextId++;
+        set({ w: to, swing: { dir, id } });
+        timer = setTimeout(() => get().endSwing(id), FOLD_SETTLE_MS);
     }
 
     return {
@@ -63,26 +52,36 @@ export const useFoldStore = create<FoldStore>()((set, get) => {
         openW:    device.screen.w * 2,
         open:     false,
         w:        device.screen.w,
+        swing:    null,
 
-        applyShell: (foldable, openW) => {
+        applyShell: (foldable, openW, open) => {
+            stopTimer();
             set(s => ({
                 foldable,
                 openW: openW > device.screen.w ? openW : device.screen.w * 2,
-                open:  foldable ? s.open : false,
+                open:  foldable ? (typeof open === 'boolean' ? open : s.open) : false,
             }));
-            animateTo(targetW(get()));
+            set({ w: targetW(get()), swing: null });
         },
 
         setOpen: (open) => {
+            const was = get().open;
             set(s => (s.foldable ? { open } : { open: false }));
-            animateTo(targetW(get()));
+            if (get().open !== was) swingTo(get().open ? 'open' : 'close');
         },
 
         toggle: () => {
             const s = get();
             if (!s.foldable) return;
+            if (s.swing) return;
             set({ open: !s.open });
-            animateTo(targetW(get()));
+            swingTo(get().open ? 'open' : 'close');
+        },
+
+        endSwing: (id) => {
+            if (get().swing?.id !== id) return;
+            stopTimer();
+            set({ swing: null });
         },
     };
 });
@@ -97,4 +96,8 @@ export function useFoldOpen(): boolean {
 
 export function useScreenW(): number {
     return useFoldStore(s => s.w);
+}
+
+export function useFoldSwing(): FoldSwing | null {
+    return useFoldStore(s => s.swing);
 }

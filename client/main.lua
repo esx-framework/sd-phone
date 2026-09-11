@@ -288,8 +288,15 @@ end
 ---holding, false otherwise. No-op when cross-player visibility is off.
 local function broadcastHoldState()
     if not config.Phone.PropVisibleToOthers then return end
-    local color = pose.shouldHold() and currentFrameColor or false
-    LocalPlayer.state:set('sdPhone', color, true)
+    if not pose.shouldHold() then
+        LocalPlayer.state:set('sdPhone', false, true)
+        return
+    end
+    -- Widened from a bare colour so watchers weld the unfolded body too. A holder who is shut
+    -- still broadcasts the plain string, which is what every older reader understands, and so
+    -- does one whose fold never changes the prop, so watchers have no re-weld to do.
+    LocalPlayer.state:set('sdPhone',
+        (pose.isFolded() and pose.foldChangesProp()) and { c = currentFrameColor, f = true } or currentFrameColor, true)
 end
 
 ---Pushes the current state into the pose module, which starts or stops the held clip to match,
@@ -999,6 +1006,22 @@ local FOLDABLE <const> = config.Phone.Foldable == true
 ---@type integer Screen width unfolded. Twice the closed width, which is what makes the open state
 ---two phones side by side rather than one stretched one.
 local FOLD_OPEN_W <const> = math.max(440, math.floor(tonumber(config.Phone.FoldOpenWidth) or 880))
+---@type string KVP key holding the last fold state, so the phone comes back out the way it was
+---put away instead of always starting shut. Client-side and per machine, like every other KVP.
+local FOLD_KVP <const> = 'sd-phone:fold'
+
+---The fold state this player last left the phone in. Absent reads as 0, so a phone that has
+---never been unfolded still starts shut.
+---@return boolean open
+local function LoadFold()
+    return GetResourceKvpInt(FOLD_KVP) == 1
+end
+
+---Remembers the fold state for next time.
+---@param open boolean
+local function SaveFold(open)
+    SetResourceKvpInt(FOLD_KVP, open and 1 or 0)
+end
 
 ---Unfolds or folds the phone. A foldable body doubles its screen width, and the UI reflows into
 ---the space rather than scaling up: more home-screen columns, and the list/detail apps showing
@@ -1014,25 +1037,50 @@ local function SetFolded(open)
         action = 'sd-phone:fold',
         data   = { foldable = FOLDABLE, openW = FOLD_OPEN_W, open = foldOpen },
     })
+    -- Swap the body in hand to match, and tell everyone watching, or the phone unfolds on the
+    -- player's own screen while the prop they are holding stays shut.
+    pose.setFolded(foldOpen)
+    broadcastHoldState()
+    SaveFold(foldOpen)
     return foldOpen
 end
 
--- Declares the hinge to the NUI without moving it, so the rail control is there to press the
--- moment the phone is on screen. Folded is the state a phone is put away in, so opening always
--- starts closed.
+-- Declares the hinge to the NUI without swinging it, so the rail control is there to press the
+-- moment the phone is on screen. The phone comes back out the way it was last put away, which
+-- is what the KVP holds; `restore` tells the UI to land on that state rather than animate into
+-- it, since the player did not ask for a fold, they just opened the phone.
 local function AnnounceFold()
     if not FOLDABLE then return end
-    foldOpen = false
+    foldOpen = LoadFold()
     SendNUIMessage({
         action = 'sd-phone:fold',
-        data   = { foldable = true, openW = FOLD_OPEN_W, open = false },
+        data   = { foldable = true, openW = FOLD_OPEN_W, open = foldOpen, restore = true },
     })
+    pose.setFolded(foldOpen)
+    broadcastHoldState()
 end
 
 -- The NUI outlives the shell (the keep-alive deck), so this handler is registered whether the
 -- phone is up or not and the announcement never races the mount.
 AddEventHandler('sd-phone:client:openState', function(open)
     if open then AnnounceFold() end
+end)
+
+-- The hinge lives on the chassis rail, so a fold nearly always starts in the UI. Without this the
+-- phone unfolds on the player's own screen while the prop in their hand stays shut, because Lua
+-- never hears about it. The UI swings first - its snapshot has to be taken while the outgoing
+-- width is still painted - and reports the state it landed on, so this only mirrors it onto the
+-- ped and tells everyone watching.
+---@param data { open: boolean }|nil
+---@param cb fun(result: table) NUI response
+RegisterNUICallback('sd-phone:fold:set', function(data, cb)
+    if FOLDABLE then
+        foldOpen = data ~= nil and data.open == true
+        pose.setFolded(foldOpen)
+        broadcastHoldState()
+        SaveFold(foldOpen)
+    end
+    cb({})
 end)
 
 exports('setFolded', SetFolded)

@@ -80,9 +80,10 @@ CreateThread(function()
         Wait(config.UpdateInterval or 3000)
         if next(watchers) then
             local onlineCids = player.onlineCidMap()
+            local carrying   = {}
             for src in pairs(watchers) do
                 if GetPlayerName(src) then
-                    local payload = { friends = actions.snapshot(src, onlineCids) }
+                    local payload = { friends = actions.snapshot(src, onlineCids, carrying) }
                     local encoded = json.encode(payload)
                     if lastSent[src] ~= encoded then
                         lastSent[src] = encoded

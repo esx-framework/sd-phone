@@ -60,9 +60,15 @@ end
 
 ---The full roster for a player: every added friend with display info, the two directional share
 ---flags, and live coords for online sharing friends; incoming requests come first. Read-only.
+---A sharer who is no longer carrying a phone keeps their place in the roster but sends no coords,
+---only `unavailable = true` so the list can say why the pin is gone: the share belongs to the
+---character, so dropping the phone hides the pin and picking one back up shows it again without
+---touching the stored share.
 ---@param src number player server id
 ---@param onlineCids? table<string, number> shared citizenid->src map; the tick loop builds it once
 ---and passes it to every watcher, nil = build it here (for one-off callback use)
+---@param carrying? table<number, boolean> src -> carries a phone, filled in as sharers are checked;
+---the tick loop shares one per tick so each sharer's inventory is read once, nil = a fresh one
 ---@return table[] roster entries
 ---@type integer Seconds a roster stays cached across live-push ticks. Only positions and online
 ---state change tick-to-tick; the roster itself only changes on a mutation, which drops the entry.
@@ -115,9 +121,10 @@ local function rosterParts(owner)
     return parts
 end
 
-function actions.snapshot(src, onlineCids)
+function actions.snapshot(src, onlineCids, carrying)
     local owner = cidOf(src)
     if not owner then return {} end
+    carrying = carrying or {}
 
     local parts    = rosterParts(owner)
     local contacts = parts.contacts
@@ -167,12 +174,15 @@ function actions.snapshot(src, onlineCids)
 
             if theyShare then
                 local fsrc = onlineCids[fcid]
-                if fsrc then
+                if fsrc and carrying[fsrc] == nil then carrying[fsrc] = util.carriesPhone(fsrc) end
+                if fsrc and carrying[fsrc] then
                     local ped = GetPlayerPed(fsrc)
                     if ped and ped ~= 0 then
                         local c = GetEntityCoords(ped)
                         entry.x, entry.y, entry.updatedAt = c.x, c.y, nowMs
                     end
+                elseif fsrc then
+                    entry.unavailable = true
                 end
             end
 

@@ -8,7 +8,9 @@ import { isDemo } from '@/core/demo';
 import { useTheme } from '@/stores/themeStore';
 import type { PhoneAlign } from '@/stores/themeStore';
 import { useCallStore } from '@/stores/callStore';
-import { useFoldOpen, useFoldStore, useFoldable, useScreenW } from '@/stores/foldStore';
+import { useFoldOpen, useFoldStore, useFoldable, useFoldSwing, useScreenW } from '@/stores/foldStore';
+import { FoldRig, spineInset, SPINE_OUT, SPINE_W, type FoldAnchor } from './FoldRig';
+import { requestFold, STAGE_ATTR } from './foldSnapshot';
 import { useBatteryStore } from '@/stores/batteryStore';
 import { IslandPet } from './IslandPet';
 import { fetchNui } from '@/core/nui';
@@ -414,6 +416,8 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
     const foldW = useScreenW();
     const foldable = useFoldable();
     const foldOpen = useFoldOpen();
+    const foldSwing = useFoldSwing();
+    const foldOpenW = useFoldStore(s => s.openW);
     const m = useMemo(() => chassisMetrics(shellFor(shell, device.id), foldW), [shell, foldW]);
     const {
         SW, SH, W, H, SX, SY, BR, SR, SCREEN_MASK, BEZEL, hostsIsland, hasCutout, pillInCutout,
@@ -523,7 +527,11 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
     const effectiveAlign = peek ? peekAlign(phoneAlign) : phoneAlign;
     const flexClasses = ALIGN_MAP[effectiveAlign] ?? ALIGN_MAP['bottom-right'];
 
+    const spineBg = `linear-gradient(90deg, ${rail.s100} 0%, ${rail.s45} 38%, ${rail.s0} 72%, rgba(0,0,0,0.55) 100%)`;
+
     const align = phoneAlign ?? 'bottom-right';
+    const foldAnchor: FoldAnchor =
+        align.endsWith('left') ? 'left' : align.endsWith('center') ? 'center' : 'right';
     const reanchor = (H - W) / 2;
     const shiftX = align.includes('right') ? -reanchor : align.includes('left') ? reanchor : 0;
     const shiftY = align.includes('bottom') ? reanchor : align.includes('top') ? -reanchor : 0;
@@ -540,19 +548,35 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
             style={{ padding: EDGE_PADDING * stage, display: hidden ? 'none' : undefined }}
         >
             <div
-                className="shrink-0"
+                className="relative shrink-0"
                 style={{
                     transform:       tilt,
                     transformOrigin: 'center',
                     transition:      'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
             >
+                {foldSwing && (
+                    <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{ zoom: scale, overflow: 'visible' }}
+                    >
+                        <FoldRig
+                            swing={foldSwing}
+                            shell={shell}
+                            openW={foldOpenW}
+                            anchor={foldAnchor}
+                            spine={spineBg}
+                        />
+                    </div>
+                )}
                 <div
+                    {...{ [STAGE_ATTR]: '' }}
                     className="relative shrink-0"
                     style={{
                         width:  W,
                         height: stageH,
                         zoom: scale,
+                        visibility: foldSwing ? 'hidden' : undefined,
                         ...({ '--hairline-w': `${1 / scale}px` } as React.CSSProperties),
                         animation: motionAnimation,
                         transform: !motionAnimation && landscape ? landscapeTransform : undefined,
@@ -601,6 +625,8 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                                 style={{ background: '#fff', zIndex: 10000, borderRadius: SR }}
                             />
                         )}
+
+                        {foldOpen && <div className="sd-fold-crease" style={{ left: SW / 2 - 9 }} />}
                     </div>
 
                     <svg
@@ -938,11 +964,30 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                         />
                     )}
 
+                    {foldable && !foldOpen && !foldSwing && (
+                        <div
+                            aria-hidden
+                            className="pointer-events-none absolute"
+                            style={{
+                                left: -SPINE_OUT,
+                                top: spineInset(BR), bottom: spineInset(BR),
+                                width: SPINE_W,
+                                zIndex: 190,
+                                borderRadius: 4,
+                                background: spineBg,
+                                boxShadow: '-1px 0 2px rgba(0,0,0,0.45)',
+                            }}
+                        />
+                    )}
+
                     {FOLD_BTN && foldable && (
                         <button
                             type="button"
                             aria-label={foldOpen ? t('shell.fold','Fold') : t('shell.unfold','Unfold')}
-                            onClick={() => useFoldStore.getState().toggle()}
+                            onClick={() => {
+                                requestFold();
+                                void fetchNui('sd-phone:fold:set', { open: useFoldStore.getState().open });
+                            }}
                             className="absolute z-[300] cursor-pointer bg-transparent"
                             style={{ left: FOLD_BTN.x - 6, top: FOLD_BTN.y, width: FOLD_BTN.w + 12, height: FOLD_BTN.h }}
                         />

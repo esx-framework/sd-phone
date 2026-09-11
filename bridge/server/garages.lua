@@ -37,7 +37,11 @@ end
 --   qb-garages / qbx_garages / jg-advancedgarages : player_vehicles
 --       garage=`garage`, state=`state` (0 out / 1 stored / 2 impound),
 --       fuel=`fuel` (0-100), engine/body=`engine`/`body` (0-1000), props=`mods`
---   lunar_garage / nc_garage / op_garages (QB)     : player_vehicles, garage/state
+--   lunar_garage / nc_garage                       : player_vehicles, garage/state
+--   op-garages                                     : player_vehicles/owned_vehicles, garage is the
+--       numeric `vehicleGarage` index (label via its getGarageByIndex export), state=`state` (qb)
+--       or `stored` (esx) INVERTED - 0/false garaged, 1/true out - which op-garages creates as a
+--       TINYINT(1), so oxmysql hands it back as a boolean; impound=`isTowedOut` + `vehicleImpound`
 --   okokGarage / codem-garage (QB)                 : player_vehicles, garage in `parking`
 --   cd_garage                                      : owned_vehicles/player_vehicles,
 --       garage=`garage_id`, state=`in_garage` (+ separate `impound` flag)
@@ -74,7 +78,7 @@ local PROFILES = {
     ['jg-advancedgarages'] = { garage = { 'garage_id', 'garage' },state = { 'in_garage' }, impoundCol = 'impound' },
     ['lunar_garage']       = { garage = { 'garage', 'parking' },  state = { 'state', 'stored' } },
     ['nc_garage']          = { garage = { 'garage', 'parking' },  state = { 'state', 'stored' } },
-    ['op_garages']         = { garage = { 'vehicleGarage', 'garage', 'parking' }, state = { 'state', 'stored' }, stored = { [0] = true }, storedFallback = false, impoundCol = 'isTowedOut', outState = 1 },
+    ['op-garages']         = { garage = { 'vehicleGarage', 'garage', 'parking' }, state = { 'state', 'stored' }, stored = { [0] = true }, storedFallback = false, impoundCol = 'isTowedOut', outState = 1 },
     ['okokGarage']         = { garage = { 'parking', 'garage' },  state = { 'state', 'stored' } },
     ['codem-garage']       = { garage = { 'parking', 'garage' },  state = { 'state', 'stored' } },
     ['cd_garage']          = { garage = { 'garage_id', 'garage' },state = { 'in_garage', 'state' } },
@@ -90,21 +94,53 @@ local PROFILES = {
 ---rather than read from a runtime export, because they publish no schema for them.
 local DISCOVERS_GARAGES = { ['aty_garage'] = true, ['aty_garage_v2'] = true, ['mt_garages'] = true }
 
----Resolve which supported garage system is running: an explicit config override wins, else the
----first resource in G.Resources that reports `started`.
----@return string|nil name active system's resource name, nil when none is running
-local function detectSystem()
-    if G.System and G.System ~= 'auto' then return G.System end
-    for _, name in ipairs(G.Resources or {}) do
-        if GetResourceState(name) == 'started' then return name end
+---@type table<string, string> Other folder names a system is installed under -> the name its
+---profile and branches are keyed by. OTHERPLANET ships `op-garages`, but `op_garages` was the only
+---spelling listed for a long time, so a config still carrying it must find the real resource.
+local CANONICAL = { ['op_garages'] = 'op-garages' }
+
+---Every folder name a listed system may be running under, the listed one first.
+---@param name string resource name from the config
+---@return string[] spellings
+local function spellingsOf(name)
+    local canon = CANONICAL[name] or name
+    local out = { name }
+    if canon ~= name then out[#out + 1] = canon end
+    for alt, c in pairs(CANONICAL) do
+        if c == canon and alt ~= name then out[#out + 1] = alt end
+    end
+    return out
+end
+
+---The spelling of `name` that is actually started, so exports reach the live resource.
+---@param name string
+---@return string|nil started nil when no spelling of it is running
+local function startedSpelling(name)
+    for _, s in ipairs(spellingsOf(name)) do
+        if GetResourceState(s) == 'started' then return s end
     end
     return nil
 end
 
----@type string|nil Active garage system's resource name, resolved once at load (nil = none).
+---Resolve which supported garage system is running: an explicit config override wins, else the
+---first resource in G.Resources that reports `started` under any of its spellings.
+---@return string|nil name active system's resource name, nil when none is running
+local function detectSystem()
+    if G.System and G.System ~= 'auto' then return startedSpelling(G.System) or G.System end
+    for _, name in ipairs(G.Resources or {}) do
+        local started = startedSpelling(name)
+        if started then return started end
+    end
+    return nil
+end
+
+---@type string|nil Active garage system's resource name, resolved once at load (nil = none). This
+---is the name exports are called on.
 local ACTIVE  = detectSystem()
+---@type string|nil The active system under the name its profile and branches are keyed by.
+local SYSTEM  = ACTIVE and (CANONICAL[ACTIVE] or ACTIVE) or nil
 ---@type table Column profile for the active system; missing keys inherit DEFAULT_PROFILE.
-local PROFILE = setmetatable(PROFILES[ACTIVE or ''] or {}, { __index = DEFAULT_PROFILE })
+local PROFILE = setmetatable(PROFILES[SYSTEM or ''] or {}, { __index = DEFAULT_PROFILE })
 
 ---First non-nil value among the named columns of a row, in preference order.
 ---@param row table DB row
@@ -221,6 +257,8 @@ end
 
 ---Base status from the DB row: 'stored' or 'out', plus an explicit impound flag. A set
 ---impound-flag column wins; else the first present state column matches the profile's value sets.
+---A TINYINT(1) state comes back from oxmysql as a boolean, so booleans are read as 1/0 before the
+---match: the value sets are numeric, and op-garages' `false` (garaged) matched none of them.
 ---@param row table vehicle DB row
 ---@return string status 'stored' | 'out'
 ---@return boolean impound explicitly impound-flagged
@@ -230,9 +268,10 @@ local function statusOf(row)
     local v = pick(row, PROFILE.state)
     if v == nil then return 'stored', false end
     if type(v) == 'string' then v = tonumber(v) or v end
+    if type(v) == 'boolean' then v = v and 1 or 0 end
     if PROFILE.impound and PROFILE.impound[v] then return 'out', true end
     if PROFILE.stored and PROFILE.stored[v] then return 'stored', false end
-    if PROFILE.storedFallback ~= false and (v == 1 or v == true) then return 'stored', false end
+    if PROFILE.storedFallback ~= false and v == 1 then return 'stored', false end
     return 'out', false
 end
 
@@ -294,7 +333,7 @@ end
 ---Where a vehicle row says it is, resolved through the active system's column profile. Exists so
 ---the MDT reads garages the same way the Garages app does: it used to look only at `garage`,
 ---`parking`, `state` and `stored`, which meant every system keeping them elsewhere (jg and cd_garage
----in `garage_id`/`in_garage`, op_garages in `vehicleGarage`) showed as "Not on file" there while the
+---in `garage_id`/`in_garage`, op-garages in `vehicleGarage`) showed as "Not on file" there while the
 ---Garages app read them correctly.
 ---@param row table|nil vehicle DB row
 ---@return string garage garage name, '' when unknown or the row is out
@@ -349,7 +388,7 @@ local function mileageFor(plate)
 end
 
 -- Garage waypoint resolution: systems with a runtime export (qbx_garages, qb-garages,
--- jg-advancedgarages, cd_garage, op_garages) are read directly, qs-advancedgarages from its config
+-- jg-advancedgarages, cd_garage, op-garages) are read directly, qs-advancedgarages from its config
 -- file; the rest fall back to the manual coordinate map in configs.garages -> Locations.
 
 ---@type table|nil Last loaded garage collection (nil is a valid cached answer).
@@ -626,15 +665,16 @@ local function parkedIsAuthoritative(rows)
     return PROFILE.parkedTable ~= nil and rows[1] ~= nil and pick(rows[1], PROFILE.state) == nil
 end
 
----Pull the active system's full garage collection. Nil for op_garages (per-garage export lookups)
----and for unsupported systems. Memoised on the same short TTL as the plate set: it crosses a
----resource boundary and every caller gets the same answer.
+---Pull the active system's full garage collection. Nil for unsupported systems. Memoised on the
+---same short TTL as the plate set: it crosses a resource boundary and every caller gets the same
+---answer.
 ---@return table|nil collection
 local function loadGarageCollection()
     local now = os.time()
     if (now - gcolAt) < MEMO_TTL then return gcolCache end
 
     local ok, data = pcall(function()
+        if SYSTEM == 'op-garages'         then return exports[ACTIVE]:getAllGarages() end
         if ACTIVE == 'qbx_garages'        then return exports['qbx_garages']:GetGarages() end
         if ACTIVE == 'qb-garages'         then return exports['qb-garages']:getAllGarages() end
         if ACTIVE == 'jg-advancedgarages' then return exports['jg-advancedgarages']:getAllGarages() end
@@ -663,19 +703,39 @@ if ACTIVE then
     AddEventHandler('onResourceStop', dropCollection)
 end
 
+---op-garages' record for a garage index: its collection first, then the per-garage export for
+---builds whose collection export is missing. A collection entry is only trusted when its own
+---`Index` agrees, since an array-shaped collection would put a different garage at that position.
+---@param gcol table|nil op-garages' getAllGarages result
+---@param idx any the row's `vehicleGarage` index
+---@return table|nil garage { Label, CenterOfZone, AccessPoint, ... }
+local function opGarage(gcol, idx)
+    if idx == nil or SYSTEM ~= 'op-garages' then return nil end
+    local want = tostring(idx)
+
+    if type(gcol) == 'table' then
+        local g = gcol[want] or gcol[tonumber(want)]
+        if type(g) == 'table' and (g.Index == nil or tostring(g.Index) == want) then return g end
+        for _, entry in pairs(gcol) do
+            if type(entry) == 'table' and entry.Index ~= nil and tostring(entry.Index) == want then return entry end
+        end
+    end
+
+    local ok, one = pcall(function() return exports[ACTIVE]:getGarageByIndex(want) end)
+    return (ok and type(one) == 'table') and one or nil
+end
+
 ---Coords (a vector with .x/.y) for the vehicle's garage from the active system's own data.
 ---pcall-guarded; any shape surprise yields nil.
----@param gcol table|nil pre-loaded garage collection (nil for op_garages / unsupported)
+---@param gcol table|nil pre-loaded garage collection (nil for unsupported systems)
 ---@param row table the vehicle's DB row
 ---@param garageId any the row's garage name/id
 ---@return any coords vector-like with .x/.y, or nil
 local function systemCoords(gcol, row, garageId)
     if not ACTIVE then return nil end
     local ok, c = pcall(function()
-        if ACTIVE == 'op_garages' then
-            local idx = row.vehicleGarage or garageId
-            if idx == nil then return nil end
-            local g = exports['op_garages']:getGarageByIndex(tostring(idx))
+        if SYSTEM == 'op-garages' then
+            local g = opGarage(gcol, row.vehicleGarage or garageId)
             return g and (g.CenterOfZone or g.AccessPoint)
         end
         if not gcol then return nil end
@@ -736,16 +796,16 @@ local function isCarDepot(vt) return vt == nil or vt == 'car' or vt == 'all' end
 
 ---Coords of the impound/depot lot an impounded vehicle is retrievable from, preferring a depot
 ---that serves cars. Nil when nothing matches; pcall-guarded like systemCoords.
----@param gcol table|nil pre-loaded garage collection (nil for op_garages / unsupported)
+---@param gcol table|nil pre-loaded garage collection (nil for unsupported systems)
 ---@param row table the vehicle's DB row
 ---@param garageId any the row's garage name/id
 ---@return any coords vector-like with .x/.y, or nil
 local function impoundCoords(gcol, row, garageId)
     if not ACTIVE then return nil end
     local ok, c = pcall(function()
-        if ACTIVE == 'op_garages' then
+        if SYSTEM == 'op-garages' then
             if row.vehicleImpound == nil then return nil end
-            local g = exports['op_garages']:getImpoundByIndex(tostring(row.vehicleImpound))
+            local g = exports[ACTIVE]:getImpoundByIndex(tostring(row.vehicleImpound))
             return g and g.Coords
         end
         if not gcol then return nil end
@@ -870,7 +930,10 @@ function garages.list(source)
         end
 
         local garageName = pick(row, PROFILE.garage)
-        if type(garageName) ~= 'string' or garageName == '' or garageName:upper() == 'OUT' then
+        local opg = opGarage(gcol, row.vehicleGarage)
+        if opg and type(opg.Label) == 'string' and opg.Label ~= '' then
+            garageName = opg.Label
+        elseif type(garageName) ~= 'string' or garageName == '' or garageName:upper() == 'OUT' then
             garageName = nil
         end
         garageName = garageName or inBay
@@ -994,6 +1057,8 @@ function garages.takeOut(source, plate, netId)
                 TriggerEvent('jg-advancedgarages:server:register-vehicle-outside', veh.plate, netId)
             elseif ACTIVE == 'qs-advancedgarages' then
                 exports['qs-advancedgarages']:setVehicleToPersistent(netId)
+            elseif SYSTEM == 'op-garages' then
+                exports[ACTIVE]:setVehicleOutside(veh.plate, netId)
             end
         end)
     end

@@ -13,6 +13,7 @@ export interface Friend {
     x?:        number;
     y?:        number;
     updatedAt?: number;
+    unavailable?: boolean;
 }
 
 const FRIENDS_KEY = 'sd-phone:friends:v1';

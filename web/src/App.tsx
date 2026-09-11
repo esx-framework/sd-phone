@@ -72,6 +72,7 @@ import { resolveWallpaper } from '@/shell/wallpapers';
 import { NoSimScreen } from '@/shell/NoSimScreen';
 import { useNoService, useNoSim, useSimStore } from '@/stores/simStore';
 import { useFoldOpen, useFoldStore } from '@/stores/foldStore';
+import { requestFold } from '@/shell/foldSnapshot';
 import { useSplitId, useSplitSide, useSplitStore } from '@/stores/splitStore';
 import { useNoServiceArea, useServiceBars, useServiceStore } from '@/stores/serviceStore';
 import { useWifiConnected, useWifiStore } from '@/stores/wifiStore';
@@ -558,9 +559,16 @@ function AppContent() {
 
     useNuiEvent('sd-phone:fold', useCallback((data) => {
         const fold = useFoldStore.getState();
+        if (data?.restore === true) {
+            fold.applyShell(
+                data.foldable !== false,
+                typeof data.openW === 'number' ? data.openW : fold.openW,
+                data.open === true,
+            );
+            return;
+        }
         if (typeof data?.openW === 'number') fold.applyShell(data.foldable !== false, data.openW);
-        if (typeof data?.open === 'boolean') fold.setOpen(data.open);
-        else fold.toggle();
+        requestFold(typeof data?.open === 'boolean' ? data.open : undefined);
     }, []));
 
     useNuiEvent('sd-phone:music:receive', useCallback((data) => {

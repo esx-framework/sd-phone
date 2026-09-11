@@ -218,6 +218,7 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                     <div className="overflow-hidden rounded-[12px] bg-surface">
                         {friends.map((f, i) => {
                             const live = f.theyShare && f.x != null;
+                            const unavailable = f.theyShare && !live && f.unavailable === true;
                             return (
                                 <div
                                     key={f.id}
@@ -236,14 +237,16 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                                         </span>
                                         <span className="flex min-w-0 flex-col leading-tight">
                                             <span className="truncate text-[20px] font-semibold text-black dark:text-white">{f.name}</span>
-                                            <span className={'mt-[2px] truncate text-[16px] font-medium ' + (f.incoming ? 'text-ios-blue' : !f.pending && f.youShare ? 'text-ios-green' : 'text-ios-gray')}>
+                                            <span className={'mt-[2px] truncate text-[16px] font-medium ' + (f.incoming ? 'text-ios-blue' : !f.pending && !unavailable && f.youShare ? 'text-ios-green' : 'text-ios-gray')}>
                                                 {f.incoming
                                                     ? t('maps.wantsToShare', 'Wants to share locations')
                                                     : f.pending
                                                         ? t('maps.requested', 'Requested')
-                                                        : f.youShare
-                                                            ? (live ? t('maps.sharingAgo', 'Sharing · {ago}', { ago: timeAgo(f.updatedAt) }) : t('maps.sharingYourLocation', 'Sharing your location'))
-                                                            : t('maps.notSharing', 'Not sharing')}
+                                                        : unavailable
+                                                            ? t('maps.currentlyUnavailable', 'Currently unavailable')
+                                                            : f.youShare
+                                                                ? (live ? t('maps.sharingAgo', 'Sharing · {ago}', { ago: timeAgo(f.updatedAt) }) : t('maps.sharingYourLocation', 'Sharing your location'))
+                                                                : t('maps.notSharing', 'Not sharing')}
                                             </span>
                                         </span>
                                     </button>

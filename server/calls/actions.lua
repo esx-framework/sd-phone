@@ -44,8 +44,7 @@ end
 ---@param src number player server id
 ---@return boolean
 local function reachable(src)
-    if #(config.Phone.Items or {}) == 0 then return true end
-    return exports['sd-phone']:hasPhone(src) ~= nil
+    return require('server.util').carriesPhone(src)
 end
 
 -- Live call state is transient and in-memory; only a finished call is persisted. Channels

@@ -21,7 +21,7 @@ return {
     Resources = {
         'qs-advancedgarages', 'jg-advancedgarages', 'qbx_garages', 'qb-garages',
         'mt_garages', 'cd_garage', 'okokGarage', 'codem-garage', 'lunar_garage',
-        'nc_garage', 'op_garages', 'aty_garage_v2', 'aty_garage', 'esx_garage',
+        'nc_garage', 'op-garages', 'aty_garage_v2', 'aty_garage', 'esx_garage',
         'kartik-garages', 'ND_Core',
     },
 
