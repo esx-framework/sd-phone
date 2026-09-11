@@ -90,6 +90,8 @@ local inCall = false
 local callUi = true
 ---@type table<integer, true> Prop models this client has already failed to stream.
 local unavailableModels = {}
+---@type table<integer, true> Fold models already reported missing, so the fallback warns once each.
+local warnedFold = {}
 
 ---Whether our pose applies: the phone is out (or the torch is lit, or a call is live), and the
 ---native cell cam is not the one framing. That native animates its own pose and spawns its own
@@ -155,22 +157,37 @@ local function usesFoldModel(open)
     return not PLAIN_SHUT
 end
 
----Whether folding or unfolding changes the prop in hand at all. False when both body states resolve
----to the plain model, so a hinge press has nothing to re-weld and nothing to tell watchers about.
----@return boolean
-function pose.foldChangesProp()
-    return usesFoldModel(true) or usesFoldModel(false)
-end
-
----The prop model for a frame colour in the current body state. Both fold models share the closed
----phone's origin and axes, so the grip transform is the same one either way.
+---The fold model for a frame colour in a body state. Both fold models share the closed phone's
+---origin and axes, so the grip transform is the same one either way.
 ---@param frame string frame colour; must be a key of FRAME_COLORS
 ---@param open boolean|nil true for the unfolded body
 ---@return string model
-local function propModel(frame, open)
-    if not usesFoldModel(open) then return config.Phone.PropPrefix .. frame end
+local function foldModel(frame, open)
     return (config.Phone.FoldPropPrefix or 'sd_phone_fold_') .. frame
         .. (open and (config.Phone.FoldOpenSuffix or '_open') or '')
+end
+
+---The models to weld for a body state, best first: the fold model when this body uses one, then the
+---plain phone. A server that has not installed the fold props streams only the plain ones, and the
+---phone in hand falls back to them instead of vanishing.
+---@param frame string frame colour; must be a key of FRAME_COLORS
+---@param open boolean|nil true for the unfolded body
+---@return { name: string, fold: boolean }[] candidates
+local function propCandidates(frame, open)
+    local plain = { name = config.Phone.PropPrefix .. frame, fold = false }
+    if not usesFoldModel(open) then return { plain } end
+    return { { name = foldModel(frame, open), fold = true }, plain }
+end
+
+---Whether folding or unfolding changes the prop in hand at all. False when both body states resolve
+---to the plain model, whether by config or because the fold models are known not to stream, so a
+---hinge press has nothing to re-weld and nothing to tell watchers about.
+---@return boolean
+function pose.foldChangesProp()
+    for _, open in ipairs({ true, false }) do
+        if usesFoldModel(open) and not unavailableModels[joaat(foldModel(color, open))] then return true end
+    end
+    return false
 end
 
 ---Whether the body in hand is unfolded right now.
@@ -183,8 +200,9 @@ end
 ---and the unfolded body slides off-centre so the hand grips its corner rather than its middle.
 ---@param wide boolean|nil
 ---@param open boolean|nil true when the unfolded body is the one being welded
+---@param fold boolean whether the model being welded is a fold model rather than the plain phone
 ---@return vector3 offset, vector3 rotation
-local function propTransform(wide, open)
+local function propTransform(wide, open, fold)
     local off, rot
     if wide then
         off = config.Phone.PropLandscapeOffset or config.Phone.PropOffset
@@ -194,9 +212,9 @@ local function propTransform(wide, open)
     end
     -- PropRot is zero on these models, so the bone axes the offset is measured in line up with
     -- the prop's own - which is what lets a flat vec3 read as "along the screen" here.
-    if usesFoldModel(open) then
-        local fold = open and config.Phone.FoldOpenPropOffset or config.Phone.FoldPropOffset
-        if fold then off = off + fold end
+    if fold then
+        local shift = open and config.Phone.FoldOpenPropOffset or config.Phone.FoldPropOffset
+        if shift then off = off + shift end
     end
     return off, rot
 end
@@ -213,25 +231,31 @@ end
 ---@param frame string frame colour; must be a key of FRAME_COLORS
 ---@param wide boolean|nil weld it in the landscape grip
 ---@param open boolean|nil weld the unfolded body instead of the shut one
----@return integer? prop the welded prop entity, or nil if the model wouldn't stream
+---@return integer? prop the welded prop entity, or nil if no candidate model would stream
 function pose.createProp(ped, frame, wide, open)
-    local model = joaat(propModel(frame, open))
-    if unavailableModels[model] then return nil end
-
-    if not pcall(lib.requestModel, model, 1000) then
-        SetModelAsNoLongerNeeded(model)
-        unavailableModels[model] = true
-        return nil
+    for _, candidate in ipairs(propCandidates(frame, open)) do
+        local model = joaat(candidate.name)
+        if not unavailableModels[model] then
+            if pcall(lib.requestModel, model, 1000) then
+                local coords = GetEntityCoords(ped)
+                local obj = CreateObject(model, coords.x, coords.y, coords.z, false, true, true)
+                SetEntityCollision(obj, false, false)
+                local off, rot = propTransform(wide, open, candidate.fold)
+                AttachEntityToEntity(obj, ped, GetPedBoneIndex(ped, config.Phone.PropBone),
+                    off.x, off.y, off.z, rot.x, rot.y, rot.z, false, false, false, false, 2, true)
+                SetModelAsNoLongerNeeded(model)
+                return obj
+            end
+            SetModelAsNoLongerNeeded(model)
+            unavailableModels[model] = true
+        end
+        if candidate.fold and not warnedFold[model] then
+            warnedFold[model] = true
+            print(('^3[sd-phone]^0 fold prop %s is not streamed, so the plain phone is held instead. Update sd-phone-props to get the foldable models.')
+                :format(candidate.name))
+        end
     end
-
-    local coords = GetEntityCoords(ped)
-    local obj = CreateObject(model, coords.x, coords.y, coords.z, false, true, true)
-    SetEntityCollision(obj, false, false)
-    local off, rot = propTransform(wide, open)
-    AttachEntityToEntity(obj, ped, GetPedBoneIndex(ped, config.Phone.PropBone),
-        off.x, off.y, off.z, rot.x, rot.y, rot.z, false, false, false, false, 2, true)
-    SetModelAsNoLongerNeeded(model)
-    return obj
+    return nil
 end
 
 ---Attaches our own hand prop in the current frame colour and grip. No-op if one is already

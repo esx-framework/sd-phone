@@ -2,9 +2,8 @@ import { create } from 'zustand';
 
 import { device } from '@device';
 
-export const FOLD_LEAF_MS = 880;
-export const FOLD_BOOK_MS = 780;
-const FOLD_SETTLE_MS = FOLD_LEAF_MS + 60;
+export const FOLD_LEAF_MS = 850;
+const FOLD_SETTLE_MS = FOLD_LEAF_MS + 1200;
 
 export type FoldDir = 'open' | 'close';
 

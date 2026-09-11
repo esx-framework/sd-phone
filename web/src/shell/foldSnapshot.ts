@@ -76,6 +76,7 @@ export function cloneStage(): HTMLElement | null {
     copy.style.transition = 'none';
     copy.style.transform = 'none';
     copy.style.visibility = 'visible';
+    copy.style.opacity = '';
     copy.classList.add('sd-fold-frozen');
     isolateIds(copy);
     repaintCanvases(src, copy);

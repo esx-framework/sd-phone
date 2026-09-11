@@ -576,7 +576,9 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                         width:  W,
                         height: stageH,
                         zoom: scale,
-                        visibility: foldSwing ? 'hidden' : undefined,
+                        opacity: foldSwing ? 0.002 : undefined,
+                        pointerEvents: foldSwing ? 'none' : undefined,
+                        willChange: 'transform',
                         ...({ '--hairline-w': `${1 / scale}px` } as React.CSSProperties),
                         animation: motionAnimation,
                         transform: !motionAnimation && landscape ? landscapeTransform : undefined,
@@ -625,8 +627,6 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                                 style={{ background: '#fff', zIndex: 10000, borderRadius: SR }}
                             />
                         )}
-
-                        {foldOpen && <div className="sd-fold-crease" style={{ left: SW / 2 - 9 }} />}
                     </div>
 
                     <svg

@@ -236,22 +236,6 @@ html, body, #root {
     backdrop-filter: none !important;
 }
 
-.sd-fold-crease {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 18px;
-    z-index: 60;
-    opacity: 0.28;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(transparent, #000 9%, #000 91%, transparent);
-    mask-image: linear-gradient(transparent, #000 9%, #000 91%, transparent);
-    background: linear-gradient(90deg,
-        transparent 0%, rgba(0, 0, 0, 0.03) 18%, rgba(0, 0, 0, 0.09) 42%,
-        rgba(0, 0, 0, 0.13) 49%, rgba(255, 255, 255, 0.10) 57%,
-        rgba(255, 255, 255, 0.04) 77%, transparent 100%);
-}
-
 @keyframes phone-peek-in  { from { transform: translateY(118%); } to { transform: translateY(85%); } }
 @keyframes phone-peek-out { from { transform: translateY(85%);  } to { transform: translateY(118%); } }
 

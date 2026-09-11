@@ -91,6 +91,11 @@ let active = catalogs.en;
 let currentCode = 'en';
 let catalogVersion = 0;
 
+function applyDocumentLocale(code: string): void {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = code;
+}
+
 /** Select the active language (from config.Locale, or a player's saved pick).
  *  Falls back to English for an unknown code. Resolves once the catalog is
  *  applied; a newer setLocale call wins over a slower in-flight one. */
@@ -104,6 +109,7 @@ export function setLocale(lang: string): Promise<void> {
     const known = Boolean(catalogs[lang] || loaders[lang] || runtimeCodes.has(lang));
     const code = known ? lang : 'en';
     currentCode = code;
+    applyDocumentLocale(code);
     if (catalogs[code]) {
         active = catalogs[code];
         catalogVersion += 1;
