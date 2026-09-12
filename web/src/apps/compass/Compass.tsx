@@ -150,6 +150,7 @@ export function Compass({ onClose: _onClose }: { onClose: () => void }) {
 
             <div className="flex flex-1 items-center justify-center px-6">
                 <div
+                    dir="ltr"
                     className="relative aspect-square w-full max-w-[340px]"
                     style={{ touchAction: 'none' }}
                     onPointerDown={onPointerDown}
@@ -228,7 +229,7 @@ export function Compass({ onClose: _onClose }: { onClose: () => void }) {
 
             <div className="shrink-0 px-6 pb-16 text-center">
                 <div className="text-[27px] font-semibold">{t('compass.losSantos', 'Los Santos')}</div>
-                <div className="mt-2 text-[18px] tabular-nums" style={{ color: subCol }}>
+                <div dir="ltr" className="mt-2 text-[18px] tabular-nums" style={{ color: subCol }}>
                     {coordLine}
                 </div>
                 <div className="mt-1.5 text-[21px]" style={{ color: dimCol }}>{t('compass.elevation', 'Elevation: {elevation}', { elevation })}</div>

@@ -70,7 +70,7 @@ function Row({ entry, peak }: { entry: { rank: number; name: string; steps: numb
     return (
         <div className={`relative overflow-hidden rounded-[12px] px-2.5 py-2.5 ${entry.you ? 'bg-ios-blue/12' : ''}`}>
             <div
-                className="absolute inset-y-0 left-0 rounded-[12px]"
+                className="absolute inset-y-0 start-0 rounded-[12px]"
                 style={{ width: `${(entry.steps / peak) * 100}%`, background: ACCENT, opacity: 0.12 }}
             />
             <div className="relative flex items-center gap-3">

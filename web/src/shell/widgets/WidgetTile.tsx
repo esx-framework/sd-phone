@@ -47,8 +47,8 @@ export function palette(theme: WidgetTheme = 'dark'): Palette {
 
 export function alignClasses(align: WidgetAlign = 'left'): string {
     if (align === 'center') return 'items-center text-center';
-    if (align === 'right')  return 'items-end text-right';
-    return 'items-start text-left';
+    if (align === 'right')  return 'items-end text-end';
+    return 'items-start text-start';
 }
 
 export function WidgetTile({

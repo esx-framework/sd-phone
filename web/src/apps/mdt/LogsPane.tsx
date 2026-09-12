@@ -203,12 +203,12 @@ export function LogsPane() {
                         key={row.id}
                         type="button"
                         onClick={() => select(String(row.id))}
-                        className={`relative w-full px-4 py-3 text-left ${
+                        className={`relative w-full px-4 py-3 text-start ${
                             isSelected ? 'bg-ios-blue/10' : mdtRowHover
                         }`}
                     >
                         <div className="flex items-baseline gap-2">
-                            <span className={mdtRef}>{row.actorCallsign || row.actor}</span>
+                            <span dir="auto" className={mdtRef}>{row.actorCallsign || row.actor}</span>
                             <span className="flex-1" />
                             <span className={`shrink-0 ${mdtRowMeta}`}>{formatListDate(row.createdAt * 1000)}</span>
                         </div>
@@ -309,14 +309,15 @@ function Entry({ label, value, onOpen }: { label: string; value: string; onOpen?
             <dd className="min-w-[240px] flex-1 text-[14px] leading-snug text-black dark:text-white">
                 {onOpen ? (
                     <button
+                        dir="ltr"
                         type="button"
                         onClick={onOpen}
-                        className="max-w-full truncate text-left font-semibold tabular-nums text-ios-blue active:opacity-60"
+                        className="max-w-full truncate text-start font-semibold tabular-nums text-ios-blue active:opacity-60"
                     >
                         {value}
                     </button>
                 ) : (
-                    <span className="select-text break-words">{value}</span>
+                    <span dir="ltr" className="select-text break-words">{value}</span>
                 )}
             </dd>
         </div>

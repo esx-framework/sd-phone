@@ -61,7 +61,7 @@ export function AccountSwitcher({ app, forceDark = false, onClose, onSwitched, o
                         type="button"
                         onClick={() => void pick(a.username)}
                         disabled={!!busy}
-                        className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-opacity active:opacity-60 disabled:opacity-50"
+                        className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-start transition-opacity active:opacity-60 disabled:opacity-50"
                     >
                         {a.avatar && !broken[a.username] ? (
                             <img
@@ -90,7 +90,7 @@ export function AccountSwitcher({ app, forceDark = false, onClose, onSwitched, o
                     <button
                         type="button"
                         onClick={() => { onClose(); onAdd(); }}
-                        className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-opacity active:opacity-60"
+                        className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-start transition-opacity active:opacity-60"
                     >
                         <span className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full ${forceDark ? 'bg-white/10' : 'bg-black/[0.07] dark:bg-white/10'}`}>
                             <Plus className="h-[19px] w-[19px] text-ios-blue" strokeWidth={2.4} />

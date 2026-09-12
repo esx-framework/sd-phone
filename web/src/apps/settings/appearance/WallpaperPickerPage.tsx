@@ -187,14 +187,14 @@ function WallTile({ src, label, selected, onSelect, onRemove }: {
                 {label && (
                     <>
                         <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/60 to-transparent" />
-                        <span className="absolute bottom-2.5 left-3 text-[12px] font-semibold text-white drop-shadow">
+                        <span className="absolute bottom-2.5 start-3 text-[12px] font-semibold text-white drop-shadow">
                             {label}
                         </span>
                     </>
                 )}
 
                 {selected && (
-                    <div className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-blue shadow">
+                    <div className="absolute end-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-blue shadow">
                         <Check className="h-[13px] w-[13px] text-white" strokeWidth={3} />
                     </div>
                 )}
@@ -205,7 +205,7 @@ function WallTile({ src, label, selected, onSelect, onRemove }: {
                     type="button"
                     onClick={onRemove}
                     aria-label={t('settings.removeWallpaper', 'Remove wallpaper')}
-                    className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white shadow"
+                    className="absolute start-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white shadow"
                 >
                     <X className="h-[13px] w-[13px]" strokeWidth={2.6} />
                 </button>

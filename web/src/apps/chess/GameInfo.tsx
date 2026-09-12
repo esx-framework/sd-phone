@@ -22,7 +22,7 @@ export function CapturedStrip({ name, captured, dark, advantage, active }: {
         <div className="flex items-center gap-2.5" style={{ width: BOARD }}>
             <span className="flex shrink-0 items-center gap-2 text-[16px] font-bold text-white">
                 {active && <span className="h-2 w-2 rounded-full" style={{ background: '#9CCC65', boxShadow: '0 0 6px #9CCC65' }} />}
-                {name}
+                <span dir="auto">{name}</span>
             </span>
             <span className="flex min-w-0 items-center overflow-hidden">
                 {sorted.map((k, i) => (
@@ -30,7 +30,7 @@ export function CapturedStrip({ name, captured, dark, advantage, active }: {
                         key={i}
                         className="text-[23px] leading-none"
                         style={{
-                            marginLeft: i ? -5 : 0,
+                            marginInlineStart: i ? -5 : 0,
                             color: dark ? '#161616' : '#F6F6F6',
                             WebkitTextStroke: dark ? '1px rgba(232,232,232,0.92)' : '0.5px rgba(0,0,0,0.45)',
                             textShadow: dark ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 1px rgba(0,0,0,0.45)',
@@ -40,7 +40,7 @@ export function CapturedStrip({ name, captured, dark, advantage, active }: {
                     </span>
                 ))}
             </span>
-            {advantage > 0 && <span className="ml-auto shrink-0 text-[15px] font-bold text-white/70">+{advantage}</span>}
+            {advantage > 0 && <span dir="ltr" className="ms-auto shrink-0 text-[15px] font-bold text-white/70">+{advantage}</span>}
         </div>
     );
 }
@@ -63,7 +63,7 @@ export function MoveList({ items }: { items: HistItem[] }) {
                     <div className="px-3 py-2.5 text-[14px] text-white/35">{t('chess.noMovesYet','No moves yet')}</div>
                 ) : (
                     rows.map((r, i) => (
-                        <div key={r.n} className="flex items-center gap-2 px-3 py-1.5 text-[15px] text-white/90" style={{ background: i % 2 ? 'rgba(255,255,255,0.035)' : 'transparent' }}>
+                        <div key={r.n} dir="ltr" className="flex items-center gap-2 px-3 py-1.5 text-[15px] text-white/90" style={{ background: i % 2 ? 'rgba(255,255,255,0.035)' : 'transparent' }}>
                             <span className="w-7 shrink-0 text-[13px] font-semibold text-white/35">{r.n}.</span>
                             <span className="flex-1 font-semibold">{r.w}</span>
                             <span className="flex-1 font-semibold">{r.b ?? ''}</span>

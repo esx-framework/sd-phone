@@ -131,7 +131,7 @@ function LinkRow({ title, sub, right, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-[8px] px-2 py-2 text-left ${mdtRowHover}`}
+            className={`-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-[8px] px-2 py-2 text-start ${mdtRowHover}`}
         >
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-medium text-black dark:text-white">{title}</span>
@@ -256,7 +256,7 @@ export function PersonRecord({ citizenid }: { citizenid: string }) {
                         </h1>
                         {person.wanted && <Pill tone="red">{t('mdt.wanted', 'Wanted')}</Pill>}
                     </div>
-                    <div className="mt-1 text-[14px] tabular-nums text-ios-gray">{person.citizenid}</div>
+                    <div className="mt-1 text-[14px] tabular-nums text-ios-gray"><span dir="ltr">{person.citizenid}</span></div>
                     {!STACK_HEADER && facts}
                 </div>
             </div>
@@ -339,7 +339,7 @@ export function PersonRecord({ citizenid }: { citizenid: string }) {
                             placeholder={t('mdt.notesPlaceholder', 'Observations, known associates, cautions.')}
                         />
                     ) : person.notes ? (
-                        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+                        <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                             {person.notes}
                         </p>
                     ) : (

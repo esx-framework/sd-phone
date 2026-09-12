@@ -102,7 +102,7 @@ export function MailList({ folder, accountId, accountName, messages, onBack, onO
                 <button
                     type="button"
                     onClick={toggleEditing}
-                    className="ml-auto text-[17px] text-ios-blue active:opacity-60"
+                    className="ms-auto text-[17px] text-ios-blue active:opacity-60"
                 >
                     {editing ? t('mail.done', 'Done') : t('mail.edit', 'Edit')}
                 </button>
@@ -110,7 +110,7 @@ export function MailList({ folder, accountId, accountName, messages, onBack, onO
                     type="button"
                     onClick={onCompose}
                     disabled={editing}
-                    className="ml-4 pr-3 text-ios-blue active:opacity-60 disabled:opacity-30"
+                    className="ms-4 pe-3 text-ios-blue active:opacity-60 disabled:opacity-30"
                 >
                     <SquarePen className="h-[22px] w-[22px]" strokeWidth={2} />
                 </button>
@@ -161,7 +161,7 @@ export function MailList({ folder, accountId, accountName, messages, onBack, onO
                     <button
                         type="button"
                         onClick={applyMarkRead}
-                        className={`flex-1 text-left text-[17px] font-medium active:opacity-60 ${
+                        className={`flex-1 text-start text-[17px] font-medium active:opacity-60 ${
                             markableIds.length > 0 ? 'text-ios-blue' : 'text-black/30 dark:text-white/30'
                         }`}
                     >
@@ -179,7 +179,7 @@ export function MailList({ folder, accountId, accountName, messages, onBack, onO
                     <button
                         type="button"
                         onClick={() => { if (selected.size > 0) setConfirmDelete(true); }}
-                        className={`flex-1 text-right text-[19px] font-semibold active:opacity-60 ${
+                        className={`flex-1 text-end text-[19px] font-semibold active:opacity-60 ${
                             selected.size > 0 ? 'text-ios-red' : 'text-black/30 dark:text-white/30'
                         }`}
                     >
@@ -222,7 +222,7 @@ function MailRow({ msg, editing, selected, onOpen, onToggleSelect }: {
         <button
             type="button"
             onClick={() => (editing ? onToggleSelect(msg.id) : onOpen(msg.id))}
-            className="relative flex w-full items-start gap-2.5 px-4 py-3.5 text-left active:bg-black/5 dark:active:bg-white/5"
+            className="relative flex w-full items-start gap-2.5 px-4 py-3.5 text-start active:bg-black/5 dark:active:bg-white/5"
         >
             <div
                 className="flex shrink-0 items-center self-center overflow-hidden"
@@ -235,7 +235,7 @@ function MailRow({ msg, editing, selected, onOpen, onToggleSelect }: {
             >
                 <div
                     style={{
-                        transform:  editing ? 'translateX(0)' : 'translateX(-16px)',
+                        transform:  editing ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * -16px))',
                         transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
                     }}
                 >
@@ -274,8 +274,8 @@ function MailRow({ msg, editing, selected, onOpen, onToggleSelect }: {
                         {formatMailTime(msg.sentAt)}
                     </span>
                 </div>
-                <div className="mt-0.5 truncate text-[17px]">{msg.subject || t('mail.noSubject', '(No Subject)')}</div>
-                <div className="mt-0.5 line-clamp-2 text-[15px] leading-snug text-black/[0.82] dark:text-white/[0.82]">
+                <div dir="auto" className="mt-0.5 truncate text-[17px]">{msg.subject || t('mail.noSubject', '(No Subject)')}</div>
+                <div dir="auto" className="mt-0.5 line-clamp-2 text-[15px] leading-snug text-black/[0.82] dark:text-white/[0.82]">
                     {previewBody(msg.body)}
                 </div>
             </div>

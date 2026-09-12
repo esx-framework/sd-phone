@@ -160,12 +160,12 @@ export function AppStore({ onClose: _onClose, apps, installed, onInstall, onOpen
                             const isQueued = status === 'queued';
                             const locked = !isInstalled && lockedNetwork(a) !== null;
                             return (
-                                <div key={a.id} className={`flex items-center gap-3.5 py-2.5 pl-3.5 ${i < list.length - 1 ? 'border-b border-hairline/10' : ''}`}>
+                                <div key={a.id} className={`flex items-center gap-3.5 py-2.5 ps-3.5 ${i < list.length - 1 ? 'border-b border-hairline/10' : ''}`}>
                                     <button type="button" onClick={() => setSelectedId(a.id)} aria-label={t('appstore.appDetails', '{label} details', { label: appLabel(a) })} className="shrink-0 active:opacity-60">
                                         <StoreIcon icon={a.icon} />
                                     </button>
-                                    <div className="flex min-w-0 flex-1 items-center gap-3 pr-3.5">
-                                        <button type="button" onClick={() => setSelectedId(a.id)} className="min-w-0 flex-1 text-left active:opacity-60">
+                                    <div className="flex min-w-0 flex-1 items-center gap-3 pe-3.5">
+                                        <button type="button" onClick={() => setSelectedId(a.id)} className="min-w-0 flex-1 text-start active:opacity-60">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="min-w-0 truncate text-[23px] font-medium leading-tight text-black dark:text-white">{appLabel(a)}</span>
                                                 {locked && <Lock className="h-[15px] w-[15px] shrink-0 text-black/45 dark:text-white/45" role="img" aria-label={t('appstore.wifiOnly', 'Wi-Fi only')} />}
@@ -237,7 +237,7 @@ export function AppStore({ onClose: _onClose, apps, installed, onInstall, onOpen
 
 function StoreIcon({ icon }: { icon: string }) {
     return (
-        <div className="shrink-0 overflow-hidden" style={{ width: 66, height: 66, borderRadius: '27.6%', boxShadow: '0 0 0 0.5px rgba(0,0,0,0.10)' }}>
+        <div dir="ltr" className="shrink-0 overflow-hidden" style={{ width: 66, height: 66, borderRadius: '27.6%', boxShadow: '0 0 0 0.5px rgba(0,0,0,0.10)' }}>
             <div style={{ width: 60, height: 60, transform: 'scale(1.1)', transformOrigin: '0 0' }}>
                 <AppIconSVG icon={icon} />
             </div>

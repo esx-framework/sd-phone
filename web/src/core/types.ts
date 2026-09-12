@@ -16,6 +16,7 @@ import type { Reaction } from '@/shared/chat/data';
 export interface OpenPayload {
     locale?: string;
     locales?: string[];
+    forceLtr?: boolean;
     locked: boolean;
     battery: number;
     frameColor?: string;

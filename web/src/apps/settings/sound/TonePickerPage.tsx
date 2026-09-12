@@ -53,13 +53,13 @@ export function TonePickerPage({
     ) => {
         const isPreviewing = previewing === tone.id;
         return (
-            <div key={tone.id} className="relative flex w-full items-center pl-4 pr-2">
+            <div key={tone.id} className="relative flex w-full items-center ps-4 pe-2">
                 <button
                     type="button"
                     onClick={() => onSelect(tone.id)}
-                    className="flex min-w-0 flex-1 items-center gap-2 py-3 text-left active:opacity-50"
+                    className="flex min-w-0 flex-1 items-center gap-2 py-3 text-start active:opacity-50"
                 >
-                    <span className="min-w-0 flex-1 truncate text-[17px] font-normal text-black dark:text-white">{tone.name}</span>
+                    <span dir="auto" className="min-w-0 flex-1 truncate text-[17px] font-normal text-black dark:text-white">{tone.name}</span>
                     {selected === tone.id && (
                         <Check className="h-[17px] w-[17px] shrink-0 text-ios-blue" strokeWidth={2.5} />
                     )}
@@ -70,7 +70,7 @@ export function TonePickerPage({
                     aria-label={isPreviewing
                         ? t('settings.stopPreviewOf', 'Stop preview of {name}', { name: tone.name })
                         : t('settings.previewOf', 'Preview {name}', { name: tone.name })}
-                    className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ios-blue active:opacity-40"
+                    className="ms-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ios-blue active:opacity-40"
                 >
                     {isPreviewing
                         ? <Square className="h-[15px] w-[15px]" fill="currentColor" strokeWidth={0} />
@@ -81,15 +81,15 @@ export function TonePickerPage({
                         type="button"
                         onClick={onDelete}
                         aria-label={t('settings.deleteOf', 'Delete {name}', { name: tone.name })}
-                        className="ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ios-red active:opacity-40"
+                        className="ms-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ios-red active:opacity-40"
                     >
                         <Trash2 className="h-[16px] w-[16px]" strokeWidth={2} />
                     </button>
                 )}
                 {divider && (
                     <div
-                        className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control"
-                        style={{ left: 0, height: '0.5px' }}
+                        className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control"
+                        style={{ insetInlineStart: 0, height: '0.5px' }}
                     />
                 )}
             </div>
@@ -124,7 +124,7 @@ export function TonePickerPage({
                                 <button
                                     type="button"
                                     onClick={() => setAdding(true)}
-                                    className="flex w-full items-center gap-2 px-4 py-3 text-left active:opacity-50"
+                                    className="flex w-full items-center gap-2 px-4 py-3 text-start active:opacity-50"
                                 >
                                     <Plus className="h-[18px] w-[18px] shrink-0 text-ios-blue" strokeWidth={2.5} />
                                     <span className="text-[17px] text-ios-blue">{custom.addTone}</span>

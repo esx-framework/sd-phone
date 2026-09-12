@@ -226,7 +226,7 @@ export function Minesweeper({ onClose: _onClose }: Props) {
                                         }}
                                     >
                                         <span className="block">{levelLabel(level)}</span>
-                                        <span className="mt-0.5 block text-[10px] font-semibold opacity-70">
+                                        <span dir="ltr" className="mt-0.5 block text-[10px] font-semibold opacity-70">
                                             {DIFFICULTIES[level].cols}×{DIFFICULTIES[level].rows} · {DIFFICULTIES[level].mines}
                                         </span>
                                     </button>
@@ -249,7 +249,7 @@ export function Minesweeper({ onClose: _onClose }: Props) {
                             <button
                                 type="button"
                                 onClick={toMenu}
-                                className="absolute left-3 flex items-center active:opacity-60"
+                                className="absolute start-3 flex items-center active:opacity-60"
                                 style={{ color: pal.sub }}
                                 aria-label={t('games.back', 'Back')}
                             >
@@ -261,7 +261,7 @@ export function Minesweeper({ onClose: _onClose }: Props) {
                             <button
                                 type="button"
                                 onClick={replay}
-                                className="absolute right-4 flex h-9 w-9 items-center justify-center rounded-full active:opacity-60"
+                                className="absolute end-4 flex h-9 w-9 items-center justify-center rounded-full active:opacity-60"
                                 style={{ color: pal.sub, background: 'rgba(255,255,255,0.06)' }}
                                 aria-label={t('minesweeper.restart', 'Restart')}
                             >
@@ -279,6 +279,7 @@ export function Minesweeper({ onClose: _onClose }: Props) {
                         <div className="flex flex-1 items-center justify-center px-3">
                             <div className="relative" style={{ width: boardW, height: boardH }}>
                                 <div
+                                    dir="ltr"
                                     className="grid h-full w-full rounded-[14px]"
                                     style={{
                                         gridTemplateColumns: `repeat(${def.cols}, ${cell}px)`,

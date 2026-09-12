@@ -189,7 +189,7 @@ export function EventEditor({ dayKey, dayDate, existing, onSave, onDelete, onEve
                     </span>
                 </div>
                 {readOnly ? (
-                    <span className="ml-auto flex h-[22px] w-[22px] items-center justify-center">
+                    <span className="ms-auto flex h-[22px] w-[22px] items-center justify-center">
                         {busy && <Spinner size={18} />}
                     </span>
                 ) : (
@@ -198,7 +198,7 @@ export function EventEditor({ dayKey, dayDate, existing, onSave, onDelete, onEve
                         aria-label={t('calendar.saveEvent', 'Save event')}
                         onClick={() => void commit()}
                         disabled={!title.trim() || busy}
-                        className="ml-auto flex items-center text-ios-red active:opacity-60 disabled:opacity-30"
+                        className="ms-auto flex items-center text-ios-red active:opacity-60 disabled:opacity-30"
                     >
                         {busy ? <Spinner size={18} /> : <Check className="h-[22px] w-[22px]" strokeWidth={2.75} />}
                     </button>
@@ -271,14 +271,14 @@ export function EventEditor({ dayKey, dayDate, existing, onSave, onDelete, onEve
                                 active={activeTime === 'start'}
                                 onToggle={() => setActiveTime(a => (a === 'start' ? null : 'start'))}
                             />
-                            <TimeWheel value={start} onChange={setStart} open={!allDay && activeTime === 'start'} />
+                            <div dir="ltr"><TimeWheel value={start} onChange={setStart} open={!allDay && activeTime === 'start'} /></div>
                             <div style={{ height: 0.5, background: divider }} />
                             <TimeRow
                                 label={t('calendar.ends', 'Ends')} value={end} isDark={isDark} disabled={allDay}
                                 active={activeTime === 'end'}
                                 onToggle={() => setActiveTime(a => (a === 'end' ? null : 'end'))}
                             />
-                            <TimeWheel value={end} onChange={setEnd} open={!allDay && activeTime === 'end'} />
+                            <div dir="ltr"><TimeWheel value={end} onChange={setEnd} open={!allDay && activeTime === 'end'} /></div>
                         </div>
 
                         <div className="mx-4 mt-6 overflow-hidden rounded-[10px]" style={{ background: groupBg }}>
@@ -336,7 +336,7 @@ export function EventEditor({ dayKey, dayDate, existing, onSave, onDelete, onEve
 
                 {readOnly ? (
                     notes.trim().length > 0 && (
-                        <div className="mx-4 mt-6 overflow-hidden rounded-[10px] px-4 py-3.5 text-[18px] leading-relaxed" style={{ background: groupBg }}>
+                        <div dir="auto" className="mx-4 mt-6 overflow-hidden rounded-[10px] px-4 py-3.5 text-[18px] leading-relaxed" style={{ background: groupBg }}>
                             {notes}
                         </div>
                     )
@@ -426,15 +426,15 @@ export function EventEditor({ dayKey, dayDate, existing, onSave, onDelete, onEve
 
 function GuestChip({ name, dot, onRemove }: { name: string; dot: string; onRemove?: () => void }) {
     return (
-        <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-black/[0.06] py-1.5 pl-2.5 pr-2.5 text-[15px] dark:bg-white/10">
+        <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-black/[0.06] py-1.5 ps-2.5 pe-2.5 text-[15px] dark:bg-white/10">
             <span className={`h-[8px] w-[8px] shrink-0 rounded-full ${dot}`} />
-            <span className="max-w-[140px] truncate">{name}</span>
+            <span dir="auto" className="max-w-[140px] truncate">{name}</span>
             {onRemove && (
                 <button
                     type="button"
                     onClick={onRemove}
                     aria-label={t('calendar.removeGuest', 'Remove {name}', { name })}
-                    className="-mr-1 flex h-[18px] w-[18px] items-center justify-center rounded-full text-ios-gray active:opacity-60"
+                    className="-me-1 flex h-[18px] w-[18px] items-center justify-center rounded-full text-ios-gray active:opacity-60"
                 >
                     <X className="h-[13px] w-[13px]" strokeWidth={3} />
                 </button>
@@ -459,7 +459,7 @@ function TimeRow({ label, value, active, disabled, onToggle, isDark }: {
             onClick={onToggle}
             className={`flex w-full items-center px-4 py-3.5 transition-opacity duration-200 ${disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5'}`}
         >
-            <span className="flex-1 text-left text-[18px]">{label}</span>
+            <span className="flex-1 text-start text-[18px]">{label}</span>
             <span
                 className="rounded-[7px] px-2.5 py-1 text-[17px] tabular-nums transition-colors"
                 style={active

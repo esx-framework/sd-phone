@@ -112,7 +112,7 @@ export function CreateSheet({ onClose, onPost, animateIn = true }: {
                 </div>
 
                 {images.length > 0 && (
-                    <button type="button" onClick={() => setPicking(true)} className="px-4 py-3.5 text-left text-[17px] font-semibold active:opacity-50" style={{ color: IG.blue }}>
+                    <button type="button" onClick={() => setPicking(true)} className="px-4 py-3.5 text-start text-[17px] font-semibold active:opacity-50" style={{ color: IG.blue }}>
                         {t('photogram.editSelection', 'Edit selection')}
                     </button>
                 )}

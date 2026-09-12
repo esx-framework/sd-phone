@@ -53,7 +53,7 @@ export function MdtSidebar({ compact = false }: { compact?: boolean }) {
                                         style={active ? undefined : { opacity: 0.72 }}
                                     />
                                     {open && (
-                                        <span className="min-w-0 flex-1 truncate text-left text-[15px] font-medium tracking-tight">
+                                        <span className="min-w-0 flex-1 truncate text-start text-[15px] font-medium tracking-tight">
                                             {item.label}
                                         </span>
                                     )}
@@ -71,7 +71,8 @@ export function MdtSidebar({ compact = false }: { compact?: boolean }) {
                     type="button"
                     onClick={() => setRailOpen(o => !o)}
                     aria-label={open ? t('mdt.collapseSidebar', 'Collapse sidebar') : t('mdt.expandSidebar', 'Expand sidebar')}
-                    className="absolute right-0 top-1/2 z-20 flex h-[46px] w-[15px] -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.06] transition-colors duration-150 hover:bg-[#f6f6f6] hover:text-black active:bg-elevated dark:ring-white/[0.08] dark:hover:text-white"
+                    className="absolute end-0 top-1/2 z-20 flex h-[46px] w-[15px] items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.06] transition-colors duration-150 hover:bg-[#f6f6f6] hover:text-black active:bg-elevated dark:ring-white/[0.08] dark:hover:text-white"
+                    style={{ transform: 'translate(calc(var(--dir-x, 1) * 50%), -50%)' }}
                 >
                     {open
                         ? <ChevronLeft className="h-[13px] w-[13px]" strokeWidth={2.6} />

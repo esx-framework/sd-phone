@@ -49,7 +49,7 @@ export function MigrationLog({ lines, className }: { lines: MigrationLine[]; cla
             ) : (
                 lines.map(l => (
                     <div key={l.id} className="relative flex gap-3 px-4 py-[3px] hover:bg-white/[0.02]">
-                        <span className={clsx('absolute inset-y-0 left-0 w-[2px]', LEVEL_RAIL[l.level])} />
+                        <span className={clsx('absolute inset-y-0 start-0 w-[2px]', LEVEL_RAIL[l.level])} />
                         <span className="shrink-0 text-zinc-600 tabular-nums">{clockOf(l.at)}</span>
                         <span className={clsx('min-w-0 break-words', LEVEL_TEXT[l.level])}>{l.text}</span>
                     </div>

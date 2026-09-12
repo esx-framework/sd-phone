@@ -67,7 +67,7 @@ function CameraCard({ camera, busy, onOpen }: {
             type="button"
             disabled={busy || ownBodycam}
             onClick={onOpen}
-            className="group relative flex flex-col overflow-hidden rounded-[18px] bg-surface text-left shadow-sm ring-1 ring-black/[0.07] transition-all duration-150 hover:-translate-y-[2px] hover:shadow-lg hover:ring-black/[0.14] active:translate-y-0 active:scale-[0.99] disabled:opacity-60 dark:ring-white/[0.09] dark:hover:ring-white/20"
+            className="group relative flex flex-col overflow-hidden rounded-[18px] bg-surface text-start shadow-sm ring-1 ring-black/[0.07] transition-all duration-150 hover:-translate-y-[2px] hover:shadow-lg hover:ring-black/[0.14] active:translate-y-0 active:scale-[0.99] disabled:opacity-60 dark:ring-white/[0.09] dark:hover:ring-white/20"
         >
             <span className="relative block w-full overflow-hidden bg-[#05070c]" style={{ aspectRatio: '16 / 9' }}>
                 {still ? (
@@ -208,7 +208,7 @@ function Playback({ recording, onClose }: { recording: BodycamRecording; onClose
                     <button
                         type="button"
                         onClick={onClose}
-                        className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full bg-black/70 py-[6px] pl-1.5 pr-3 text-[14px] font-semibold text-white active:opacity-70"
+                        className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full bg-black/70 py-[6px] ps-1.5 pe-3 text-[14px] font-semibold text-white active:opacity-70"
                     >
                         <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={2.6} />
                         {t('mdt.recBack', 'Recordings')}
@@ -230,7 +230,7 @@ function Playback({ recording, onClose }: { recording: BodycamRecording; onClose
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-[12px] bg-black/70 px-3 py-2">
+                    <div dir="ltr" className="flex items-center gap-3 rounded-[12px] bg-black/70 px-3 py-2">
                         <button
                             type="button"
                             onClick={toggle}
@@ -275,10 +275,10 @@ function RecordingRow({ recording, onOpen, onShare, onDelete }: {
 }) {
     return (
         <div className="flex items-center gap-3 rounded-[16px] bg-surface p-3 ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
-            <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3.5 text-left active:opacity-70">
+            <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3.5 text-start active:opacity-70">
                 <span className="relative flex h-[62px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[11px] bg-gradient-to-b from-[#1b1f27] to-[#05070c]">
                     <Play className="h-6 w-6 text-white/75" strokeWidth={2.2} fill="currentColor" />
-                    <span className="absolute bottom-1 right-1 rounded-[5px] bg-black/75 px-1.5 py-[1px] text-[11px] font-bold tabular-nums text-white/90">
+                    <span className="absolute bottom-1 end-1 rounded-[5px] bg-black/75 px-1.5 py-[1px] text-[11px] font-bold tabular-nums text-white/90">
                         {formatDuration(recording.duration)}
                     </span>
                 </span>

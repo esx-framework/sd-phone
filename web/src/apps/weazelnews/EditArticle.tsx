@@ -153,7 +153,7 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                         <button
                             type="button"
                             onClick={() => setImage(undefined)}
-                            className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white"
+                            className="absolute -end-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white"
                             aria-label={t('weazelnews.removeImage', 'Remove image')}
                         >
                             <X className="h-[14px] w-[14px]" strokeWidth={2.6} />
@@ -182,6 +182,7 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                         {urlMode && (
                             <input
                                 autoFocus
+                                dir="ltr"
                                 onChange={e => setImage(e.target.value || undefined)}
                                 placeholder="https://…"
                                 className={`w-full rounded-xl p-3 text-[15px] outline-none ${card}`}
@@ -191,7 +192,7 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                 )}
 
                 <div className={`mt-5 flex items-center justify-between rounded-2xl p-4 ${card}`}>
-                    <span className="min-w-0 flex-1 pr-4">
+                    <span className="min-w-0 flex-1 pe-4">
                         <span className="block text-[17px] font-semibold">{t('weazelnews.featuredStory', 'Featured story')}</span>
                         <span className={`mt-1 block text-[15px] font-medium leading-snug ${dark ? 'text-white/80' : 'text-black/75'}`}>
                             {t('weazelnews.featuredStoryHint', 'Pin as the lead hero at the top of the feed.')}
@@ -216,7 +217,7 @@ export function EditArticle({ initial, dark, onClose, onSave }: {
                             <button
                                 type="button"
                                 onClick={() => setTimePicker(true)}
-                                className={`mt-3 flex w-full items-center gap-3 rounded-2xl p-4 text-left active:opacity-80 ${card}`}
+                                className={`mt-3 flex w-full items-center gap-3 rounded-2xl p-4 text-start active:opacity-80 ${card}`}
                             >
                                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ background: WEAZEL_RED }}>
                                     <Clock className="h-[19px] w-[19px]" strokeWidth={2.3} />

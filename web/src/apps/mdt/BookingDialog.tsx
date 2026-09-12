@@ -169,7 +169,7 @@ export function BookingDialog({ onClose, onBooked, fromReport, fromCitizen, mode
                 busy:     saving,
             }}
         >
-            <div className="mt-4 text-left">
+            <div className="mt-4 text-start">
                 {suspects.length > 1 && (
                     <Select
                         value={citizenid}
@@ -274,7 +274,7 @@ function CheckRow({ label, detail, checked, disabled, onToggle }: {
             type="button"
             onClick={onToggle}
             disabled={disabled}
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left disabled:opacity-45"
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start disabled:opacity-45"
         >
             <span
                 className={`flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-[6px] ${

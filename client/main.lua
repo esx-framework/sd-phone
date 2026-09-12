@@ -560,6 +560,7 @@ local function OpenPhone()
         data   = {
             locale    = config.Locale,
             locales   = locale.available(),
+            forceLtr  = config.ForceLeftToRight == true,
             locked    = phoneState.locked,
             battery   = phoneState.battery,
             frameColor = currentFrameColor,
@@ -843,6 +844,28 @@ end)
 RegisterNUICallback('sd-phone:unlock', function(_, cb)
     phoneState.locked = false
     cb({ ok = true })
+end)
+
+---@type integer Ped component slot 1 is the mask/face slot. Drawable 0 is the bare face on every
+---ped; anything above it is a mask, bandana or hood sitting over it.
+local MASK_COMPONENT <const> = 1
+
+---Whether something is covering the local player's face, which Face Unlock cannot scan through.
+---Always false when Lockscreen.MaskBlocksFaceUnlock is off, so a covered face scans as normal.
+---@return boolean covered
+local function faceCovered()
+    if not config.Lockscreen.MaskBlocksFaceUnlock then return false end
+    local ped = cache.ped
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return false end
+    return GetPedDrawableVariation(ped, MASK_COMPONENT) > 0
+end
+
+---React to Lua: the lockscreen is running a face scan and asks whether the face is readable. A
+---covered one fails the scan there, and the lockscreen falls back to the passcode.
+---@param _ table|nil unused payload
+---@param cb fun(result: table) NUI response { covered: boolean }
+RegisterNUICallback('sd-phone:face:check', function(_, cb)
+    cb({ covered = faceCovered() })
 end)
 
 ---React to Lua: the closed-shell peek's call island was tapped; reopen the phone onto the

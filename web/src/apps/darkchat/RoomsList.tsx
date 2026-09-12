@@ -79,7 +79,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 
 function RoomRow({ room, onOpen }: { room: Room; onOpen: () => void }) {
     return (
-        <button type="button" onClick={onOpen} className="flex items-center gap-3.5 rounded-[14px] bg-[#1c1c1e] px-3.5 py-3 text-left active:bg-[#262629]">
+        <button type="button" onClick={onOpen} className="flex items-center gap-3.5 rounded-[14px] bg-[#1c1c1e] px-3.5 py-3 text-start active:bg-[#262629]">
             <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#2c2c2e]">
                 {room.isPrivate
                     ? <Lock  className="h-[22px] w-[22px] text-white/70" strokeWidth={2} />
@@ -87,17 +87,17 @@ function RoomRow({ room, onOpen }: { room: Room; onOpen: () => void }) {
             </div>
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                    <span className="truncate text-[19px] font-semibold text-white">{room.name}</span>
+                    <span dir="auto" className="truncate text-[19px] font-semibold text-white">{room.name}</span>
                     {room.isPrivate && room.code && (
-                        <span className="shrink-0 rounded-md bg-white/10 px-1.5 py-[4px] text-[11px] font-semibold leading-none tracking-wider text-white/55">{room.code}</span>
+                        <span dir="ltr" className="shrink-0 rounded-md bg-white/10 px-1.5 py-[4px] text-[11px] font-semibold leading-none tracking-wider text-white/55">{room.code}</span>
                     )}
                 </div>
-                <p className="truncate text-[15px] text-white/45">{room.topic}</p>
+                <p dir="auto" className="truncate text-[15px] text-white/45">{room.topic}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 text-white/35">
                 <Users className="h-[14px] w-[14px]" strokeWidth={2.2} />
                 <span className="text-[13px]">{room.members}</span>
-                <ChevronRight className="ml-0.5 h-[20px] w-[20px] text-white/25" strokeWidth={2} />
+                <ChevronRight className="ms-0.5 h-[20px] w-[20px] text-white/25" strokeWidth={2} />
             </div>
         </button>
     );

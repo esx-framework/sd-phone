@@ -76,7 +76,7 @@ function TrackPreview({ trackId, onOpenMap }: { trackId: number; onOpenMap?: () 
             type="button"
             onClick={onOpenMap}
             aria-label={t('racing.openTrackMap', 'Open the full map')}
-            className="block w-full text-left transition-opacity duration-150 hover:opacity-95 active:opacity-85"
+            className="block w-full text-start transition-opacity duration-150 hover:opacity-95 active:opacity-85"
         >
             {body}
         </button>
@@ -96,7 +96,7 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
     return (
         <div className="flex items-center gap-3 px-4 py-2.5">
             <span className={`min-w-0 flex-1 truncate ${rowMeta}`}>{label}</span>
-            <span className={`shrink-0 text-right ${rowTitle}`}>{value}</span>
+            <span className={`shrink-0 text-end ${rowTitle}`}>{value}</span>
         </div>
     );
 }
@@ -359,7 +359,7 @@ export function RaceDetail({ race, now, standings, onRaces, onStandings, onRefre
                             >
                                 <span className={`w-6 shrink-0 tabular-nums ${rowMeta}`}>{entry.pos}</span>
                                 <span className={`min-w-0 flex-1 truncate ${rowTitle}`}>{entry.name}</span>
-                                <span className={`shrink-0 tabular-nums ${rowMeta}`}>{formatDelta(entry.deltaMs)}</span>
+                                <span className={`shrink-0 tabular-nums ${rowMeta}`}><span dir="ltr">{formatDelta(entry.deltaMs)}</span></span>
                             </div>
                         ))}
                     </div>

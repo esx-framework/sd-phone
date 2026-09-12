@@ -44,7 +44,7 @@ export function PhoneSettingsPage({ onBack }: { onBack: () => void }) {
                     <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                         {t('settings.myNumber', 'My Number')}
                     </span>
-                    <span className="mr-2 text-[15px] text-ios-gray">{number}</span>
+                    <span dir="ltr" className="me-2 text-[15px] text-ios-gray">{number}</span>
                     <button
                         type="button"
                         onClick={copyNumber}
@@ -71,7 +71,7 @@ export function PhoneSettingsPage({ onBack }: { onBack: () => void }) {
                 <button
                     type="button"
                     onClick={() => setShowBlocked(true)}
-                    className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                    className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                 >
                     <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                         {t('settings.blockedContacts', 'Blocked Contacts')}
@@ -155,7 +155,7 @@ function BlockedContactsPage({ onBack }: { onBack: () => void }) {
                                 key={b.number}
                                 className="relative flex items-center px-4 py-3"
                             >
-                                <span className="min-w-0 flex-1 truncate text-[17px] font-normal text-black dark:text-white">
+                                <span dir="auto" className="min-w-0 flex-1 truncate text-[17px] font-normal text-black dark:text-white">
                                     {labelFor(b.number)}
                                 </span>
                                 <button
@@ -167,8 +167,8 @@ function BlockedContactsPage({ onBack }: { onBack: () => void }) {
                                 </button>
                                 {i < blocked.length - 1 && (
                                     <div
-                                        className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control"
-                                        style={{ left: 0, height: '0.5px' }}
+                                        className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control"
+                                        style={{ insetInlineStart: 0, height: '0.5px' }}
                                     />
                                 )}
                             </div>

@@ -204,7 +204,7 @@ export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPoste
                                     type="button"
                                     onClick={toggleMuted}
                                     aria-label={muted ? t('vibez.unmute', 'Unmute') : t('vibez.mute', 'Mute')}
-                                    className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform active:scale-90"
+                                    className="absolute bottom-2 end-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform active:scale-90"
                                 >
                                     {muted ? <VolumeX className="h-[18px] w-[18px]" strokeWidth={2.2} /> : <Volume2 className="h-[18px] w-[18px]" strokeWidth={2.2} />}
                                 </button>
@@ -221,7 +221,7 @@ export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPoste
                             className="mt-4 w-full resize-none rounded-[14px] bg-white/[0.07] px-3.5 py-3 text-[15px] text-white outline-none ring-1 ring-white/10 transition-colors placeholder:text-white/35 focus:bg-white/[0.1]"
                         />
 
-                        <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-white/[0.07] pl-3.5 pr-1.5 ring-1 ring-white/10 transition-colors focus-within:bg-white/[0.1]">
+                        <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-white/[0.07] ps-3.5 pe-1.5 ring-1 ring-white/10 transition-colors focus-within:bg-white/[0.1]">
                             <Music2 className="h-4 w-4 shrink-0 text-white/50" strokeWidth={2.2} />
                             <input
                                 value={sound}
@@ -260,10 +260,10 @@ export function UploadOverlay({ myHandle, initialUrl, onRecord, onClose, onPoste
                                         <button
                                             type="button"
                                             onClick={() => setVoiceOpen(true)}
-                                            className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] bg-white/10 px-3 py-2.5 text-left transition-transform active:scale-[0.98]"
+                                            className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] bg-white/10 px-3 py-2.5 text-start transition-transform active:scale-[0.98]"
                                         >
                                             <span className="truncate text-[14px] font-medium text-white">{voiceLabel}</span>
-                                            <ChevronLeft className="h-4 w-4 shrink-0 -rotate-90 text-white/50" strokeWidth={2.4} />
+                                            <ChevronLeft data-flip-x="off" className="h-4 w-4 shrink-0 -rotate-90 text-white/50" strokeWidth={2.4} />
                                         </button>
                                         {genning && <Spinner size={18} />}
                                     </div>
@@ -328,7 +328,7 @@ function VoicePickerSheet({ voices, value, onSelect, onClose }: {
                             key={code}
                             type="button"
                             onClick={() => { onSelect(code); close(); }}
-                            className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-3 text-left active:bg-white/[0.06]"
+                            className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-3 text-start active:bg-white/[0.06]"
                         >
                             <span className="truncate text-[15px] font-medium text-white">{label}</span>
                             {code === value && <Check className="h-[18px] w-[18px] shrink-0" strokeWidth={2.6} style={{ color: HEART }} />}

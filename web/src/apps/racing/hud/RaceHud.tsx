@@ -184,10 +184,10 @@ function RacerRow({ lead, name, gap, you, children }: {
 }) {
     return (
         <div
-            className="relative flex items-center gap-2 overflow-hidden py-[6px] pl-2.5 pr-2"
+            className="relative flex items-center gap-2 overflow-hidden py-[6px] ps-2.5 pe-2"
             style={you ? { ...ROW, background: RACING_ACCENT_SOFT } : ROW}
         >
-            {you && <span className="absolute bottom-0 left-0 top-0 w-[3px]" style={{ background: RACING_ACCENT }} />}
+            {you && <span className="absolute bottom-0 start-0 top-0 w-[3px]" style={{ background: RACING_ACCENT }} />}
             {lead}
             <span
                 className="min-w-0 flex-1 truncate"
@@ -327,7 +327,7 @@ function SectorBars({ sectors, liveMs, pb }: { sectors: HudSector[]; liveMs: num
                         </div>
                         {pb && pb.length > 0 && (
                             <span
-                                className="w-[42px] text-right"
+                                className="w-[42px] text-end"
                                 style={{
                                     fontFamily: MONO,
                                     fontSize:   10.5,
@@ -340,7 +340,7 @@ function SectorBars({ sectors, liveMs, pb }: { sectors: HudSector[]; liveMs: num
                             </span>
                         )}
                         <span
-                            className="w-[48px] text-right"
+                            className="w-[48px] text-end"
                             style={{
                                 fontFamily: MONO,
                                 fontSize:   11,

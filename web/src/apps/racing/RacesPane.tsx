@@ -69,7 +69,7 @@ function RaceListRow({ race, now, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full flex-col gap-1 text-left ${isPhone ? `${cardRow} ${cardRowPad}` : 'rounded-[10px] px-3 py-2.5'} ${
+            className={`flex w-full flex-col gap-1 text-start ${isPhone ? `${cardRow} ${cardRowPad}` : 'rounded-[10px] px-3 py-2.5'} ${
                 selected ? 'bg-ios-blue/10' : race.joined ? racingAccentSoft : isPhone ? '' : rowHover
             }`}
         >

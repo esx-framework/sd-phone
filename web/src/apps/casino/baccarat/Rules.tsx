@@ -36,7 +36,7 @@ export function BaccaratRules() {
                         <span className="text-[15px] font-bold text-white">{row.label()}</span>
                         <span className="text-[13px] font-semibold text-white/50">{row.note()}</span>
                     </span>
-                    <span className="text-[15px] font-extrabold tabular-nums" style={{ color: GOLD.top }}>{row.pays}</span>
+                    <span dir="ltr" className="text-[15px] font-extrabold tabular-nums" style={{ color: GOLD.top }}>{row.pays}</span>
                 </div>
             ))}
 
@@ -76,8 +76,8 @@ export function BaccaratRules() {
                     className="flex items-center justify-between border-t py-1.5"
                     style={{ borderColor: SURFACE.hair }}
                 >
-                    <span className="text-[14px] font-semibold tabular-nums text-white/80">{row.total}</span>
-                    <span className="text-[14px] font-bold tabular-nums text-white">{row.draws()}</span>
+                    <span dir="auto" className="text-[14px] font-semibold tabular-nums text-white/80">{row.total}</span>
+                    <span dir="auto" className="text-[14px] font-bold tabular-nums text-white">{row.draws()}</span>
                 </div>
             ))}
             <div className="pb-2" />

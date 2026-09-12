@@ -77,10 +77,10 @@ export function ReceivedInvoices({ invoices, loading, onRefetch, onPaid, contact
                             )}
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-baseline gap-1.5">
-                                    <span className="truncate text-[18px] font-semibold text-black dark:text-white">{labelOf(inv)}</span>
-                                    {inv.code && <span className="shrink-0 text-[13px] font-semibold tracking-wide text-ios-gray">#{inv.code}</span>}
+                                    <span dir="auto" className="truncate text-[18px] font-semibold text-black dark:text-white">{labelOf(inv)}</span>
+                                    {inv.code && <span dir="ltr" className="shrink-0 text-[13px] font-semibold tracking-wide text-ios-gray">#{inv.code}</span>}
                                 </div>
-                                <div className="truncate text-[16px] font-medium text-ios-gray">
+                                <div dir="auto" className="truncate text-[16px] font-medium text-ios-gray">
                                     {inv.note
                                         ? inv.note
                                         : inv.from
@@ -89,7 +89,7 @@ export function ReceivedInvoices({ invoices, loading, onRefetch, onPaid, contact
                                 </div>
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-1.5">
-                                <span className="text-[18px] font-bold tabular-nums text-black dark:text-white">{hideAmounts ? HIDDEN_TEXT : formatMoney(inv.amount, { whole: true })}</span>
+                                <span dir="ltr" className="text-[18px] font-bold tabular-nums text-black dark:text-white">{hideAmounts ? HIDDEN_TEXT : formatMoney(inv.amount, { whole: true })}</span>
                                 {inv.status === 'pending' ? (
                                     <button
                                         type="button"

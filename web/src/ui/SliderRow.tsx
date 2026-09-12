@@ -24,7 +24,7 @@ export function SliderRow({
                 </span>
                 {accessory}
                 {display !== undefined && (
-                    <span className="shrink-0 text-[15px] tabular-nums text-ios-gray">{display}</span>
+                    <span dir="auto" className="shrink-0 text-[15px] tabular-nums text-ios-gray">{display}</span>
                 )}
             </div>
             <Slider

@@ -115,7 +115,7 @@ export function VolumeHUD({ suppressed = false }: { suppressed?: boolean }) {
 
     return (
         <div
-            className="absolute left-[12px] z-[500] flex flex-col items-center"
+            className="absolute start-[12px] z-[500] flex flex-col items-center"
             style={{
                 top:        233,
                 opacity:    visible ? 1 : 0,

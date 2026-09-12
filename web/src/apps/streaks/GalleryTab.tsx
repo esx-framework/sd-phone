@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Flame, Heart, Image as ImageIcon, Loader2 } 
 
 import { EmptyState } from '@/ui/EmptyState';
 import { useIosPush } from '@/hooks/useIosPush';
+import { dirSign } from '@/stores/directionStore';
 import { t } from '@/i18n';
 import type { StreakPost } from './data';
 
@@ -72,7 +73,7 @@ export function GalleryTab({ posts, dark, onLike, onLoadMore, loadingMore, hasMo
                         <img src={p.imageUrl} alt="" draggable={false} className="h-full w-full object-cover" />
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
 
-                        <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/40 py-0.5 pl-1.5 pr-2 text-[15px] font-extrabold text-white shadow-sm ring-1 ring-white/15">
+                        <span className="absolute start-2 top-2 flex items-center gap-1 rounded-full bg-black/40 py-0.5 ps-1.5 pe-2 text-[15px] font-extrabold text-white shadow-sm ring-1 ring-white/15">
                             <Flame className="h-[16px] w-[16px]" strokeWidth={2.4} style={{ color: STREAK_ORANGE }} fill={STREAK_ORANGE} />
                             {p.dayStreak}
                         </span>
@@ -81,7 +82,7 @@ export function GalleryTab({ posts, dark, onLike, onLoadMore, loadingMore, hasMo
                             type="button"
                             onClick={e => { e.stopPropagation(); onLike(p.id); }}
                             aria-label={p.likedByMe ? t('streaks.unlike', 'Unlike') : t('streaks.like', 'Like')}
-                            className="absolute bottom-2 right-2 flex items-center gap-1.5 px-1 py-1 text-[15px] font-bold text-white drop-shadow active:scale-90"
+                            className="absolute bottom-2 end-2 flex items-center gap-1.5 px-1 py-1 text-[15px] font-bold text-white drop-shadow active:scale-90"
                         >
                             <Heart
                                 className="h-[19px] w-[19px]"
@@ -197,7 +198,7 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
         start.current = null;
         if (!s || !areaRef.current) return;
         const w = areaRef.current.getBoundingClientRect().width || 1;
-        const dx = e.clientX - s.x;
+        const dx = (e.clientX - s.x) * dirSign();
         const dy = e.clientY - s.y;
         if (Math.abs(dx) > w * 0.12 && Math.abs(dx) > Math.abs(dy) * 1.3) {
             if (dx < 0) next(); else prev();
@@ -223,12 +224,12 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
     return (
         <div className={`absolute inset-0 z-20 flex flex-col ${dark ? 'bg-black text-white' : 'bg-[#d4d4d4] text-black'}`} style={pageStyle}>
             <style>{`@keyframes heart-burst {0%{transform:scale(.3);opacity:0}30%{transform:scale(1.15);opacity:.95}62%{transform:scale(1);opacity:.95}100%{transform:scale(1.12);opacity:0}}`}</style>
-            <div className="flex shrink-0 items-center justify-between pb-1.5 pl-2 pr-3 pt-1">
+            <div className="flex shrink-0 items-center justify-between pb-1.5 ps-2 pe-3 pt-1">
                 <button
                     type="button"
                     onClick={goBack}
                     aria-label={t('streaks.back', 'Back')}
-                    className="flex h-9 items-center pl-1 pr-2 text-[16px] font-semibold active:opacity-60"
+                    className="flex h-9 items-center ps-1 pe-2 text-[16px] font-semibold active:opacity-60"
                     style={{ color: STREAK_ORANGE }}
                 >
                     <ChevronLeft className="h-[22px] w-[22px]" strokeWidth={2.6} />
@@ -270,7 +271,7 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
                                     type="button"
                                     onClick={prev}
                                     aria-label={t('streaks.previousPhoto', 'Previous photo')}
-                                    className={`${arrowBtn} left-2`}
+                                    className={`${arrowBtn} start-2`}
                                 >
                                     <ChevronLeft className={chevronCls} strokeWidth={2.5} />
                                 </button>
@@ -280,7 +281,7 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
                                     type="button"
                                     onClick={next}
                                     aria-label={t('streaks.nextPhoto', 'Next photo')}
-                                    className={`${arrowBtn} right-2`}
+                                    className={`${arrowBtn} end-2`}
                                 >
                                     <ChevronRight className={chevronCls} strokeWidth={2.5} />
                                 </button>
@@ -291,7 +292,7 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
                     <div className="shrink-0 pt-0.5">
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-baseline gap-1">
-                                <span className="truncate text-[22px] font-bold leading-tight">{post.author}</span>
+                                <span dir="auto" className="truncate text-[22px] font-bold leading-tight">{post.author}</span>
                                 <span className={`flex shrink-0 items-center gap-1 text-[14px] font-semibold ${dark ? 'text-white/55' : 'text-black/50'}`}>
                                     <Flame className="h-[13px] w-[13px]" style={{ color: STREAK_ORANGE }} strokeWidth={2.6} />
                                     {t('streaks.dayN', 'Day {day}', { day: post.dayStreak })}
@@ -314,7 +315,7 @@ function PhotoViewer({ posts, openId, dark, onClose, onNavigate, onLike, onLoadM
                         </div>
 
                         {post.caption && (
-                            <p className={`-mt-1.5 line-clamp-2 text-[18px] leading-snug ${dark ? 'text-white/95' : 'text-black/90'}`}>
+                            <p dir="auto" className={`-mt-1.5 line-clamp-2 text-[18px] leading-snug ${dark ? 'text-white/95' : 'text-black/90'}`}>
                                 {post.caption}
                             </p>
                         )}

@@ -134,7 +134,7 @@ export function TableFelt({ state, heroSeat, handEnd, onSit }: {
     const heroSwept = heroSeat !== null ? sweptFor(heroSeat) : null;
 
     return (
-        <div className="flex min-h-0 flex-1 items-start justify-center px-2">
+        <div dir="ltr" className="flex min-h-0 flex-1 items-start justify-center px-2">
             <style>{sweepKeyframes()}</style>
 
             <div className="relative flex w-full flex-col" style={{ height: '100%', minHeight: 300, maxHeight: FELT_H }}>

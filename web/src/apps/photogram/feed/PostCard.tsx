@@ -6,6 +6,7 @@ import { IG, type Post } from '../data';
 import { isVideoUrl } from '../create/Media';
 import { VerifiedCheck } from '../ui';
 import { useDeckActive } from '@/shell/deckActive';
+import { dirSign } from '@/stores/directionStore';
 import { t } from '@/i18n';
 
 export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpenProfile, onShare, onDelete, scrollRoot }: {
@@ -91,7 +92,7 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
     }
     function onPointerMove(e: ReactPointerEvent) {
         if (!down.current) return;
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         const dy = e.clientY - start.current.y;
         moved.current = Math.max(moved.current, Math.abs(dx) + Math.abs(dy));
         if (!horiz.current && Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) horiz.current = true;
@@ -105,7 +106,7 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
         if (!down.current) return;
         down.current = false;
         setDragging(false);
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         if (moved.current < 10) {
             const now = Date.now();
             if (now - lastTap.current < 280) { onDoubleLike(); fireBurst(); }
@@ -123,14 +124,14 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
 
     return (
         <div className="pb-1">
-            <button type="button" onClick={() => onOpenProfile?.(post.user.handle)} className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left active:opacity-60">
+            <button type="button" onClick={() => onOpenProfile?.(post.user.handle)} className="flex w-full items-center gap-3 px-3.5 py-2.5 text-start active:opacity-60">
                 <img src={post.user.avatar} alt="" draggable={false} loading="lazy" decoding="async" className="h-[48px] w-[48px] rounded-full object-cover" />
                 <div className="min-w-0 flex-1 leading-tight">
                     <div className="flex items-center gap-1.5">
-                        <span className="text-[20px] font-semibold text-black">{post.user.handle}</span>
+                        <span dir="auto" className="text-[20px] font-semibold text-black">{post.user.handle}</span>
                         {post.user.verified && <VerifiedCheck size={24} />}
                     </div>
-                    {post.location && <div className="mt-[2px] text-[15px] leading-tight text-black">{post.location}</div>}
+                    {post.location && <div dir="auto" className="mt-[2px] text-[15px] leading-tight text-black">{post.location}</div>}
                 </div>
             </button>
 
@@ -145,7 +146,7 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
                 <div
                     className="flex h-full w-full"
                     style={{
-                        transform: `translateX(calc(${-idx * 100}% + ${drag}px))`,
+                        transform: `translateX(calc(var(--dir-x, 1) * (${-idx * 100}% + ${drag}px)))`,
                         transition: dragging ? 'none' : 'transform 0.32s cubic-bezier(0.22,0.61,0.36,1)',
                     }}
                 >
@@ -169,7 +170,7 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
                     ))}
                 </div>
                 {n > 1 && (
-                    <div className="absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-[3px] text-[15px] font-semibold text-white">
+                    <div className="absolute end-3 top-3 rounded-full bg-black/55 px-2.5 py-[3px] text-[15px] font-semibold text-white">
                         {idx + 1}/{n}
                     </div>
                 )}
@@ -179,7 +180,7 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
                         aria-label={muted ? t('photogram.unmute', 'Unmute') : t('photogram.mute', 'Mute')}
                         onPointerDown={e => e.stopPropagation()}
                         onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
-                        className="absolute bottom-3 right-3 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-black/55 text-white active:scale-90"
+                        className="absolute bottom-3 end-3 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-black/55 text-white active:scale-90"
                     >
                         {muted ? <VolumeX className="h-[18px] w-[18px]" strokeWidth={2.2} /> : <Volume2 className="h-[18px] w-[18px]" strokeWidth={2.2} />}
                     </button>
@@ -232,10 +233,10 @@ export function PostCard({ post, onLike, onDoubleLike, onSave, onComment, onOpen
 
             <div className="px-3.5 pt-2.5">
                 <div className="text-[19px] font-semibold text-black">{post.likes.toLocaleString()} {post.likes === 1 ? t('photogram.likesCountSingular', 'Like') : t('photogram.likesCountPlural', 'Likes')}</div>
-                <div className="mt-[4px] text-[19px] leading-snug text-black">
+                <div dir="auto" className="mt-[4px] text-[19px] leading-snug text-black">
                     <span className="font-semibold">{post.user.handle}</span> {post.caption}
                 </div>
-                <button type="button" onClick={onComment} className="mt-[5px] block text-left text-[18px] active:opacity-50" style={{ color: '#555555' }}>
+                <button type="button" onClick={onComment} className="mt-[5px] block text-start text-[18px] active:opacity-50" style={{ color: '#555555' }}>
                     {post.comments > 0 ? t('photogram.viewAllComments', 'See all {count} comments', { count: post.comments }) : t('photogram.beFirstToComment', 'Be the first to comment…')}
                 </button>
                 <div className="mt-[6px] text-[13px] uppercase tracking-wide" style={{ color: '#6a6a6a' }}>{post.time}</div>

@@ -102,7 +102,7 @@ function ChipStack({ amount, won }: { amount: number; won: boolean }) {
             }}
         >
             {shown.map((denom, i) => (
-                <div key={i} className="absolute left-0" style={{ bottom: i * 3, zIndex: i }}>
+                <div key={i} className="absolute start-0" style={{ bottom: i * 3, zIndex: i }}>
                     <Chip value={denom} label={i === shown.length - 1 ? chipText(amount) : ''} />
                 </div>
             ))}
@@ -178,6 +178,7 @@ export function BetLayout({ stacks, winning, winners, onPlace }: {
 
     return (
         <div
+            dir="ltr"
             className="mx-auto"
             style={{
                 width: GRID_W + PAD * 2 + GUTTER,

@@ -163,12 +163,12 @@ export function MatchChat({ match, onBack, onSend, onReact, onPayRequest, onUnma
                         type="button"
                         onClick={() => setShowProfile(true)}
                         aria-label={t('cherry.viewProfile', "View {name}'s profile", { name })}
-                        className="flex min-w-0 items-center gap-2 text-left active:opacity-70"
+                        className="flex min-w-0 items-center gap-2 text-start active:opacity-70"
                     >
                         {match.partner.photo
                             ? <img src={match.partner.photo} alt={name} draggable={false} className="h-[58px] w-[58px] shrink-0 rounded-full object-cover" />
                             : <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full text-[22px] font-bold text-white" style={{ background: CHERRY.pink }}>{name.slice(0, 1)}</span>}
-                        <span className="ml-1 min-w-0 truncate text-[24px] font-semibold text-black">{name}</span>
+                        <span dir="auto" className="ms-1 min-w-0 truncate text-[24px] font-semibold text-black">{name}</span>
                     </button>
                 </div>
                 <div className="mx-[6%] h-[0.5px] bg-black/15" />
@@ -238,7 +238,7 @@ export function MatchChat({ match, onBack, onSend, onReact, onPayRequest, onUnma
                         <div className="w-[3px] self-stretch rounded-full" style={{ background: CHERRY.pink }} />
                         <div className="min-w-0 flex-1">
                             <div className="text-[12px] font-semibold" style={{ color: CHERRY.pink }}>{t('cherry.replyTo', 'In reply to {name}', { name: replyName(replyTo) })}</div>
-                            <div className="truncate text-[13px] text-black/55">{msgPreview(replyTo)}</div>
+                            <div dir="auto" className="truncate text-[13px] text-black/55">{msgPreview(replyTo)}</div>
                         </div>
                         <button
                             type="button"
@@ -259,7 +259,7 @@ export function MatchChat({ match, onBack, onSend, onReact, onPayRequest, onUnma
                                     type="button"
                                     onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
                                     aria-label={t('cherry.removeImage', 'Remove image')}
-                                    className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                    className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
                                 >
                                     <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                                 </button>
@@ -269,7 +269,7 @@ export function MatchChat({ match, onBack, onSend, onReact, onPayRequest, onUnma
                 )}
 
                 <div className="px-3 pb-2 pt-1.5">
-                    <div className={`flex items-center gap-1 rounded-[22px] bg-[#d4d4d4] py-[9px] pl-4 ${draft.trim() || attachments.length ? 'pr-[5px]' : 'pr-4'}`}>
+                    <div className={`flex items-center gap-1 rounded-[22px] bg-[#d4d4d4] py-[9px] ps-4 ${draft.trim() || attachments.length ? 'pe-[5px]' : 'pe-4'}`}>
                         <input
                             ref={inputRef}
                             type="text"
@@ -492,9 +492,9 @@ function PartnerProfile({ partner, onClose, onUnmatch, onBlock }: {
                         type="button"
                         aria-label={t('cherry.previousPhoto', 'Previous photo')}
                         onClick={() => setPhotoIdx(i => Math.max(0, i - 1))}
-                        className="absolute left-3 top-1/2 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
+                        className="absolute start-3 top-1/2 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
                     >
-                        <ChevronLeft className="-ml-0.5 h-[26px] w-[26px]" strokeWidth={2.6} />
+                        <ChevronLeft className="-ms-0.5 h-[26px] w-[26px]" strokeWidth={2.6} />
                     </button>
                 )}
                 {photoIdx < photos.length - 1 && (
@@ -502,9 +502,9 @@ function PartnerProfile({ partner, onClose, onUnmatch, onBlock }: {
                         type="button"
                         aria-label={t('cherry.nextPhoto', 'Next photo')}
                         onClick={() => setPhotoIdx(i => Math.min(photos.length - 1, i + 1))}
-                        className="absolute right-3 top-1/2 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
+                        className="absolute end-3 top-1/2 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
                     >
-                        <ChevronRight className="-mr-0.5 h-[26px] w-[26px]" strokeWidth={2.6} />
+                        <ChevronRight className="-me-0.5 h-[26px] w-[26px]" strokeWidth={2.6} />
                     </button>
                 )}
 
@@ -512,7 +512,7 @@ function PartnerProfile({ partner, onClose, onUnmatch, onBlock }: {
                     type="button"
                     onClick={close}
                     aria-label={t('cherry.closeProfile', 'Close profile')}
-                    className="absolute right-4 top-[60px] z-10 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
+                    className="absolute end-4 top-[60px] z-10 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:opacity-70"
                 >
                     <X className="h-[19px] w-[19px]" strokeWidth={2.6} />
                 </button>
@@ -520,13 +520,13 @@ function PartnerProfile({ partner, onClose, onUnmatch, onBlock }: {
 
             <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-6 pt-5">
                 <p className="flex items-center leading-tight">
-                    <span className="text-[30px] font-bold text-black">{partner.name},</span>
-                    <span className="ml-2 text-[25px] font-medium text-black/80">{partner.age}</span>
-                    <span className="ml-2.5"><GenderBadge gender={partner.gender} /></span>
+                    <span dir="auto" className="text-[30px] font-bold text-black">{partner.name},</span>
+                    <span className="ms-2 text-[25px] font-medium text-black/80">{partner.age}</span>
+                    <span className="ms-2.5"><GenderBadge gender={partner.gender} /></span>
                 </p>
                 <div className="mt-4 h-px bg-black/10" />
                 <p className="mt-4 text-[20px] font-bold text-black">{t('cherry.aboutMe', 'About Me')}</p>
-                <p className="mt-1.5 text-[18px] leading-snug text-black/80">
+                <p dir="auto" className="mt-1.5 text-[18px] leading-snug text-black/80">
                     {partner.about?.trim() || t('cherry.noAbout', "They haven't written anything about themselves yet.")}
                 </p>
 

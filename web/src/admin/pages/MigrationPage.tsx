@@ -283,7 +283,7 @@ export function MigrationPage({ toast }: { toast: (text: string, error?: boolean
                         ? `${STAGE_LABEL[state.currentStage ?? 'building']} ${state.currentDomain}`
                         : PHASE_LABEL[state.phase] ?? state.phase}
                     {state.currentStage === 'writing' && (state.writeTotal ?? 0) > 0 && (
-                        <span className="ml-2 font-mono font-normal text-zinc-500 tabular-nums">
+                        <span className="ms-2 font-mono font-normal text-zinc-500 tabular-nums">
                             {comma(state.writeDone ?? 0)} of {comma(state.writeTotal ?? 0)} rows written
                         </span>
                     )}

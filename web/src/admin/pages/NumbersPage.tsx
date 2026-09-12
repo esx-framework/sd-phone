@@ -42,7 +42,7 @@ export function NumbersPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => v
                     ? <Btn variant="subtle" onClick={() => { setQ(''); setSubmitted(''); }}>Clear</Btn>
                     : undefined}
             >
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full text-start text-[13px]">
                     <thead>
                         <tr className="text-[11px] uppercase tracking-wide text-zinc-500">
                             <th className="px-4 py-2.5 font-semibold">Number</th>
@@ -80,7 +80,7 @@ export function NumbersPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => v
                                         : <span className="text-zinc-600">—</span>}
                                 </td>
                                 <td className="px-4 py-2.5 text-zinc-400">{fmtTime(row.createdAt)}</td>
-                                <td className="pr-3 text-zinc-600">{row.ownerCid && <ChevronRight size={15} />}</td>
+                                <td className="pe-3 text-zinc-600">{row.ownerCid && <ChevronRight size={15} />}</td>
                             </tr>
                         ))}
                     </tbody>

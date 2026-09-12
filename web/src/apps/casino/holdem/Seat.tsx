@@ -127,7 +127,7 @@ export function SeatPod({ seat, isButton, isActor, blind, best, onSit, hideCards
                     animation: isActor ? 'hd-turn 1.6s ease-in-out infinite' : undefined,
                 }}
             >
-                <span className="w-full truncate px-1.5 text-center text-[12px] font-semibold" style={{ color: ink }}>
+                <span dir="auto" className="w-full truncate px-1.5 text-center text-[12px] font-semibold" style={{ color: ink }}>
                     {seat.name}
                 </span>
                 <span className="flex items-center gap-1">
@@ -162,7 +162,7 @@ export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind
     const cards = seat.hole ?? [];
     return (
         <div className="flex shrink-0 items-center gap-3 px-4 pt-2">
-            <div className="flex shrink-0 items-end" style={{ height: 96 }}>
+            <div dir="ltr" className="flex shrink-0 items-end" style={{ height: 96 }}>
                 {cards.length === 0 && (
                     <div
                         className="rounded-[10px]"
@@ -194,7 +194,7 @@ export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind
 
             <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[15px] font-bold text-white">{seat.name}</span>
+                    <span dir="auto" className="truncate text-[15px] font-bold text-white">{seat.name}</span>
                     <span className="flex items-center gap-1">
                         <BlindTag mark={blind} />
                         {isButton && (
@@ -219,9 +219,10 @@ export function HeroPanel({ seat, isActor, best, msLeft, clockKey, sb, bb, blind
                     {isActor && msLeft > 0 && (
                         <div
                             key={clockKey}
-                            className="h-full origin-left rounded-full"
+                            className="h-full rounded-full"
                             style={{
                                 background: msLeft < 6000 ? TABLE.lose : SEAT.live,
+                                transformOrigin: 'calc(50% - 50% * var(--dir-x, 1))',
                                 animation: `hd-clock ${msLeft}ms linear forwards`,
                             }}
                         />

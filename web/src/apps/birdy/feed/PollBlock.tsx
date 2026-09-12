@@ -61,6 +61,7 @@ export function PollBlock({ postId, poll, onVoted }: {
                         <button
                             key={option.idx}
                             type="button"
+                            dir="auto"
                             onClick={e => { e.stopPropagation(); vote(option.idx); }}
                             className="w-full truncate rounded-full border px-4 py-2 text-center text-[17px] font-semibold transition-colors hover:bg-ios-blue/10 active:opacity-70"
                             style={{ borderColor: BLUE, color: BLUE }}
@@ -74,14 +75,14 @@ export function PollBlock({ postId, poll, onVoted }: {
                     <div key={option.idx} className="relative overflow-hidden rounded-[8px]">
                         <div
                             aria-hidden
-                            className="absolute inset-y-0 left-0 rounded-[8px] transition-[width] duration-500 ease-out"
+                            className="absolute inset-y-0 start-0 rounded-[8px] transition-[width] duration-500 ease-out"
                             style={{
                                 width: `${Math.max(share * 100, 1.5)}%`,
                                 background: mine ? 'rgb(var(--ios-blue) / 0.32)' : 'rgb(var(--hairline) / 0.16)',
                             }}
                         />
                         <div className="relative flex items-center gap-2 px-3 py-1.5">
-                            <span className={`min-w-0 flex-1 truncate text-[17px] text-label ${live.total > 0 && option.votes === winning ? 'font-bold' : ''}`}>
+                            <span dir="auto" className={`min-w-0 flex-1 truncate text-[17px] text-label ${live.total > 0 && option.votes === winning ? 'font-bold' : ''}`}>
                                 {option.label}
                             </span>
                             {mine && (

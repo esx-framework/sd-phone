@@ -28,6 +28,7 @@ export function CurveChart({ phase, runKey, delayMs, bustX100 }: {
 
     return (
         <div
+            dir="ltr"
             className="mx-auto shrink-0 overflow-hidden rounded-[22px]"
             style={{ width: VIEW_W + 10, padding: 5, background: SURFACE.sunken, boxShadow: `inset 0 1px 0 ${SURFACE.hair}` }}
         >

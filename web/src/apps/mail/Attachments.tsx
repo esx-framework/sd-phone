@@ -38,7 +38,7 @@ export function AttachmentStrip({ attachments, max, onRemove }: {
                 <span className="text-[14px] font-semibold uppercase tracking-wide text-ios-gray">
                     {t('mail.attachmentsLabel', 'Attachments')}
                 </span>
-                <span className="ml-auto text-[14px] text-ios-gray">{attachments.length}/{max}</span>
+                <span className="ms-auto text-[14px] text-ios-gray">{attachments.length}/{max}</span>
             </div>
 
             <div className="max-h-[250px] overflow-y-auto no-scrollbar">
@@ -53,7 +53,7 @@ export function AttachmentStrip({ attachments, max, onRemove }: {
                                     type="button"
                                     onClick={() => onRemove(i)}
                                     aria-label={t('mail.removeAttachment', 'Remove attachment')}
-                                    className="absolute right-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/55 text-white active:opacity-70"
+                                    className="absolute end-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/55 text-white active:opacity-70"
                                 >
                                     <X className="h-[14px] w-[14px]" strokeWidth={2.8} />
                                 </button>
@@ -82,7 +82,7 @@ export function AttachmentStrip({ attachments, max, onRemove }: {
                                 <button
                                     type="button"
                                     onClick={() => setOpenNote(a)}
-                                    className="flex min-w-0 flex-1 items-center gap-3 text-left active:opacity-70"
+                                    className="flex min-w-0 flex-1 items-center gap-3 text-start active:opacity-70"
                                 >
                                     <StickyNote className="h-[24px] w-[24px] shrink-0 text-ios-orange" strokeWidth={2} />
                                     <div className="min-w-0 flex-1">
@@ -210,7 +210,7 @@ export function MemoPickerSheet({ excludeUrls, max, onPickMany, onClose }: {
                             <button
                                 type="button"
                                 onClick={() => toggle(m.id)}
-                                className="flex w-full items-center gap-3 px-4 py-4 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center gap-3 px-4 py-4 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <AudioLines className="h-[24px] w-[24px] shrink-0 text-ios-blue" strokeWidth={2} />
                                 <div className="min-w-0 flex-1">
@@ -276,12 +276,12 @@ export function NotePickerSheet({ max, onPickMany, onClose }: {
                             <button
                                 type="button"
                                 onClick={() => toggle(n.id)}
-                                className="flex w-full items-center gap-3 px-4 py-4 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center gap-3 px-4 py-4 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <StickyNote className="h-[24px] w-[24px] shrink-0 text-ios-orange" strokeWidth={2} />
                                 <div className="min-w-0 flex-1">
                                     <div className="truncate text-[17px] font-medium">{noteTitle(n)}</div>
-                                    <div className="truncate text-[14px] text-ios-gray">{notePreview(n)}</div>
+                                    <div dir="auto" className="truncate text-[14px] text-ios-gray">{notePreview(n)}</div>
                                 </div>
                                 <SelectCircle selected={selected.has(n.id)} />
                             </button>
@@ -337,7 +337,7 @@ export function DocPickerSheet({ excludeIds, max, onPickMany, onClose }: {
                             <button
                                 type="button"
                                 onClick={() => toggle(d.id)}
-                                className="flex w-full items-center gap-3 px-4 py-4 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center gap-3 px-4 py-4 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <FileText className="h-[24px] w-[24px] shrink-0 text-ios-blue" strokeWidth={2} />
                                 <div className="min-w-0 flex-1">
@@ -377,7 +377,7 @@ function DocAttachmentSheet({ att, onClose }: { att: DocAttachment; onClose: () 
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="max-w-[60%] truncate text-[15px] font-semibold">{att.name}</span>
                 </div>
-                <button type="button" onClick={close} className="ml-auto text-[16px] font-medium text-ios-blue">
+                <button type="button" onClick={close} className="ms-auto text-[16px] font-medium text-ios-blue">
                     {t('mail.done', 'Done')}
                 </button>
             </div>
@@ -418,11 +418,11 @@ function NoteSheet({ title, body, onClose }: { title: string; body: string; onCl
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="max-w-[60%] truncate text-[15px] font-semibold">{title || t('mail.note', 'Note')}</span>
                 </div>
-                <button type="button" onClick={close} className="ml-auto text-[16px] font-medium text-ios-blue">
+                <button type="button" onClick={close} className="ms-auto text-[16px] font-medium text-ios-blue">
                     {t('mail.done', 'Done')}
                 </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar whitespace-pre-wrap px-5 pb-10 pt-2 text-[16px] leading-[1.55]">
+            <div dir="auto" className="min-h-0 flex-1 overflow-y-auto no-scrollbar whitespace-pre-wrap px-5 pb-10 pt-2 text-[16px] leading-[1.55]">
                 {body}
             </div>
         </div>
@@ -459,12 +459,12 @@ function StripAudioRow({ att }: { att: Extract<MailAttachment, { kind: 'audio' }
             >
                 {playing
                     ? <Pause className="h-[15px] w-[15px]" strokeWidth={2.4} fill="currentColor" />
-                    : <Play className="ml-0.5 h-[15px] w-[15px]" strokeWidth={2.4} fill="currentColor" />}
+                    : <Play className="ms-0.5 h-[15px] w-[15px]" strokeWidth={2.4} fill="currentColor" />}
             </button>
             <div className="min-w-0 flex-1">
                 <div className="truncate text-[16px] font-medium">{att.name || t('mail.voiceMemo', 'Voice Memo')}</div>
                 <div className="truncate text-[13px] text-ios-gray">
-                    {playing || position > 0 ? `${fmtDuration(position)} / ` : ''}{fmtDuration(att.duration)}
+                    <span dir="ltr">{playing || position > 0 ? `${fmtDuration(position)} / ` : ''}{fmtDuration(att.duration)}</span>
                 </div>
             </div>
         </>
@@ -521,12 +521,12 @@ function AudioAttachmentCard({ att, saved, onSave }: {
             >
                 {playing
                     ? <Pause className="h-[18px] w-[18px]" strokeWidth={2.4} fill="currentColor" />
-                    : <Play className="ml-0.5 h-[18px] w-[18px]" strokeWidth={2.4} fill="currentColor" />}
+                    : <Play className="ms-0.5 h-[18px] w-[18px]" strokeWidth={2.4} fill="currentColor" />}
             </button>
             <div className="min-w-0 flex-1">
                 <div className="truncate text-[15px] font-medium">{att.name || t('mail.voiceMemo', 'Voice Memo')}</div>
                 <div className="text-[13px] text-ios-gray">
-                    {playing || position > 0 ? `${fmtDuration(position)} / ` : ''}{fmtDuration(att.duration)}
+                    <span dir="ltr">{playing || position > 0 ? `${fmtDuration(position)} / ` : ''}{fmtDuration(att.duration)}</span>
                 </div>
             </div>
             {onSave && <SaveButton saved={saved} onSave={onSave} label={t('mail.saveToMemos', 'Save to Voice Memos')} />}
@@ -603,7 +603,7 @@ export function AttachmentsView({ attachments, accountEmail, messageId, canSave 
                         <button
                             type="button"
                             onClick={() => setOpenDoc(a)}
-                            className="flex min-w-0 flex-1 items-center gap-3 text-left active:opacity-70"
+                            className="flex min-w-0 flex-1 items-center gap-3 text-start active:opacity-70"
                         >
                             <FileText className="h-[22px] w-[22px] shrink-0 text-ios-blue" strokeWidth={2} />
                             <div className="min-w-0 flex-1">
@@ -627,12 +627,12 @@ export function AttachmentsView({ attachments, accountEmail, messageId, canSave 
                         <button
                             type="button"
                             onClick={() => setOpenNote(a)}
-                            className="flex min-w-0 flex-1 items-center gap-3 text-left active:opacity-70"
+                            className="flex min-w-0 flex-1 items-center gap-3 text-start active:opacity-70"
                         >
                             <StickyNote className="h-[22px] w-[22px] shrink-0 text-ios-orange" strokeWidth={2} />
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-[15px] font-medium">{a.title || t('mail.note', 'Note')}</div>
-                                <div className="line-clamp-2 text-[13px] leading-snug text-ios-gray">{a.body}</div>
+                                <div dir="auto" className="line-clamp-2 text-[13px] leading-snug text-ios-gray">{a.body}</div>
                             </div>
                         </button>
                         {showSave && (

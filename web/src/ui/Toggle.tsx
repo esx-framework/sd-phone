@@ -52,10 +52,10 @@ export function Toggle({ defaultOn = false, on, onChange, disabled = false, acti
                 className="absolute rounded-full bg-white transition-transform duration-[280ms]"
                 style={{
                     top:  pad,
-                    left: pad,
+                    insetInlineStart: pad,
                     width:  K,
                     height: K,
-                    transform:                value ? `translateX(${tx}px)` : 'translateX(0)',
+                    transform:                value ? `translateX(calc(var(--dir-x, 1) * ${tx}px))` : 'translateX(0)',
                     boxShadow:                THUMB_SHADOW,
                     transitionTimingFunction: 'cubic-bezier(0.25, 1, 0.5, 1)',
                 }}

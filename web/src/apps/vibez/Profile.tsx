@@ -63,7 +63,7 @@ export function Profile({ handle, onBack, onOpenPost, onSignOut, onSignOutAll, o
                     type="button"
                     onClick={onBack}
                     aria-label={t('vibez.back', 'Back')}
-                    className="absolute left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 active:opacity-70"
+                    className="absolute start-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 active:opacity-70"
                     style={{ top: SB_H + 2 }}
                 >
                     <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
@@ -81,13 +81,13 @@ export function Profile({ handle, onBack, onOpenPost, onSignOut, onSignOutAll, o
                         />
                     </div>
                     <div className="mt-3 flex items-center gap-1.5">
-                        <span className="text-[17px] font-semibold">@{profile?.username ?? handle ?? ''}</span>
+                        <span dir="ltr" className="text-[17px] font-semibold">@{profile?.username ?? handle ?? ''}</span>
                         {profile?.verified && (
                             <VerifiedBadge size={16} />
                         )}
                     </div>
                     {profile?.name && profile.name !== '' && profile.name !== profile.username && (
-                        <span className="mt-0.5 text-[13px] text-white/55">{profile.name}</span>
+                        <span dir="auto" className="mt-0.5 text-[13px] text-white/55">{profile.name}</span>
                     )}
 
                     <div className="mt-4 flex items-center gap-7">
@@ -120,7 +120,7 @@ export function Profile({ handle, onBack, onOpenPost, onSignOut, onSignOutAll, o
                     )}
 
                     {profile?.bio && profile.bio !== '' && (
-                        <p className="mt-3 text-center text-[13px] text-white/80">{profile.bio}</p>
+                        <p dir="auto" className="mt-3 text-center text-[13px] text-white/80">{profile.bio}</p>
                     )}
                 </div>
 
@@ -150,7 +150,7 @@ export function Profile({ handle, onBack, onOpenPost, onSignOut, onSignOutAll, o
                         >
                             <Thumb post={p} />
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/70 to-transparent" />
-                            <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-white drop-shadow">
+                            <div className="absolute bottom-1.5 start-1.5 flex items-center gap-1 text-white drop-shadow">
                                 <Play className="h-3 w-3" fill="#fff" strokeWidth={0} />
                                 <span className="text-[11px] font-semibold">{fmt(p.views)}</span>
                             </div>

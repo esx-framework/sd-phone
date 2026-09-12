@@ -112,12 +112,14 @@ function ThreadRow({ thread, scope, onOpen }: { thread: InboxThread; scope: Scop
     const title  = scope === 'job' ? phone(thread.key) : thread.name;
     const unread = (thread.unread ?? 0) > 0;
     return (
-        <button type="button" onClick={onOpen} className="flex w-full items-center gap-4 px-4 py-4 text-left active:bg-black/5 dark:active:bg-white/5">
+        <button type="button" onClick={onOpen} className="flex w-full items-center gap-4 px-4 py-4 text-start active:bg-black/5 dark:active:bg-white/5">
             <ServiceAvatar color={thread.color} emoji={thread.emoji} size={58} />
 
             <div className="min-w-0 flex-1">
-                <div className="truncate text-[20px] font-semibold text-black dark:text-white">{title}</div>
-                <div className={`mt-0.5 line-clamp-2 text-[17px] leading-snug ${unread ? 'font-semibold text-black dark:text-white' : 'font-medium text-black/90 dark:text-white/85'}`}>
+                <div className="truncate text-[20px] font-semibold text-black dark:text-white">
+                    {scope === 'job' ? <span dir="ltr">{title}</span> : title}
+                </div>
+                <div dir="auto" className={`mt-0.5 line-clamp-2 text-[17px] leading-snug ${unread ? 'font-semibold text-black dark:text-white' : 'font-medium text-black/90 dark:text-white/85'}`}>
                     {thread.preview}
                 </div>
             </div>
@@ -209,7 +211,9 @@ function Conversation({ scope, thread, onBack, onSent }: {
                 </div>
                 <div className="flex min-w-0 flex-col items-center gap-1.5">
                     <ServiceAvatar color={thread.color} emoji={thread.emoji} size={64} />
-                    <span className="max-w-[200px] truncate text-[18px] font-semibold leading-none text-black dark:text-white">{scope === 'job' ? phone(thread.key) : thread.name}</span>
+                    <span className="max-w-[200px] truncate text-[18px] font-semibold leading-none text-black dark:text-white">
+                        {scope === 'job' ? <span dir="ltr">{phone(thread.key)}</span> : thread.name}
+                    </span>
                 </div>
                 <div className="flex-1" />
             </div>
@@ -226,7 +230,7 @@ function Conversation({ scope, thread, onBack, onSent }: {
                             <div key={m.id} className={`flex ${isLast ? 'mb-3' : 'mb-[2px]'} ${sent ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`flex flex-col ${sent ? 'max-w-[78%] items-end' : 'max-w-[80%] items-start'}`}>
                                     {showName && m.name && (
-                                        <span className="mb-0.5 ml-1 text-[12px] font-semibold text-black/45 dark:text-white/45">{m.name}</span>
+                                        <span className="mb-0.5 ms-1 text-[12px] font-semibold text-black/45 dark:text-white/45">{m.name}</span>
                                     )}
                                     <MessageBubble
                                         msg={bubbleMsgs[i]}
@@ -248,7 +252,7 @@ function Conversation({ scope, thread, onBack, onSent }: {
                                             : undefined}
                                     />
                                     {!sent && isLast && (
-                                        <span className="ml-1 mt-1 text-[11px] text-black/35 dark:text-white/30">{clock(m.ts)}</span>
+                                        <span className="ms-1 mt-1 text-[11px] text-black/35 dark:text-white/30">{clock(m.ts)}</span>
                                     )}
                                 </div>
                             </div>

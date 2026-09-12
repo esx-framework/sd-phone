@@ -96,7 +96,7 @@ export function GroupsList({
                                         <button
                                             type="button"
                                             onClick={() => onSelectGroup(g)}
-                                            className="flex w-full items-center gap-3.5 px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                            className="flex w-full items-center gap-3.5 px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                         >
                                             {g.avatar ? (
                                                 <img

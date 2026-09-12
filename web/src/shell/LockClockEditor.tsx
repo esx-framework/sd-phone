@@ -85,7 +85,7 @@ export function LockClockEditor({ config, time, date, wallpaper, onChange, onClo
                                         >
                                             <img src={wp} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
                                             <div className="absolute inset-0 bg-black/25" />
-                                            <div className={`absolute inset-0 flex flex-col justify-center ${l.id === 'left' ? 'items-start pl-3.5' : l.id === 'right' ? 'items-end pr-3.5' : 'items-center'}`}>
+                                            <div dir="ltr" className={`absolute inset-0 flex flex-col justify-center ${l.id === 'left' ? 'items-start ps-3.5' : l.id === 'right' ? 'items-end pe-3.5' : 'items-center'}`}>
                                                 <Clockface time={time} date={date} config={{ ...config, layout: l.id }} size={26} />
                                             </div>
                                         </button>
@@ -115,7 +115,7 @@ export function LockClockEditor({ config, time, date, wallpaper, onChange, onClo
                     <div className="mt-3 h-px w-full bg-black/[0.14]" />
 
                     <div
-                        className="mt-3 grid grid-flow-col grid-rows-2 gap-x-3.5 gap-y-2.5 overflow-x-auto no-scrollbar py-2 pl-2 pr-3"
+                        className="mt-3 grid grid-flow-col grid-rows-2 gap-x-3.5 gap-y-2.5 overflow-x-auto no-scrollbar py-2 ps-2 pe-3"
                         style={{ gridAutoColumns: 'max-content' }}
                     >
                         {CLOCK_COLORS.map(c => {

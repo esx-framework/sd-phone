@@ -45,7 +45,7 @@ function Tile({ item, onOpen, onRemove }: {
                     type="button"
                     onClick={onRemove}
                     aria-label={t('mdt.evRemove', 'Remove evidence')}
-                    className="absolute -right-1.5 -top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_3px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06] transition-colors hover:text-ios-red dark:bg-elevated dark:ring-white/[0.10]"
+                    className="absolute -end-1.5 -top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_3px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06] transition-colors hover:text-ios-red dark:bg-elevated dark:ring-white/[0.10]"
                 >
                     <X className="h-[13px] w-[13px]" strokeWidth={2.6} />
                 </button>
@@ -84,7 +84,7 @@ export function MdtEvidence({ items, onChange, label }: {
             <div className="flex items-center gap-2">
                 <span className={mdtSectionHeader}>{label ?? t('mdt.evidence', 'Evidence')}</span>
                 {editable && (
-                    <span className="ml-auto flex items-center gap-1">
+                    <span className="ms-auto flex items-center gap-1">
                         <MdtButton size="sm" variant="text" disabled={full} onClick={() => setPicker(true)}>
                             <span className="flex items-center gap-1.5">
                                 <ImagePlus className="h-[14px] w-[14px]" strokeWidth={2.2} />

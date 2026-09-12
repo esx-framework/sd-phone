@@ -110,7 +110,7 @@ export function ChatPane() {
                             return (
                                 <div key={m.id} className={`flex flex-col ${grouped ? 'mt-[3px]' : 'mt-3'}`}>
                                     {!grouped && (
-                                        <div className={`mb-1 flex items-center gap-2 ${mine ? 'justify-end' : 'pl-[34px]'} ${mdtRowMeta}`}>
+                                        <div className={`mb-1 flex items-center gap-2 ${mine ? 'justify-end' : 'ps-[34px]'} ${mdtRowMeta}`}>
                                             {!mine && m.callsign && <Pill tone="green">{m.callsign}</Pill>}
                                             {!mine && (
                                                 <span className="min-w-0 truncate font-semibold text-black/70 dark:text-white/70">

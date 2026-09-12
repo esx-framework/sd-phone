@@ -90,7 +90,7 @@ export function Lobby({ chips, onPlay, onCashier, onLeaderboards, onRules }: {
                 <button type="button" onClick={onCashier} className="mx-auto mt-2 flex items-center gap-1.5 active:opacity-70">
                     <Coins className="h-[19px] w-[19px]" strokeWidth={2.5} style={{ color: TABLE.chip }} />
                     <span className="text-[22px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(chips)}</span>
-                    <span className="ml-0.5 text-[13px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
+                    <span className="ms-0.5 text-[13px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
                 </button>
 
                 <div className="mt-5 flex flex-col gap-3">
@@ -136,8 +136,8 @@ export function Lobby({ chips, onPlay, onCashier, onLeaderboards, onRules }: {
                             {t('casino.chipsLabel', 'Chips')}
                         </span>
                         <span className="flex items-center gap-3.5 text-[14px] font-semibold tabular-nums">
-                            <span><span className="font-extrabold text-[#9CCC65]">+{fmtChips(won)}</span> {t('casino.won', 'won')}</span>
-                            <span><span className="font-extrabold text-[#FF8A80]">-{fmtChips(lost)}</span> {t('casino.lost', 'lost')}</span>
+                            <span><span dir="ltr" className="font-extrabold text-[#9CCC65]">+{fmtChips(won)}</span> {t('casino.won', 'won')}</span>
+                            <span><span dir="ltr" className="font-extrabold text-[#FF8A80]">-{fmtChips(lost)}</span> {t('casino.lost', 'lost')}</span>
                         </span>
                     </div>
                     {failed && (

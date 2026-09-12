@@ -47,7 +47,7 @@ export function EditProfile({ profile, onChange, onSignOut, onSignOutAll, onSwit
                             {(profile.name || '?').slice(0, 1).toUpperCase()}
                         </span>
                     )}
-                    <p className="mt-3 text-[25px] font-bold text-black">{profile.name}, {profile.age}</p>
+                    <p className="mt-3 text-[25px] font-bold text-black"><span dir="auto">{profile.name}</span>, {profile.age}</p>
                     <p
                         className={`mt-1 h-[18px] text-[13px] font-medium leading-none transition-opacity ${profile.visible ? 'opacity-0' : 'opacity-100'}`}
                         style={{ color: CHERRY.pink }}
@@ -94,7 +94,7 @@ export function EditProfile({ profile, onChange, onSignOut, onSignOutAll, onSwit
                                         type="button"
                                         aria-label={t('cherry.removePhoto', 'Remove photo')}
                                         onClick={() => removePhoto(i)}
-                                        className="absolute bottom-1.5 right-1.5 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white shadow-md"
+                                        className="absolute bottom-1.5 end-1.5 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white shadow-md"
                                         style={{ color: CHERRY.nope }}
                                     >
                                         <X className="h-[15px] w-[15px]" strokeWidth={3} />
@@ -340,7 +340,7 @@ function BlockedSheet({ onClose }: { onClose: () => void }) {
                                         {e.name.slice(0, 1).toUpperCase()}
                                     </span>
                                 )}
-                                <span className="min-w-0 flex-1 truncate text-[19px] font-semibold text-black">
+                                <span dir="auto" className="min-w-0 flex-1 truncate text-[19px] font-semibold text-black">
                                     {e.name}{e.age ? `, ${e.age}` : ''}
                                 </span>
                                 <button

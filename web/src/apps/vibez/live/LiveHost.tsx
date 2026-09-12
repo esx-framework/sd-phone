@@ -212,7 +212,7 @@ export function LiveHost({ onClose }: { onClose: () => void }) {
                                 onAnimationEnd={() => setHearts(prev => prev.filter(x => x.id !== h.id))}
                                 className="absolute bottom-0 h-[26px] w-[26px]"
                                 fill="currentColor"
-                                style={{ color: HEART, left: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
+                                style={{ color: HEART, insetInlineStart: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
                             />
                         ))}
                     </div>

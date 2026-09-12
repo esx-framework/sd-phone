@@ -159,11 +159,11 @@ function NotificationBanner({ item, onDismiss, onOpen }: {
                     </span>
                 )}
                 <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[15px] font-semibold text-black dark:text-white">{item.title}</span>
+                    <span dir="auto" className="truncate text-[15px] font-semibold text-black dark:text-white">{item.title}</span>
                     <span className="shrink-0 text-[13px] text-black/45 dark:text-white/45">{item.time ?? t('shell.now','now')}</span>
                 </div>
                 {item.body && (
-                    <p className="mt-0.5 line-clamp-4 text-[15px] leading-snug text-black/80 dark:text-white/85">
+                    <p dir="auto" className="mt-0.5 line-clamp-4 text-[15px] leading-snug text-black/80 dark:text-white/85">
                         {hidePreview ? t('shell.notificationHidden', 'Notification hidden') : item.body}
                     </p>
                 )}

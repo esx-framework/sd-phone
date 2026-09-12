@@ -66,6 +66,7 @@ export function FairnessSheet({ commit, previous, ceiling, onClose }: {
                             )}
 
                             <div
+                                dir="ltr"
                                 className="mt-3 overflow-x-auto rounded-[14px] px-3.5 py-3"
                                 style={{ background: 'rgba(0,0,0,0.34)', boxShadow: `inset 0 1px 0 ${SURFACE.hair}` }}
                             >
@@ -149,6 +150,7 @@ function HashBlock({ label, value, tint }: { label: string; value: string | null
                 )}
             </div>
             <div
+                dir={value === null ? undefined : 'ltr'}
                 className="break-all rounded-[14px] px-3.5 py-2.5 font-mono text-[11px] leading-[16px]"
                 style={{ background: 'rgba(0,0,0,0.34)', color: value === null ? 'rgba(255,255,255,0.35)' : tint, boxShadow: `inset 0 1px 0 ${SURFACE.hair}` }}
             >

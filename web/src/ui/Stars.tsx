@@ -45,7 +45,7 @@ export function Stars({ value, size, onChange, color = GOLD }: {
                     <span key={i} className="relative inline-block" style={{ width: px, height: px }}>
                         <StarShape size={px} color={EMPTY} />
                         {frac > 0 && (
-                            <span className="absolute left-0 top-0 overflow-hidden" style={{ width: `${frac * 100}%`, height: px }}>
+                            <span className="absolute start-0 top-0 overflow-hidden" style={{ width: `${frac * 100}%`, height: px }}>
                                 <StarShape size={px} color={color} />
                             </span>
                         )}

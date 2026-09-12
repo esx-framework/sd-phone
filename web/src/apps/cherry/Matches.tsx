@@ -19,7 +19,7 @@ function Avatar({ match, size, dot }: { match: Match; size: number; dot?: boolea
             {dot && (
                 <span
                     className="absolute rounded-full"
-                    style={{ width: 18, height: 18, right: -7, top: '50%', transform: 'translateY(-50%)', background: CHERRY.pink, border: '3px solid #fff', boxSizing: 'content-box' }}
+                    style={{ width: 18, height: 18, insetInlineEnd: -7, top: '50%', transform: 'translateY(-50%)', background: CHERRY.pink, border: '3px solid #fff', boxSizing: 'content-box' }}
                 />
             )}
         </span>
@@ -59,7 +59,7 @@ export function Matches({ matches, seen, onOpen, onDiscover }: {
                         {fresh.map(m => (
                             <button key={m.id} type="button" onClick={() => onOpen(m.id)} className="flex w-[84px] shrink-0 flex-col items-center gap-1.5 active:opacity-70">
                                 <Avatar match={m} size={76} />
-                                <span className="max-w-full truncate text-[20px] font-semibold leading-snug text-black">{m.partner.name}</span>
+                                <span dir="auto" className="max-w-full truncate text-[20px] font-semibold leading-snug text-black">{m.partner.name}</span>
                             </button>
                         ))}
                     </div>
@@ -78,13 +78,13 @@ export function Matches({ matches, seen, onOpen, onDiscover }: {
                             const mine   = last.from === 'me';
                             const unread = !mine && last.ts > (seen[m.id] ?? 0);
                             return (
-                                <button key={m.id} type="button" onClick={() => onOpen(m.id)} className="flex items-center gap-4 rounded-[16px] px-2.5 py-2 text-left active:bg-black/5">
+                                <button key={m.id} type="button" onClick={() => onOpen(m.id)} className="flex items-center gap-4 rounded-[16px] px-2.5 py-2 text-start active:bg-black/5">
                                     <Avatar match={m} size={76} dot={unread} />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[20px] font-semibold leading-snug text-black">{m.partner.name}</p>
+                                        <p dir="auto" className="text-[20px] font-semibold leading-snug text-black">{m.partner.name}</p>
                                         <p className={`mt-0.5 flex items-center gap-1.5 truncate text-[17px] leading-snug ${unread ? 'font-semibold text-black/90' : 'text-black/70'}`}>
                                             {mine && <Reply className="h-[18px] w-[18px] shrink-0 text-black/55" strokeWidth={2.2} />}
-                                            <span className="truncate">{msgPreview(last)}</span>
+                                            <span dir="auto" className="truncate">{msgPreview(last)}</span>
                                         </p>
                                     </div>
                                 </button>

@@ -94,12 +94,12 @@ function RankListRow({ row, narrow, onPress }: { row: RankRow; narrow: boolean; 
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full items-center gap-3 text-left ${
+            className={`flex w-full items-center gap-3 text-start ${
                 isPhone ? `${cardRow} ${cardRowPad}` : `rounded-[10px] px-3 py-2 ${rowHover}`
             } ${row.you ? racingAccentSoft : ''}`}
         >
             <span
-                className={`w-10 shrink-0 text-right text-[15px] font-bold tabular-nums ${medal ? '' : 'text-ios-gray'}`}
+                className={`w-10 shrink-0 text-end text-[15px] font-bold tabular-nums ${medal ? '' : 'text-ios-gray'}`}
                 style={medal ? { color: medal } : undefined}
             >
                 {row.rank}
@@ -117,16 +117,16 @@ function RankListRow({ row, narrow, onPress }: { row: RankRow; narrow: boolean; 
 
             {!narrow && (
                 <>
-                    <span className="w-16 shrink-0 text-right text-[14px] font-medium tabular-nums text-ios-gray">
+                    <span className="w-16 shrink-0 text-end text-[14px] font-medium tabular-nums text-ios-gray">
                         {row.races}
                     </span>
-                    <span className="w-16 shrink-0 text-right text-[14px] font-medium tabular-nums text-ios-gray">
+                    <span className="w-16 shrink-0 text-end text-[14px] font-medium tabular-nums text-ios-gray">
                         {row.wins}
                     </span>
                 </>
             )}
             <span
-                className={`shrink-0 text-right text-[15px] font-bold tabular-nums text-black dark:text-white ${
+                className={`shrink-0 text-end text-[15px] font-bold tabular-nums text-black dark:text-white ${
                     narrow ? '' : 'w-20'
                 }`}
             >
@@ -257,16 +257,16 @@ export function RankingsPane() {
 
                     <div className="px-2">
                         <div className={`flex items-center gap-3 px-3 pb-1 pt-1 ${sectionHeader}`}>
-                            <span className="w-10 shrink-0 text-right">{t('racing.rank', 'Rank')}</span>
+                            <span className="w-10 shrink-0 text-end">{t('racing.rank', 'Rank')}</span>
                             <span className="w-[34px] shrink-0" />
                             <span className="min-w-0 flex-1">{t('racing.racer', 'Racer')}</span>
                             {!narrow && (
                                 <>
-                                    <span className="w-16 shrink-0 text-right">{t('racing.races', 'Races')}</span>
-                                    <span className="w-16 shrink-0 text-right">{t('racing.wins', 'Wins')}</span>
+                                    <span className="w-16 shrink-0 text-end">{t('racing.races', 'Races')}</span>
+                                    <span className="w-16 shrink-0 text-end">{t('racing.wins', 'Wins')}</span>
                                 </>
                             )}
-                            <span className={`shrink-0 text-right ${narrow ? '' : 'w-20'}`}>
+                            <span className={`shrink-0 text-end ${narrow ? '' : 'w-20'}`}>
                                 {t('racing.mmr', 'MMR')}
                             </span>
                         </div>

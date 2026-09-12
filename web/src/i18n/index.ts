@@ -152,10 +152,18 @@ export function getLocaleTag(): string {
     return LOCALE_TAGS[currentCode] ?? currentCode ?? 'en-US';
 }
 
+const RTL_CODES = new Set(['ar', 'fa', 'he', 'ur']);
+
+function isolated(value: string): string {
+    return RTL_CODES.has(currentCode.split('-')[0])
+        ? `⁨${value}⁩`
+        : value;
+}
+
 export function t(key: string, fallback: string, vars?: Record<string, string | number>): string {
     let s = active[key] ?? fallback;
     if (vars) {
-        for (const k in vars) s = s.split('{' + k + '}').join(String(vars[k]));
+        for (const k in vars) s = s.split('{' + k + '}').join(isolated(String(vars[k])));
     }
     return s;
 }

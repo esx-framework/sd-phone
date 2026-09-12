@@ -100,7 +100,7 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                         type="button"
                         onClick={submit}
                         disabled={!canPost}
-                        className={`pr-3 text-[17px] font-semibold ${canPost ? 'text-ios-blue active:opacity-60' : 'text-ios-blue/40'}`}
+                        className={`pe-3 text-[17px] font-semibold ${canPost ? 'text-ios-blue active:opacity-60' : 'text-ios-blue/40'}`}
                     >
                         {scheduling ? t('classifieds.schedule', 'Schedule') : submitLabel}
                     </button>
@@ -135,7 +135,7 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                                     type="button"
                                     onClick={() => setImages(imgs => imgs.filter((_, j) => j !== i))}
                                     aria-label={t('classifieds.removePhoto', 'Remove photo')}
-                                    className="absolute -right-2 -top-2 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-black/70 text-white shadow active:opacity-70"
+                                    className="absolute -end-2 -top-2 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-black/70 text-white shadow active:opacity-70"
                                 >
                                     <X className="h-4 w-4" strokeWidth={2.6} />
                                 </button>
@@ -192,7 +192,7 @@ export function CreateEntryPage({ pageTitle = t('classifieds.newPost', 'New Post
                                 <button
                                     type="button"
                                     onClick={() => setTimePicker(true)}
-                                    className="mt-3 flex w-full items-center gap-3 rounded-[14px] bg-surface p-4 text-left active:opacity-80"
+                                    className="mt-3 flex w-full items-center gap-3 rounded-[14px] bg-surface p-4 text-start active:opacity-80"
                                 >
                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios-blue text-white">
                                         <Clock className="h-[19px] w-[19px]" strokeWidth={2.3} />

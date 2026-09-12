@@ -49,7 +49,8 @@ export function BankCard({ holder, last4, expiry, style }: {
 
     return (
         <div
-            className="relative mx-auto w-full max-w-[420px] select-none overflow-hidden rounded-[20px] text-left font-sf text-white"
+            dir="ltr"
+            className="relative mx-auto w-full max-w-[420px] select-none overflow-hidden rounded-[20px] text-start font-sf text-white"
             style={{
                 aspectRatio: '1.586',
                 background: color.background,
@@ -75,14 +76,14 @@ export function BankCard({ holder, last4, expiry, style }: {
             <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(150deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(0deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 32%)' }} />
 
             <div className="absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-[14px]">
-                <span className="truncate pr-2 text-[24px] font-extrabold leading-none tracking-[-0.02em]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{bank.wordmark}</span>
+                <span className="truncate pe-2 text-[24px] font-extrabold leading-none tracking-[-0.02em]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{bank.wordmark}</span>
                 <div className="flex shrink-0 items-center gap-2 pt-0.5">
                     <span className="text-white/65"><Contactless size={20} /></span>
                     <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/55">{t('banking.debit', 'Debit')}</span>
                 </div>
             </div>
 
-            <div className="absolute left-4 top-[40%] -translate-y-1/2"><Chip gradientId={chipId} /></div>
+            <div className="absolute start-4 top-[40%] -translate-y-1/2"><Chip gradientId={chipId} /></div>
 
             <div className="absolute inset-x-4 bottom-[34px]">
                 <div className="flex items-center gap-[14px]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
@@ -96,8 +97,8 @@ export function BankCard({ holder, last4, expiry, style }: {
             </div>
 
             <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
-                <span className="min-w-0 flex-1 truncate pr-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/85">{holder}</span>
-                <div className="shrink-0 text-right leading-none">
+                <span className="min-w-0 flex-1 truncate pe-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/85">{holder}</span>
+                <div className="shrink-0 text-end leading-none">
                     <div className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-white/50">{t('banking.validThru', 'Valid thru')}</div>
                     <div className="mt-1 text-[15px] font-semibold tabular-nums tracking-wide text-white/90">{expiry}</div>
                 </div>

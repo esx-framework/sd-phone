@@ -7,7 +7,7 @@ export const DIAL_KEYS: { d: string; sub: string }[] = [
 
 export function Dialpad({ onPress }: { onPress: (digit: string) => void }) {
     return (
-        <div className="grid grid-cols-3 justify-items-center gap-y-4">
+        <div dir="ltr" className="grid grid-cols-3 justify-items-center gap-y-4">
             {DIAL_KEYS.map(k => (
                 <button
                     key={k.d}

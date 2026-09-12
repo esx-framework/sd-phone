@@ -142,15 +142,15 @@ export function Profile({ profile, me, handle, onBack, onEdit, onOpenPost, onTog
                     ) : (
                         <>
                             <div className="mt-2 flex items-center gap-1.5">
-                                <span className="text-[22px] font-extrabold text-label">{name}</span>
+                                <span dir="auto" className="text-[22px] font-extrabold text-label">{name}</span>
                                 {verified && <VerifiedBadge size={20} type={verifiedType} />}
                             </div>
-                            <div className="text-[16px]" style={{ color: META }}>@{displayHandle}</div>
+                            <div className="text-[16px]" style={{ color: META }}><span dir="ltr">@{displayHandle}</span></div>
                         </>
                     )}
 
                     {profile?.bio ? (
-                        <p className="mt-2 whitespace-pre-wrap text-[16px] leading-snug text-label">{profile.bio}</p>
+                        <p dir="auto" className="mt-2 whitespace-pre-wrap text-[16px] leading-snug text-label">{profile.bio}</p>
                     ) : null}
 
                     {profile?.joined ? (
@@ -176,8 +176,8 @@ export function Profile({ profile, me, handle, onBack, onEdit, onOpenPost, onTog
                     ))}
                     <span
                         aria-hidden
-                        className="absolute bottom-0 left-0 flex w-1/4 justify-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                        style={{ transform: `translateX(${TABS.indexOf(tab) * 100}%)` }}
+                        className="absolute bottom-0 start-0 flex w-1/4 justify-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        style={{ transform: `translateX(calc(var(--dir-x, 1) * ${TABS.indexOf(tab) * 100}%))` }}
                     >
                         <span className="h-[3px] w-12 rounded-full" style={{ background: BLUE }} />
                     </span>
@@ -220,7 +220,7 @@ export function Profile({ profile, me, handle, onBack, onEdit, onOpenPost, onTog
                 type="button"
                 onClick={onBack}
                 aria-label={t('squawk.back', 'Back')}
-                className="absolute left-3 top-[62px] z-10 flex h-9 w-9 items-center justify-center rounded-full text-white"
+                className="absolute start-3 top-[62px] z-10 flex h-9 w-9 items-center justify-center rounded-full text-white"
                 style={{ background: 'rgba(0,0,0,0.55)' }}
             >
                 <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />

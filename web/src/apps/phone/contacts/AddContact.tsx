@@ -113,6 +113,7 @@ function Field({ placeholder, value, onChange, inputMode }: {
     return (
         <input
             type="text"
+            dir={inputMode === 'tel' ? 'ltr' : 'auto'}
             inputMode={inputMode}
             value={value}
             onChange={e => onChange(e.target.value)}

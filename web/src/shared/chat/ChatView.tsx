@@ -305,7 +305,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                         >
                             <ChevronLeft className="h-[38px] w-[38px]" strokeWidth={2.4} />
                             {totalUnread > 0 && (
-                                <span className="-ml-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ios-blue px-1 text-[14px] font-semibold leading-none text-white">
+                                <span className="-ms-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ios-blue px-1 text-[14px] font-semibold leading-none text-white">
                                     {totalUnread}
                                 </span>
                             )}
@@ -343,7 +343,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                         </div>
                     )}
 
-                    <div className="flex flex-1 items-center justify-end gap-[18px] pr-1.5">
+                    <div className="flex flex-1 items-center justify-end gap-[18px] pe-1.5">
                         {!conv.groupName && device.calls && (
                             <>
                                 <button type="button" onClick={() => setCallConfirm('voice')} className="text-ios-blue active:opacity-60">
@@ -390,7 +390,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                                     const showName = !prev || prev.kind === 'separator' ||
                                         (prev.kind === 'msg' && prev.msg.from !== msg.from);
                                     return showName ? (
-                                        <span className="mb-0.5 ml-1 text-[15px] font-semibold"
+                                        <span className="mb-0.5 ms-1 text-[15px] font-semibold"
                                             style={{ color: contact?.color ?? '#888' }}>
                                             {contact?.name.split(' ')[0]}
                                         </span>
@@ -424,7 +424,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                                 />
 
                                 {sent && isLast && msg === lastSent && msg.kind === 'text' && (
-                                    <span className="mt-1 mr-1 text-[11px] text-black/45 dark:text-white/45">
+                                    <span className="mt-1 me-1 text-[11px] text-black/45 dark:text-white/45">
                                         {msg.seenAt
                                             ? t('messages.readAt', 'Read {time}', { time: readTime(msg.seenAt) })
                                             : t('messages.delivered', 'Delivered')}
@@ -440,7 +440,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                         <div className="flex max-w-[80%] flex-col items-start">
                             {conv.groupName && (
                                 <span
-                                    className="mb-0.5 ml-1 text-[15px] font-semibold"
+                                    className="mb-0.5 ms-1 text-[15px] font-semibold"
                                     style={{ color: typingPeer.color ?? '#888' }}
                                 >
                                     {typingPeer.name.split(' ')[0]}
@@ -485,7 +485,7 @@ export function ChatView({ conv, totalUnread, contacts, myNumber, onBack, onSend
                                     type="button"
                                     onClick={() => removeAttachment(i)}
                                     aria-label={t('messages.removeImageAria', 'Remove image')}
-                                    className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                    className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
                                 >
                                     <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                                 </button>

@@ -6,6 +6,7 @@ import { useNuiEvent } from '@/hooks/useNuiEvent';
 import { useSessionState } from '@/hooks/useSessionState';
 import { useDeckActive } from '@/shell/deckActive';
 import { useSessionStore } from '@/stores/sessionStore';
+import { dirSign } from '@/stores/directionStore';
 import { t } from '@/i18n';
 import { TabBar, type TabBarItem } from '@/ui/TabBar';
 import { apiLeaderboard, apiSummary } from './healthApi';
@@ -44,7 +45,8 @@ export function Health({ onClose }: { onClose: () => void }) {
 
     function goTab(next: HealthTab) {
         if (next === tab) return;
-        setTabDir(TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tab) ? 'right' : 'left');
+        const forward = TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tab);
+        setTabDir(forward === (dirSign() > 0) ? 'right' : 'left');
         setTab(next);
     }
 

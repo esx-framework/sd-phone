@@ -88,7 +88,7 @@ export function ShareSheet({ onClose, onShare, children, top = '55%' }: {
                                             ) : (
                                                 <PlaceholderAvatar size={80} />
                                             )}
-                                            <span className="absolute -bottom-0.5 -right-0.5 flex h-[27px] w-[27px] items-center justify-center rounded-full bg-surface shadow-sm ring-2 ring-base dark:bg-elevated">
+                                            <span className="absolute -bottom-0.5 -end-0.5 flex h-[27px] w-[27px] items-center justify-center rounded-full bg-surface shadow-sm ring-2 ring-base dark:bg-elevated">
                                                 <Smartphone className="h-[15px] w-[15px] text-black/60 dark:text-white/70" />
                                             </span>
                                         </span>
@@ -117,7 +117,7 @@ export function ShareSheet({ onClose, onShare, children, top = '55%' }: {
 
 export function ShareAction({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
     return (
-        <button type="button" onClick={onClick} className="flex w-full items-center justify-between rounded-[14px] bg-black/[0.05] px-5 py-5 text-left active:opacity-70 dark:bg-white/[0.06]">
+        <button type="button" onClick={onClick} className="flex w-full items-center justify-between rounded-[14px] bg-black/[0.05] px-5 py-5 text-start active:opacity-70 dark:bg-white/[0.06]">
             <span className="text-[18px] font-medium text-black dark:text-white">{label}</span>
             <span className="text-black/60 dark:text-white/70">{icon}</span>
         </button>

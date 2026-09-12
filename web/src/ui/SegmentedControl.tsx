@@ -23,8 +23,8 @@ export function SegmentedControl<T extends string>({ value, onChange, options, c
             {sliding && selected >= 0 && (
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-[2px] left-[2px] rounded-[8px] bg-elevated shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] dark:bg-control"
-                    style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(${selected * 100}%)` }}
+                    className="pointer-events-none absolute inset-y-[2px] start-[2px] rounded-[8px] bg-elevated shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] dark:bg-control"
+                    style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(calc(var(--dir-x, 1) * ${selected * 100}%))` }}
                 />
             )}
             {options.map(opt => (

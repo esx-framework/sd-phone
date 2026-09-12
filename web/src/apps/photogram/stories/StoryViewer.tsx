@@ -71,7 +71,7 @@ export function StoryViewer({ stories, startIndex, onClose }: { stories: StoryGr
 
             <div className="flex items-center gap-2.5 px-3.5 py-2.5">
                 <img src={story.user.avatar} alt="" draggable={false} className="h-[32px] w-[32px] rounded-full object-cover" />
-                <span className="text-[14px] font-semibold text-white">{story.user.handle}</span>
+                <span dir="auto" className="text-[14px] font-semibold text-white">{story.user.handle}</span>
                 {story.user.verified && <VerifiedCheck size={18} />}
                 <div className="flex-1" />
                 <button type="button" onClick={onClose} aria-label={t('common.close', 'Close')} className="text-white active:opacity-60">
@@ -94,8 +94,8 @@ export function StoryViewer({ stories, startIndex, onClose }: { stories: StoryGr
                 ) : (
                     <img src={activeUrl} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
                 )}
-                <button type="button" aria-label={t('photogram.previousStory', 'Previous')} onClick={() => advance(-1)} className="absolute inset-y-0 left-0 w-1/3" />
-                <button type="button" aria-label={t('photogram.nextStory', 'Next')} onClick={() => advance(1)} className="absolute inset-y-0 right-0 w-2/3" />
+                <button type="button" aria-label={t('photogram.previousStory', 'Previous')} onClick={() => advance(-1)} className="absolute inset-y-0 start-0 w-1/3" />
+                <button type="button" aria-label={t('photogram.nextStory', 'Next')} onClick={() => advance(1)} className="absolute inset-y-0 end-0 w-2/3" />
             </div>
 
             <div className="h-7 shrink-0" />

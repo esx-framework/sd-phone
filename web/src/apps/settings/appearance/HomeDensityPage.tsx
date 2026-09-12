@@ -111,7 +111,7 @@ function DockPreview({ style, wallpaper }: { style: DockStyle; wallpaper: string
         >
             {style !== 'hidden' && (
                 <div
-                    className="absolute bottom-[5px] left-[5px] right-[5px] flex items-center justify-around"
+                    className="absolute bottom-[5px] start-[5px] end-[5px] flex items-center justify-around"
                     style={{ height: 13, borderRadius: 5, ...tray }}
                 >
                     {Array.from({ length: DOCK_ICONS }, (_, i) => (
@@ -172,15 +172,15 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
                                 key={d}
                                 type="button"
                                 onClick={() => setHomeDensity(d)}
-                                className={`relative flex items-center gap-4 rounded-[14px] bg-surface px-4 py-4 text-left active:opacity-70 ${selected ? 'ring-2 ring-ios-blue' : ''}`}
+                                className={`relative flex items-center gap-4 rounded-[14px] bg-surface px-4 py-4 text-start active:opacity-70 ${selected ? 'ring-2 ring-ios-blue' : ''}`}
                             >
                                 <DensityPreview density={d} wallpaper={wallpaperHome} scale={homeIconScale} />
-                                <span className="flex min-w-0 flex-1 flex-col gap-1.5 pr-7">
+                                <span className="flex min-w-0 flex-1 flex-col gap-1.5 pe-7">
                                     <span className="text-[20px] font-semibold leading-tight">{label(d)}</span>
                                     <span className="text-[15px] leading-snug text-ios-gray">{describe(d)}</span>
                                 </span>
                                 {selected && (
-                                    <span className="absolute right-3 top-3 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ios-blue">
+                                    <span className="absolute end-3 top-3 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ios-blue">
                                         <Check className="h-[14px] w-[14px] text-white" strokeWidth={3} />
                                     </span>
                                 )}
@@ -239,7 +239,7 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
                                 <button
                                     type="button"
                                     onClick={() => setDockStyle(d)}
-                                    className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                    className="flex w-full items-center gap-3 px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                 >
                                     <DockPreview style={d} wallpaper={wallpaperHome} />
                                     <span className="flex min-w-0 flex-1 flex-col">
@@ -247,7 +247,7 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
                                         <span className="text-[13px] leading-snug text-ios-gray">{DOCK_HINT[d]}</span>
                                     </span>
                                     {dockStyle === d && (
-                                        <Check className="ml-1 h-[18px] w-[18px] shrink-0 text-ios-blue" strokeWidth={3} />
+                                        <Check className="ms-1 h-[18px] w-[18px] shrink-0 text-ios-blue" strokeWidth={3} />
                                     )}
                                 </button>
                             </div>
@@ -260,7 +260,7 @@ export function HomeDensityPage({ onBack }: { onBack: () => void }) {
                             onClick={() => setWallpaperParallax(!wallpaperParallax)}
                             className="flex w-full items-center px-4 py-3 active:bg-black/5 dark:active:bg-white/5"
                         >
-                            <span className="flex-1 text-left text-[17px] font-normal text-black dark:text-white">
+                            <span className="flex-1 text-start text-[17px] font-normal text-black dark:text-white">
                                 {t('settings.wallpaperParallax', 'Wallpaper Parallax')}
                             </span>
                             <div className="pointer-events-none">

@@ -60,13 +60,13 @@ function Row({ label, sub, value, example, highlight }: {
 }) {
     return (
         <div className="flex items-center justify-between border-t py-2 first:border-t-0" style={{ borderColor: SURFACE.hair }}>
-            <span className="flex min-w-0 flex-col pr-3">
+            <span className="flex min-w-0 flex-col pe-3">
                 <span className="text-[15px] font-bold text-white">{label}</span>
                 <span className="text-[13px] font-semibold text-white/55">{sub}</span>
             </span>
             <span className="flex shrink-0 flex-col items-end">
                 <span className="text-[15px] font-extrabold" style={{ color: highlight ? GOLD.top : '#fff' }}>{value}</span>
-                <span className="text-[13px] font-semibold tabular-nums text-white/55">{example}</span>
+                <span dir="ltr" className="text-[13px] font-semibold tabular-nums text-white/55">{example}</span>
             </span>
         </div>
     );

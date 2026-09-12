@@ -133,7 +133,7 @@ function List({ me, onClose, convos, onOpen, onCompose }: {
         <>
             <div className="flex items-center gap-3 px-4 pb-2">
                 <button type="button" onClick={onClose} aria-label={t('photogram.back', 'Back')} className="text-black active:opacity-50"><ArrowLeft className="h-[26px] w-[26px]" strokeWidth={2.2} /></button>
-                <div className="flex items-center gap-1.5"><span className="text-[26px] font-bold text-black">{me.handle}</span>{me.verified && <VerifiedCheck size={24} />}</div>
+                <div className="flex items-center gap-1.5"><span dir="auto" className="text-[26px] font-bold text-black">{me.handle}</span>{me.verified && <VerifiedCheck size={24} />}</div>
                 <div className="flex-1" />
                 <button type="button" onClick={onCompose} aria-label={t('photogram.newMessage', 'New message')} className="text-black active:opacity-50"><PenSquare className="h-[24px] w-[24px]" strokeWidth={1.9} /></button>
             </div>
@@ -155,11 +155,11 @@ function List({ me, onClose, convos, onOpen, onCompose }: {
                     </div>
                 ) : filtered.map((c, i) => (
                     <div key={c.id}>
-                        <button type="button" onClick={() => onOpen(c.user.handle)} className="flex w-full items-center gap-4 px-4 py-3.5 text-left active:bg-black/5">
+                        <button type="button" onClick={() => onOpen(c.user.handle)} className="flex w-full items-center gap-4 px-4 py-3.5 text-start active:bg-black/5">
                             <img src={c.user.avatar} alt="" draggable={false} className="h-[68px] w-[68px] rounded-full object-cover" />
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5"><span className="text-[20px] font-semibold text-black">{c.user.handle}</span>{c.user.verified && <VerifiedCheck size={20} />}</div>
-                                <div className={`mt-1 truncate text-[18px] ${c.unread > 0 ? 'font-semibold text-black' : ''}`} style={c.unread > 0 ? undefined : { color: IG.sub }}>{c.last ? previewOf(c.last) : ''}</div>
+                                <div className="flex items-center gap-1.5"><span dir="auto" className="text-[20px] font-semibold text-black">{c.user.handle}</span>{c.user.verified && <VerifiedCheck size={20} />}</div>
+                                <div dir="auto" className={`mt-1 truncate text-[18px] ${c.unread > 0 ? 'font-semibold text-black' : ''}`} style={c.unread > 0 ? undefined : { color: IG.sub }}>{c.last ? previewOf(c.last) : ''}</div>
                             </div>
                             {c.unread > 0 && <span className="h-[10px] w-[10px] shrink-0 rounded-full" style={{ background: IG.blue }} />}
                         </button>
@@ -206,11 +206,11 @@ function NewMessage({ onClose, onPick }: { onClose: () => void; onPick: (handle:
                 {results.length === 0 ? (
                     <div className="px-8 py-12 text-center text-[16px]" style={{ color: IG.sub }}>{query.trim() ? t('photogram.noAccountsFound', 'No accounts found.') : t('photogram.searchAccountToMessage', 'Search for an account to message.')}</div>
                 ) : results.map(u => (
-                    <button key={u.handle} type="button" onClick={() => onPick(u.handle)} className="flex w-full items-center gap-4 px-4 py-3 text-left active:bg-black/5">
+                    <button key={u.handle} type="button" onClick={() => onPick(u.handle)} className="flex w-full items-center gap-4 px-4 py-3 text-start active:bg-black/5">
                         <img src={u.avatar} alt="" draggable={false} className="h-[56px] w-[56px] rounded-full object-cover" />
                         <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5"><span className="text-[19px] font-semibold text-black">{u.handle}</span>{u.verified && <VerifiedCheck size={18} />}</div>
-                            {u.name && <div className="truncate text-[16px]" style={{ color: IG.sub }}>{u.name}</div>}
+                            <div className="flex items-center gap-1.5"><span dir="auto" className="text-[19px] font-semibold text-black">{u.handle}</span>{u.verified && <VerifiedCheck size={18} />}</div>
+                            {u.name && <div dir="auto" className="truncate text-[16px]" style={{ color: IG.sub }}>{u.name}</div>}
                         </div>
                     </button>
                 ))}

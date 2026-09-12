@@ -64,7 +64,7 @@ export function Wheel({ wheelDeg, ballDeg, ballR, ballSnap, onSettled }: {
     }
 
     return (
-        <div className="relative" style={{ width: WHEEL_SIZE, height: WHEEL_SIZE }}>
+        <div dir="ltr" className="relative" style={{ width: WHEEL_SIZE, height: WHEEL_SIZE }}>
             <div className="absolute inset-0" style={{ transform: `rotate(${wheelDeg}deg)`, transition: WHEEL_TRANS, willChange: 'transform' }}>
                 <svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox={`0 0 ${VIEW} ${VIEW}`} style={{ display: 'block' }} aria-hidden="true">
                     <defs>

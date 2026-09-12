@@ -139,7 +139,7 @@ export function Account({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={onClose}
                     aria-label={t('ryde.close', 'Close')}
-                    className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.08] text-black active:opacity-60 dark:bg-white/10 dark:text-white"
+                    className="-me-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.08] text-black active:opacity-60 dark:bg-white/10 dark:text-white"
                 >
                     <X className="h-[20px] w-[20px]" strokeWidth={2.4} />
                 </button>
@@ -170,49 +170,49 @@ export function Account({ onClose }: { onClose: () => void }) {
                 <Section title={t('ryde.account', 'Account')}>
                     <button
                         onClick={() => setPwOpen(true)}
-                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: 'rgb(var(--ios-blue))' }}>
                             <KeyRound className="h-[21px] w-[21px] text-white" strokeWidth={2.2} />
                         </div>
                         <span className="flex-1 text-[18px] font-medium text-black dark:text-white">{t('ryde.changePassword', 'Change password')}</span>
                         <ChevronRight className="h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
-                        <div className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control" style={{ left: '70px', height: '0.5px' }} />
+                        <div className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control" style={{ insetInlineStart: '70px', height: '0.5px' }} />
                     </button>
                     <button
                         onClick={() => setSwitching(true)}
-                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: 'rgb(var(--ios-blue))' }}>
                             <Users className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
                         </div>
                         <span className="flex-1 text-[18px] font-medium text-black dark:text-white">{t('accounts.switchAccount', 'Switch account')}</span>
                         <ChevronRight className="h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
-                        <div className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control" style={{ left: '70px', height: '0.5px' }} />
+                        <div className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control" style={{ insetInlineStart: '70px', height: '0.5px' }} />
                     </button>
                     <button
                         onClick={() => setConfirmSignOut(true)}
-                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: '#FF3B30' }}>
                             <LogOut className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
                         </div>
                         <span className="flex-1 text-[18px] font-medium text-ios-red">{t('ryde.signOut', 'Sign out')}</span>
-                        <div className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control" style={{ left: '70px', height: '0.5px' }} />
+                        <div className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control" style={{ insetInlineStart: '70px', height: '0.5px' }} />
                     </button>
                     <button
                         onClick={() => setConfirmSignOutAll(true)}
-                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: '#FF3B30' }}>
                             <LogOut className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
                         </div>
                         <span className="flex-1 text-[18px] font-medium text-ios-red">{t('accounts.signOutAll', 'Log Out of All Accounts')}</span>
-                        <div className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control" style={{ left: '70px', height: '0.5px' }} />
+                        <div className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control" style={{ insetInlineStart: '70px', height: '0.5px' }} />
                     </button>
                     <button
                         onClick={() => setConfirmDelete(true)}
-                        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: '#FF3B30' }}>
                             <Trash2 className="h-[20px] w-[20px] text-white" strokeWidth={2.2} />
@@ -303,7 +303,7 @@ function Row({ icon, iconBg, label, value, onClick, divider = false }: {
     icon: React.ReactNode; iconBg: string; label: string; value?: string; onClick?: () => void; divider?: boolean;
 }) {
     return (
-        <button onClick={onClick} className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5">
+        <button onClick={onClick} className="relative flex w-full items-center gap-3.5 px-4 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5">
             <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[9px] shadow-sm" style={{ background: iconBg }}>
                 {icon}
             </div>
@@ -311,7 +311,7 @@ function Row({ icon, iconBg, label, value, onClick, divider = false }: {
             {value && <span className="shrink-0 text-[16px] text-ios-gray">{value}</span>}
             <ChevronRight className="h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
             {divider && (
-                <div className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control" style={{ left: `${ROW_DIVIDER_LEFT}px`, height: '0.5px' }} />
+                <div className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control" style={{ insetInlineStart: `${ROW_DIVIDER_LEFT}px`, height: '0.5px' }} />
             )}
         </button>
     );

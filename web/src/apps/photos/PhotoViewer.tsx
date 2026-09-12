@@ -7,6 +7,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { ShareAction, ShareSheet } from '@/shared/ShareSheet';
 import { useCopied } from '@/hooks/useCopied';
+import { dirSign } from '@/stores/directionStore';
 import { VideoView } from './VideoView';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
@@ -117,14 +118,14 @@ export function PhotoViewer({
                     startX.current = e.clientX;
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                 }}
-                onPointerMove={e => { if (dragging) setDrag(e.clientX - startX.current); }}
+                onPointerMove={e => { if (dragging) setDrag((e.clientX - startX.current) * dirSign()); }}
                 onPointerUp={endDrag}
                 onPointerCancel={endDrag}
             >
                 <div
                     className="flex h-full"
                     style={{
-                        transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
+                        transform: `translateX(calc(var(--dir-x, 1) * (${-index * 100}% + ${drag}px)))`,
                         transition: dragging ? 'none' : 'transform 0.25s ease-out',
                     }}
                 >

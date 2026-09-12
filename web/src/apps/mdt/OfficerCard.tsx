@@ -263,7 +263,7 @@ export function OfficerCard({ officer, grades = [], onChanged, onDismissed }: {
                                         key={file.ref}
                                         type="button"
                                         onClick={() => open('affairs', file.ref)}
-                                        className={`-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-[8px] px-2 py-1.5 text-left ${mdtRowHover}`}
+                                        className={`-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-[8px] px-2 py-1.5 text-start ${mdtRowHover}`}
                                     >
                                         <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-black dark:text-white">
                                             {file.title}

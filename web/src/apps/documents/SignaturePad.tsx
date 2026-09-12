@@ -129,7 +129,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { onInkChange?: (hasI
         }));
 
         return (
-            <div className="relative overflow-hidden rounded-[12px] border border-black/10 bg-white">
+            <div dir="ltr" className="relative overflow-hidden rounded-[12px] border border-black/10 bg-white">
                 <canvas
                     ref={canvasRef}
                     className="block h-[150px] w-full touch-none"

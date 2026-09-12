@@ -34,7 +34,7 @@ export function AllTransactions({ transactions, onBack, onSelectTx }: { transact
                     <div key={day.key} className="mb-4">
                         <div className="flex items-baseline justify-between px-1 pb-2 pt-1">
                             <span className="text-[17px] font-semibold">{day.label}</span>
-                            <span className={`text-[17px] font-semibold tabular-nums ${
+                            <span dir="ltr" className={`text-[17px] font-semibold tabular-nums ${
                                 day.total > 0 ? 'text-[#34c759]' : day.total < 0 ? 'text-ios-red' : 'text-black/45 dark:text-white/45'
                             }`}>
                                 {fmtAmount(day.total)}

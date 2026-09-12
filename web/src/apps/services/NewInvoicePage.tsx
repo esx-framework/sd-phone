@@ -82,7 +82,7 @@ export function NewInvoicePage({ onClose, onSent }: {
                         type="button"
                         onClick={() => void submit()}
                         disabled={!canSend}
-                        className={`pr-3 text-[17px] font-semibold ${canSend ? 'text-ios-blue active:opacity-60' : 'text-ios-blue/40'}`}
+                        className={`pe-3 text-[17px] font-semibold ${canSend ? 'text-ios-blue active:opacity-60' : 'text-ios-blue/40'}`}
                     >
                         {t('services.sendShort', 'Send')}
                     </button>
@@ -95,6 +95,7 @@ export function NewInvoicePage({ onClose, onSent }: {
                     <div className="mb-6 flex items-center gap-3">
                         <input
                             type="tel"
+                            dir="ltr"
                             inputMode="tel"
                             aria-label={t('services.recipientNumber', 'Recipient number')}
                             value={number ? (isServerId ? recipientDigits : formatPhonePartial(number)) : ''}
@@ -113,7 +114,7 @@ export function NewInvoicePage({ onClose, onSent }: {
                     </div>
 
                     <Label required>{t('services.amount', 'Amount')}</Label>
-                    <div className="mb-6 flex items-center gap-1.5 rounded-[14px] bg-surface px-4 py-4">
+                    <div dir="ltr" className="mb-6 flex items-center gap-1.5 rounded-[14px] bg-surface px-4 py-4">
                         <span className="text-[18px] font-medium text-black/45 dark:text-white/45">$</span>
                         <input
                             value={amount ? amountNum.toLocaleString('en-US') : ''}

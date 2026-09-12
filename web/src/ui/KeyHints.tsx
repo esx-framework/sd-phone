@@ -17,10 +17,10 @@ export interface KeyHint {
 export const HINT_DEFAULTS: HintConfig = { enabled: true, corner: 'top-right', columns: 2 };
 
 const CORNER_CLASS: Record<HintCorner, string> = {
-    'top-right':    'right-4 top-4',
-    'top-left':     'left-4 top-4',
-    'bottom-right': 'right-4 bottom-4',
-    'bottom-left':  'left-4 bottom-4',
+    'top-right':    'end-4 top-4',
+    'top-left':     'start-4 top-4',
+    'bottom-right': 'end-4 bottom-4',
+    'bottom-left':  'start-4 bottom-4',
 };
 
 export function KeyHints({ hints, config }: { hints: KeyHint[]; config: HintConfig }) {
@@ -52,7 +52,7 @@ export function KeyHints({ hints, config }: { hints: KeyHint[]; config: HintConf
                                     opacity:      shown ? 1 : 0,
                                     maxHeight:    shown ? 24 : 0,
                                     marginBottom: shown ? 6 : 0,
-                                    transform:    shown ? 'translateX(0)' : `translateX(${edgeRight ? 8 : -8}px)`,
+                                    transform:    shown ? 'translateX(0)' : `translateX(calc(var(--dir-x, 1) * ${edgeRight ? 8 : -8}px))`,
                                 }}
                                 aria-hidden={!shown}
                             >

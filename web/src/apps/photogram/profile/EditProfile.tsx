@@ -86,7 +86,7 @@ export function EditProfile({ profile, onCancel, onSave, onSignOut, onSignOutAll
                     </div>
 
                     <div className="flex items-center justify-between px-4 py-3.5">
-                        <div className="pr-4">
+                        <div className="pe-4">
                             <div className="text-[18px] font-semibold text-black">{t('photogram.privateAccount', 'Private account')}</div>
                             <div className="mt-0.5 text-[14px] leading-snug text-black/50">{t('photogram.privateAccountDesc', 'Only approved followers can see your posts.')}</div>
                         </div>

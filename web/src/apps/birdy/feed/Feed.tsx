@@ -66,8 +66,8 @@ export function Feed({ posts, me, feed, onFeedChange, onRefresh, onToggleLike, o
                     <FeedTab label={t('squawk.following', 'Following')} active={feed === 'following'} onClick={() => onFeedChange('following')} />
                     <span
                         aria-hidden
-                        className="absolute bottom-0 left-0 flex w-1/2 justify-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                        style={{ transform: feed === 'following' ? 'translateX(100%)' : 'translateX(0)' }}
+                        className="absolute bottom-0 start-0 flex w-1/2 justify-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        style={{ transform: feed === 'following' ? 'translateX(calc(var(--dir-x, 1) * 100%))' : 'translateX(0)' }}
                     >
                         <span className="h-[3.5px] w-14 rounded-full" style={{ background: BLUE }} />
                     </span>

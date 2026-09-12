@@ -215,7 +215,7 @@ export function RaceStartBoard({ board, x, y, lineup }: {
                     </span>
                 )}
 
-                <span className="ml-auto flex shrink-0 items-center gap-2">
+                <span className="ms-auto flex shrink-0 items-center gap-2">
                     <span
                         className="flex h-[20px] min-w-[20px] items-center justify-center rounded-[5px] px-1"
                         style={{

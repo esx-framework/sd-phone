@@ -48,7 +48,7 @@ export function AppDetail({ app, desc, installed, downloadProgress, onBack, onIn
         <div
             className="absolute inset-0 z-20 flex flex-col bg-base font-sf"
             style={{
-                transform:  shown ? 'translateX(0)' : 'translateX(100%)',
+                transform:  shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))',
                 transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
             }}
             onTransitionEnd={() => { if (!shown) onBack(); }}
@@ -58,13 +58,13 @@ export function AppDetail({ app, desc, installed, downloadProgress, onBack, onIn
             <div className="flex items-center px-3 pb-1">
                 <button type="button" onClick={() => setShown(false)} className="flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('appstore.apps', 'Apps')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('appstore.apps', 'Apps')}</span>
                 </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
                 <div className="flex items-center gap-4 pt-2">
-                    <div className="shrink-0 overflow-hidden" style={{ width: 100, height: 100, borderRadius: '22.5%', boxShadow: '0 1px 5px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08)' }}>
+                    <div dir="ltr" className="shrink-0 overflow-hidden" style={{ width: 100, height: 100, borderRadius: '22.5%', boxShadow: '0 1px 5px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08)' }}>
                         <div style={{ width: 60, height: 60, transform: 'scale(1.6667)', transformOrigin: '0 0' }}>
                             <AppIconSVG icon={app.icon} />
                         </div>
@@ -119,7 +119,7 @@ function InfoRow({ label, value, last }: { label: string; value: string; last?: 
     return (
         <div className={`flex items-center justify-between gap-4 py-3.5 ${last ? '' : 'border-b border-hairline/10'}`}>
             <span className="shrink-0 text-[18px] text-black/55 dark:text-white/55">{label}</span>
-            <span className="truncate text-right text-[18px] font-medium text-black dark:text-white">{value}</span>
+            <span className="truncate text-end text-[18px] font-medium text-black dark:text-white">{value}</span>
         </div>
     );
 }

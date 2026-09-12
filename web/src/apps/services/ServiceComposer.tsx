@@ -81,7 +81,7 @@ export function ServiceComposer({ isDark, onSend }: {
                                 type="button"
                                 onClick={() => removeAttachment(i)}
                                 aria-label={t('services.removeImage', 'Remove image')}
-                                className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
                             >
                                 <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                             </button>
@@ -92,7 +92,7 @@ export function ServiceComposer({ isDark, onSend }: {
 
             <div className="px-3 pb-2 pt-1.5">
                 <div
-                    className={`flex items-center gap-1 rounded-[22px] py-[9px] pl-4 ${hasContent ? 'pr-[5px]' : 'pr-4'}`}
+                    className={`flex items-center gap-1 rounded-[22px] py-[9px] ps-4 ${hasContent ? 'pe-[5px]' : 'pe-4'}`}
                     style={{ background: pillBg, border: `0.5px solid ${pillBdr}` }}
                 >
                     <input

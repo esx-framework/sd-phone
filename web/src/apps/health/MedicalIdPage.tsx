@@ -107,7 +107,7 @@ function FieldSheet({ field, value, onSave, onClose }: {
                             onChange={e => setDraft(e.target.value)}
                             className="w-full resize-none rounded-[12px] bg-surface px-3.5 py-3 text-[17px] leading-snug text-black outline-none placeholder:text-ios-gray dark:text-white"
                         />
-                        <p className="px-1 pt-1.5 text-right text-[13px] tabular-nums text-ios-gray">
+                        <p className="px-1 pt-1.5 text-end text-[13px] tabular-nums text-ios-gray">
                             {MEDICAL_LIMITS[field] - draft.length}
                         </p>
                     </div>

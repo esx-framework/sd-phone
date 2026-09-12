@@ -77,17 +77,19 @@ export function Home() {
             </div>
 
             <div className="relative min-h-0 flex-1 overflow-hidden">
-                <MapView
-                    chromeTop="12px"
-                    chromeBottom={idle ? `${sheetH + 8}px` : '24px'}
-                    insetBottom={idle ? sheetH : 24}
-                    centerTo={centerOn ?? undefined}
-                    placing={placingDrop}
-                    onPlace={(x, y) => onPlaceDrop(x, y)}
-                >
-                    {me && <LiveDot x={me.x} y={me.y} heading={me.h} />}
-                    {dropoff && <Pin x={dropoff.x} y={dropoff.y}><DropoffPin /></Pin>}
-                </MapView>
+                <div dir="ltr" className="h-full w-full">
+                    <MapView
+                        chromeTop="12px"
+                        chromeBottom={idle ? `${sheetH + 8}px` : '24px'}
+                        insetBottom={idle ? sheetH : 24}
+                        centerTo={centerOn ?? undefined}
+                        placing={placingDrop}
+                        onPlace={(x, y) => onPlaceDrop(x, y)}
+                    >
+                        {me && <LiveDot x={me.x} y={me.y} heading={me.h} />}
+                        {dropoff && <Pin x={dropoff.x} y={dropoff.y}><DropoffPin /></Pin>}
+                    </MapView>
+                </div>
 
                 {placingDrop && (
                     <>
@@ -125,11 +127,11 @@ export function Home() {
                         <div ref={bodyRef} className="px-4 pb-4 pt-1">
                             <button onClick={() => setPicking(true)} className="mb-3 flex w-full items-center gap-3 rounded-full bg-black/[0.07] px-5 py-[15px] active:bg-hairline/10 dark:active:bg-white/15">
                                 <Search className="h-[24px] w-[24px] shrink-0 text-black dark:text-white" strokeWidth={2.6} />
-                                <span className="flex-1 text-left text-[21px] font-bold tracking-tight text-black/85 dark:text-white/90">{t('ryde.whereTo', 'Where to?')}</span>
+                                <span className="flex-1 text-start text-[21px] font-bold tracking-tight text-black/85 dark:text-white/90">{t('ryde.whereTo', 'Where to?')}</span>
                             </button>
 
                             <div className="no-scrollbar overflow-y-auto" style={{ maxHeight: 252 }}>
-                                <button onClick={pickOnMap} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-left active:bg-black/5 dark:active:bg-white/5">
+                                <button onClick={pickOnMap} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-start active:bg-black/5 dark:active:bg-white/5">
                                     <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-black/[0.07] text-black dark:bg-white/10 dark:text-white"><Crosshair className="h-[24px] w-[24px]" /></span>
                                     <span className="min-w-0">
                                         <span className="block truncate text-[18px] font-semibold text-black dark:text-white">{t('ryde.setLocationOnMap', 'Set location on map')}</span>
@@ -197,21 +199,21 @@ function PickRow({ onClick, icon, iconClass, name, sub, divider }: {
 }) {
     return (
         <div className="relative">
-            <button onClick={onClick} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-left active:bg-black/5 dark:active:bg-white/5">
+            <button onClick={onClick} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-start active:bg-black/5 dark:active:bg-white/5">
                 <span className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-black/[0.07] dark:bg-white/10 ${iconClass}`}>{icon}</span>
                 <span className="min-w-0">
                     <span className="block truncate text-[18px] font-semibold text-black dark:text-white">{name}</span>
                     <span className="block truncate text-[15px] text-ios-gray">{sub}</span>
                 </span>
             </button>
-            {divider && <div className="absolute bottom-0 left-1 right-0 h-px bg-hairline/[0.08]" />}
+            {divider && <div className="absolute bottom-0 start-1 end-0 h-px bg-hairline/[0.08]" />}
         </div>
     );
 }
 
 function Saved({ icon, place, onPick }: { icon: React.ReactNode; place: Place; onPick: (p: Place) => void }) {
     return (
-        <button onClick={() => onPick(place)} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-left active:bg-black/5 dark:active:bg-white/5">
+        <button onClick={() => onPick(place)} className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-start active:bg-black/5 dark:active:bg-white/5">
             <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-black/[0.07] text-black/70 dark:bg-white/10 dark:text-white/80">{icon}</span>
             <span className="min-w-0">
                 <span className="block truncate text-[18px] font-semibold text-black dark:text-white">{place.name}</span>

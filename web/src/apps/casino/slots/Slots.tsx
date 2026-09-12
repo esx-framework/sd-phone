@@ -275,7 +275,7 @@ export function Slots({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4">
-                <div style={{ width: CAB_W, borderRadius: 26, padding: 3, background: GOLD_FRAME, boxShadow: CARD_SHADOW }}>
+                <div dir="ltr" style={{ width: CAB_W, borderRadius: 26, padding: 3, background: GOLD_FRAME, boxShadow: CARD_SHADOW }}>
                     <div
                         style={{
                             borderRadius: 23,
@@ -528,7 +528,7 @@ function PaytableSheet({ onClose }: { onClose: () => void }) {
                         <span className="text-[12px] font-bold uppercase tracking-wide text-white/45">{t('slots.paylines', 'Paylines')}</span>
                         <span className="text-[13px] font-semibold text-white/55">{t('slots.lines', '5 lines')}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl px-3 py-2" style={{ background: SURFACE.soft, border: `1px solid ${SURFACE.hair}` }}>
+                    <div dir="ltr" className="flex items-center justify-between rounded-2xl px-3 py-2" style={{ background: SURFACE.soft, border: `1px solid ${SURFACE.hair}` }}>
                         {PAYLINES.map((rows, i) => <PaylineChip key={i} rows={rows} />)}
                     </div>
 

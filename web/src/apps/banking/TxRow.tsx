@@ -29,7 +29,7 @@ const TxRow = memo(function TxRow({ tx, onSelect, hideAmount }: { tx: BankTx; on
         <>
             <TxAvatar tx={tx} meta={meta} size={50} />
             <div className="min-w-0 flex-1">
-                <div className="truncate text-[18.5px] font-semibold leading-tight">{tx.merchant}</div>
+                <div dir="auto" className="truncate text-[18.5px] font-semibold leading-tight">{tx.merchant}</div>
                 <div className="mt-1 flex items-center gap-1.5 text-[16.5px] text-black dark:text-white">
                     <span className="truncate">{meta.label}</span>
                     <span className="opacity-50">·</span>
@@ -39,7 +39,7 @@ const TxRow = memo(function TxRow({ tx, onSelect, hideAmount }: { tx: BankTx; on
                     )}
                 </div>
             </div>
-            <span className={`shrink-0 text-[19px] font-semibold tabular-nums tracking-tight ${isIncome ? 'text-[#34c759]' : 'text-black dark:text-white'} ${tx.pending ? 'opacity-55' : ''}`}>
+            <span dir="ltr" className={`shrink-0 text-[19px] font-semibold tabular-nums tracking-tight ${isIncome ? 'text-[#34c759]' : 'text-black dark:text-white'} ${tx.pending ? 'opacity-55' : ''}`}>
                 {hideAmount ? HIDDEN_TEXT : fmtAmount(tx.amount)}
             </span>
         </>
@@ -47,7 +47,7 @@ const TxRow = memo(function TxRow({ tx, onSelect, hideAmount }: { tx: BankTx; on
 
     if (selectable) {
         return (
-            <button type="button" onClick={() => onSelect!(tx)} className="flex w-full items-center gap-3.5 px-4 py-[18px] text-left transition-colors active:bg-black/[0.06] dark:active:bg-white/[0.08]">
+            <button type="button" onClick={() => onSelect!(tx)} className="flex w-full items-center gap-3.5 px-4 py-[18px] text-start transition-colors active:bg-black/[0.06] dark:active:bg-white/[0.08]">
                 {inner}
             </button>
         );

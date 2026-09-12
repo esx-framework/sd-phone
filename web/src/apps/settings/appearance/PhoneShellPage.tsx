@@ -385,7 +385,7 @@ export function PhoneShellPage({ onBack }: { onBack: () => void }) {
                                 key={s.id}
                                 type="button"
                                 onClick={() => setShell(s.id)}
-                                className={`flex items-center gap-4 rounded-[14px] bg-surface px-4 py-4 text-left active:opacity-70 ${selected ? 'ring-2 ring-ios-blue' : ''}`}
+                                className={`flex items-center gap-4 rounded-[14px] bg-surface px-4 py-4 text-start active:opacity-70 ${selected ? 'ring-2 ring-ios-blue' : ''}`}
                             >
                                 <ShellPreview shell={s} frameColor={DEFAULT_FRAME_COLOR} />
                                 <span className="flex min-w-0 flex-1 flex-col gap-1">

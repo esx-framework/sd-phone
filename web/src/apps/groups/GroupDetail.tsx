@@ -93,7 +93,7 @@ export function GroupDetail({
                     className="flex items-center text-ios-blue active:opacity-60"
                 >
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('groups.groups', 'Groups')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('groups.groups', 'Groups')}</span>
                 </button>
 
                 {isLeader && (
@@ -138,7 +138,7 @@ export function GroupDetail({
                             </div>
                         )}
                         {isLeader && (
-                            <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-base bg-ios-blue">
+                            <span className="absolute -bottom-1 -end-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-base bg-ios-blue">
                                 <Camera className="h-[17px] w-[17px] text-white" strokeWidth={2} />
                             </span>
                         )}
@@ -172,7 +172,7 @@ export function GroupDetail({
                             type="button"
                             onClick={() => void handleToggleActive()}
                             disabled={busy}
-                            className="flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                            className="flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                         >
                             <span className="flex-1 text-[18px] font-normal">
                                 {shownActive ? t('groups.currentlyActive', 'Currently Active') : t('groups.setAsActive', 'Set as Active')}
@@ -209,7 +209,7 @@ export function GroupDetail({
                                             </div>
                                             {m.online && (
                                                 <span
-                                                    className="absolute -bottom-[1px] -right-[1px] h-[12px] w-[12px] rounded-full border-[2px] border-surface"
+                                                    className="absolute -bottom-[1px] -end-[1px] h-[12px] w-[12px] rounded-full border-[2px] border-surface"
                                                     style={{ background: '#34c759' }}
                                                 />
                                             )}

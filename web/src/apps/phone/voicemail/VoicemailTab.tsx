@@ -146,6 +146,7 @@ function Row({ vm, title, contact, open, onToggle, onCallBack, onRequestDelete }
     onRequestDelete: () => void;
 }) {
     const [armed, setArmed] = useState(open);
+    const numeric = !!vm.number && !contact && !vm.name;
 
     useEffect(() => {
         if (!open || armed) return;
@@ -155,9 +156,9 @@ function Row({ vm, title, contact, open, onToggle, onCallBack, onRequestDelete }
 
     return (
         <div>
-            <button type="button" onClick={onToggle} className="relative flex w-full items-center gap-3.5 px-4 py-[18px] text-left active:opacity-60">
+            <button type="button" onClick={onToggle} className="relative flex w-full items-center gap-3.5 px-4 py-[18px] text-start active:opacity-60">
                 {!vm.listened && (
-                    <span className="absolute left-[5px] top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full bg-ios-blue" />
+                    <span className="absolute start-[5px] top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full bg-ios-blue" />
                 )}
                 {contact
                     ? <ContactAvatar contact={contact} size={52} />
@@ -166,7 +167,7 @@ function Row({ vm, title, contact, open, onToggle, onCallBack, onRequestDelete }
                         : <PlaceholderAvatar size={52} />}
                 <span className="min-w-0 flex-1">
                     <span className={`block truncate text-[19px] text-black dark:text-white ${vm.listened ? '' : 'font-semibold'}`}>
-                        {title}
+                        {numeric ? <span dir="ltr">{title}</span> : title}
                     </span>
                     <span className="mt-0.5 block text-[16px] text-black/50 dark:text-white/50">
                         {formatDuration(vm.duration)}

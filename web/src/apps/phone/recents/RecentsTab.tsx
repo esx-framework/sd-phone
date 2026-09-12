@@ -115,15 +115,19 @@ function CallRow({ entry, onBody, onInfo }: {
     onInfo: (e: CallEntry) => void;
 }) {
     const phone     = useMaskedPhone();
-    const primary   = entry.contact ? entry.contact.name : entry.noCallerId ? t('phone.noCallerId','No Caller ID') : phone(entry.number);
-    const secondary = entry.contact ? phone(entry.contact.phone) : t('phone.unknown','Unknown');
+    const primary   = entry.contact ? entry.contact.name
+        : entry.noCallerId ? t('phone.noCallerId','No Caller ID')
+        : <span dir="ltr">{phone(entry.number)}</span>;
+    const secondary = entry.contact
+        ? <span dir="ltr">{phone(entry.contact.phone)}</span>
+        : t('phone.unknown','Unknown');
 
     return (
         <div className="flex w-full items-center px-3.5 py-3.5">
             <button
                 type="button"
                 onClick={() => onBody(entry)}
-                className="flex min-w-0 flex-1 items-center gap-3.5 text-left active:opacity-60"
+                className="flex min-w-0 flex-1 items-center gap-3.5 text-start active:opacity-60"
             >
                 <RecentAvatar entry={entry} />
                 <div className="min-w-0 flex-1">
@@ -137,7 +141,7 @@ function CallRow({ entry, onBody, onInfo }: {
                 type="button"
                 aria-label={t('phone.callDetails','Call details')}
                 onClick={() => onInfo(entry)}
-                className="ml-2 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-ios-blue transition-colors hover:bg-ios-blue/15 active:bg-ios-blue/25"
+                className="ms-2 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-ios-blue transition-colors hover:bg-ios-blue/15 active:bg-ios-blue/25"
             >
                 <Info className="h-[25px] w-[25px]" strokeWidth={2} />
             </button>

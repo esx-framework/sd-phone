@@ -35,7 +35,7 @@ export function TabBar<T extends string>({ tabs, active, onChange, labelClassNam
                                 {tab.icon(isActive)}
                                 {(tab.badge ?? 0) > 0 && (
                                     <span
-                                        className="absolute -top-[2px] -right-[3px] h-[11px] w-[11px] rounded-full bg-ios-red ring-2 ring-elevated dark:ring-base"
+                                        className="absolute -top-[2px] -end-[3px] h-[11px] w-[11px] rounded-full bg-ios-red ring-2 ring-elevated dark:ring-base"
                                         aria-label={t('shell.unreadMessages','Unread messages')}
                                     />
                                 )}

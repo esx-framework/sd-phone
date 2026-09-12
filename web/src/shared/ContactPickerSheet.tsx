@@ -92,7 +92,7 @@ function Row({ contact, divider, onChoose }: { contact: Contact; divider: boolea
             <button
                 type="button"
                 onClick={() => onChoose(contact)}
-                className="flex w-full items-center gap-4 px-4 py-3.5 text-left active:bg-black/[0.06] dark:active:bg-white/[0.06]"
+                className="flex w-full items-center gap-4 px-4 py-3.5 text-start active:bg-black/[0.06] dark:active:bg-white/[0.06]"
             >
                 <ContactAvatar contact={contact} size={56} />
                 <div className="min-w-0 flex-1">

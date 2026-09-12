@@ -204,7 +204,7 @@ export function BulletinsColumn({ bulletins, onChanged, minWidth = 268, classNam
                                         e.stopPropagation();
                                         setMenu({ anchor: e.currentTarget, bulletin: b });
                                     }}
-                                    className="-mr-1 -mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors hover:bg-black/[0.06] active:bg-black/[0.1] dark:hover:bg-white/[0.08]"
+                                    className="-me-1 -mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors hover:bg-black/[0.06] active:bg-black/[0.1] dark:hover:bg-white/[0.08]"
                                 >
                                     <MoreHorizontal className="h-[16px] w-[16px]" strokeWidth={2.4} />
                                 </button>

@@ -146,7 +146,7 @@ export function Radio({ onClose: _onClose }: { onClose: () => void }) {
                         )}
                     </div>
 
-                    <div className="mt-3.5 flex items-end justify-center gap-2">
+                    <div dir="ltr" className="mt-3.5 flex items-end justify-center gap-2">
                         <input
                             value={entry}
                             onChange={e => setEntry(cleanFreq(e.target.value))}
@@ -171,7 +171,9 @@ export function Radio({ onClose: _onClose }: { onClose: () => void }) {
                     </div>
                 </div>
 
-                <Keypad variant="decimal" onPress={press} onDelete={del} canDelete={entry.length > 0} className="mt-3 px-2" />
+                <div dir="ltr">
+                    <Keypad variant="decimal" onPress={press} onDelete={del} canDelete={entry.length > 0} className="mt-3 px-2" />
+                </div>
 
                 <div className="mt-3 flex">
                     <button
@@ -191,7 +193,7 @@ export function Radio({ onClose: _onClose }: { onClose: () => void }) {
                         aria-hidden={!on}
                         tabIndex={on ? 0 : -1}
                         className={`overflow-hidden whitespace-nowrap rounded-full py-3 text-[18px] font-semibold shadow-sm ${anim} active:opacity-80 ${
-                            on ? 'ml-2 max-w-[280px] flex-1 opacity-100' : 'ml-0 max-w-0 flex-1 opacity-0'
+                            on ? 'ms-2 max-w-[280px] flex-1 opacity-100' : 'ms-0 max-w-0 flex-1 opacity-0'
                         } ${
                             targetDiffers && canTune ? 'bg-ios-blue text-white' : 'bg-black/15 text-black/30 dark:bg-white/10 dark:text-white/30'
                         }`}
@@ -215,7 +217,7 @@ export function Radio({ onClose: _onClose }: { onClose: () => void }) {
                 <button
                     type="button"
                     onClick={() => setShowSaved(true)}
-                    className="mt-3 flex w-full items-center gap-3 rounded-[16px] bg-surface px-4 py-3.5 text-left active:opacity-70"
+                    className="mt-3 flex w-full items-center gap-3 rounded-[16px] bg-surface px-4 py-3.5 text-start active:opacity-70"
                 >
                     <Bookmark className="h-[19px] w-[19px] shrink-0 text-ios-blue" strokeWidth={2.2} />
                     <span className="flex-1 text-[17px] font-semibold">{t('radio.savedChannels', 'Saved Channels')}</span>

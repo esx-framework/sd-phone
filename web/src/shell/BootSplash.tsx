@@ -160,7 +160,7 @@ export function BootSplash({ radius, tint }: { radius: number; tint: string }) {
                     <div className="boot-rim pointer-events-none absolute inset-0" style={LOGO_MASK} />
                     <div className="boot-sheen pointer-events-none absolute inset-0" style={LOGO_MASK} />
                     <div
-                        className="pointer-events-none absolute left-0 top-full h-full w-full"
+                        className="pointer-events-none absolute start-0 top-full h-full w-full"
                         style={{
                             ...LOGO_MASK,
                             backgroundImage: `linear-gradient(180deg, ${tint}55, transparent 46%)`,

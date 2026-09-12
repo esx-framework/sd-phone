@@ -97,7 +97,7 @@ export function DrumWheel({ values, index, onChange, bandHeight = 60, label, wid
     const centreIdx  = Math.round(-offsetY / bandHeight);
 
     return (
-        <div className="flex flex-col items-center" style={{ width }}>
+        <div dir="ltr" className="flex flex-col items-center" style={{ width }}>
             <div
                 ref={wheelRef}
                 className="relative w-full cursor-ns-resize overflow-hidden"
@@ -119,7 +119,7 @@ export function DrumWheel({ values, index, onChange, bandHeight = 60, label, wid
                 />
                 {showBand && (
                     <div
-                        className={'pointer-events-none absolute left-0 right-0 z-10 border-y-[0.5px] ' + (forceDark ? 'border-white/20' : 'border-black/20 dark:border-white/20')}
+                        className={'pointer-events-none absolute start-0 end-0 z-10 border-y-[0.5px] ' + (forceDark ? 'border-white/20' : 'border-black/20 dark:border-white/20')}
                         style={{ top: bandHeight, height: bandHeight }}
                     />
                 )}

@@ -78,7 +78,7 @@ function Signup() {
                     </button>
                     <p className="mb-3.5 mt-2 text-center text-[13px] text-ios-gray">{t('ryde.orEnterManually', 'or enter manually')}</p>
                     <Field label={t('ryde.vehicle', 'Vehicle')} value={car} onChange={setCar} placeholder={t('ryde.vehiclePlaceholder', 'e.g. Karin Sultan')} />
-                    <Field label={t('ryde.plate', 'Plate')} value={plate} onChange={setPlate} placeholder={t('ryde.platePlaceholder', 'e.g. 12 ABC 34')} />
+                    <Field label={t('ryde.plate', 'Plate')} value={plate} onChange={setPlate} placeholder={t('ryde.platePlaceholder', 'e.g. 12 ABC 34')} dir="ltr" />
                     <p className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ios-gray">{t('ryde.colour', 'Colour')}</p>
                     <div className="mb-4 flex gap-2.5">
                         {CAR_COLORS.map(c => (
@@ -135,7 +135,7 @@ function Dashboard() {
                 {view === 'overview' ? (
                     <>
                         <div className="relative mb-3 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2a2a2e] to-black p-4 text-white shadow-sm dark:from-white dark:to-[#e6e6e6] dark:text-black">
-                            <TrendingUp className="pointer-events-none absolute -right-4 -top-4 h-[112px] w-[112px] opacity-[0.07]" strokeWidth={1.5} />
+                            <TrendingUp className="pointer-events-none absolute -end-4 -top-4 h-[112px] w-[112px] opacity-[0.07]" strokeWidth={1.5} />
                             <div className="flex items-center gap-1.5 text-[14px] font-medium opacity-65">
                                 <Wallet className="h-[16px] w-[16px]" strokeWidth={2.2} /> {t('ryde.todaysEarnings', 'Today’s earnings')}
                             </div>
@@ -211,7 +211,7 @@ function Dashboard() {
                                                     {r.rated ? <TripStars value={r.rated} /> : <span className="text-[14px] text-ios-gray">{t('ryde.notRatedYet', 'Not rated yet')}</span>}
                                                 </div>
                                             </div>
-                                            <div className="shrink-0 text-right">
+                                            <div className="shrink-0 text-end">
                                                 <p className="text-[22px] font-bold text-[#22c55e]">+{money((r.earn ?? 0) + (r.tip ?? 0))}</p>
                                                 <p className="text-[14px] text-ios-gray">{t('ryde.fareAmount', 'fare {amount}', { amount: money(r.fare) })}</p>
                                                 {(r.tip ?? 0) > 0 && <p className="text-[13px] font-semibold text-[#22c55e]">{t('ryde.inclTip', 'incl. {amount} tip', { amount: money(r.tip ?? 0) })}</p>}
@@ -219,7 +219,7 @@ function Dashboard() {
                                         </div>
                                         <div className="mt-3.5 flex items-center gap-2 border-t border-black/[0.07] pt-3.5 text-[17px] text-black/70 dark:border-white/10 dark:text-white/70">
                                             <span className="h-3 w-3 shrink-0 rounded-full bg-[#22c55e]" /><span className="truncate">{r.pickup.name}</span>
-                                            <span className="opacity-50">→</span>
+                                            <span className="inline-block opacity-50" style={{ transform: 'scaleX(var(--dir-x, 1))' }}>→</span>
                                             <span className="h-3 w-3 shrink-0 rounded-full bg-black dark:bg-white" /><span className="truncate">{r.dropoff.name}</span>
                                         </div>
                                     </div>
@@ -269,11 +269,11 @@ function Stat({ icon, iconBg, label, value, sub, small }: { icon: React.ReactNod
         </div>
     );
 }
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Field({ label, value, onChange, placeholder, dir = 'auto' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; dir?: 'auto' | 'ltr' }) {
     return (
         <label className="mb-3.5 block">
             <span className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ios-gray">{label}</span>
-            <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+            <input dir={dir} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
                 className="w-full rounded-[10px] bg-black/[0.05] px-3.5 py-3 text-[17px] text-black outline-none placeholder:text-ios-gray dark:bg-white/10 dark:text-white" />
         </label>
     );

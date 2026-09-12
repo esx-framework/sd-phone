@@ -67,7 +67,7 @@ function LanguagePickerPage({
                                 key={opt.code}
                                 type="button"
                                 onClick={() => onSelect(opt.code)}
-                                className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <span className="flex-1 text-[17px] font-normal text-black dark:text-white">{opt.name}</span>
                                 {opt.code === selected && (
@@ -75,8 +75,8 @@ function LanguagePickerPage({
                                 )}
                                 {i < SUPPORTED_LOCALES.length - 1 && (
                                     <div
-                                        className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control"
-                                        style={{ left: 0, height: '0.5px' }}
+                                        className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control"
+                                        style={{ insetInlineStart: 0, height: '0.5px' }}
                                     />
                                 )}
                             </button>

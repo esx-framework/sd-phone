@@ -25,7 +25,7 @@ export function MoveSheet({ folders, currentFolderId, onSelect, onClose }: Props
                         label={name}
                         selected={(currentFolderId ?? null) === id}
                         left={
-                            <span className="flex items-center text-ios-blue" style={{ paddingLeft: depth * 20 }}>
+                            <span className="flex items-center text-ios-blue" style={{ paddingInlineStart: depth * 20 }}>
                                 {icon}
                             </span>
                         }

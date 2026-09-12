@@ -43,7 +43,7 @@ export function Rating() {
                             <Stars value={stars} onChange={setStars} color="#FF9600" />
                         </div>
 
-                        <p className="mb-2 mt-4 text-left text-[13px] font-semibold uppercase tracking-wide text-ios-gray">{t('ryde.addATip', 'Add a tip')}</p>
+                        <p className="mb-2 mt-4 text-start text-[13px] font-semibold uppercase tracking-wide text-ios-gray">{t('ryde.addATip', 'Add a tip')}</p>
                         <div className="mb-2.5 flex gap-2">
                             {TIPS.map(amt => (
                                 <button key={amt} onClick={() => pickPreset(amt)}

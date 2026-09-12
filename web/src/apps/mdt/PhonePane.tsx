@@ -53,11 +53,11 @@ function Row({ children }: { children: React.ReactNode }) {
     return <div className={`flex items-center gap-3 px-4 py-2.5 ${mdtRowHover}`}>{children}</div>;
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
     return (
         <div className="flex items-baseline justify-between gap-4 px-4 py-2">
             <span className={mdtRowMeta}>{label}</span>
-            <span className="min-w-0 truncate text-[14px] font-medium text-black dark:text-white">{value || '-'}</span>
+            <span dir={ltr ? 'ltr' : 'auto'} className="min-w-0 truncate text-[14px] font-medium text-black dark:text-white">{value || '-'}</span>
         </div>
     );
 }
@@ -84,7 +84,7 @@ function Overview({ citizenid }: { citizenid: string }) {
         <div className="flex flex-col gap-4 pb-6">
             <MdtCard className="overflow-hidden">
                 <div className={`px-4 pb-1 pt-3 ${mdtSectionHeader}`}>{t('mdt.hsHandset', 'Handset')}</div>
-                <Field label={t('mdt.hsNumber', 'Number')} value={d.number} />
+                <Field ltr label={t('mdt.hsNumber', 'Number')} value={d.number} />
                 <Field label={t('mdt.hsContactCard', 'Contact card')} value={d.name} />
                 <Field label={t('mdt.hsCardEmail', 'Card email')} value={d.email} />
                 <Field label={t('mdt.hsCardAddress', 'Card address')} value={d.address} />
@@ -118,7 +118,7 @@ function Overview({ citizenid }: { citizenid: string }) {
                     {data.blocked.map(b => (
                         <Row key={b.number}>
                             <Ban className="h-[15px] w-[15px] shrink-0 text-ios-red" strokeWidth={2.2} />
-                            <span className="min-w-0 flex-1 truncate text-[14px] tabular-nums text-black dark:text-white">{b.number}</span>
+                            <span className="min-w-0 flex-1 truncate text-[14px] tabular-nums text-black dark:text-white"><span dir="ltr">{b.number}</span></span>
                             <span className={mdtRowMeta}>{stamp(b.created_at)}</span>
                         </Row>
                     ))}
@@ -141,8 +141,8 @@ function Contacts({ citizenid }: { citizenid: string }) {
             {rows.map(c => (
                 <Row key={`${c.name}:${c.phone}`}>
                     <span className="min-w-0 flex-1">
-                        <span className={`block truncate ${mdtRowTitle}`}>{c.name}</span>
-                        <span className={`block truncate tabular-nums ${mdtRowMeta}`}>{c.phone}</span>
+                        <span dir="auto" className={`block truncate ${mdtRowTitle}`}>{c.name}</span>
+                        <span className={`block truncate tabular-nums ${mdtRowMeta}`}><span dir="ltr">{c.phone}</span></span>
                     </span>
                     {c.favorite && <Pill tone="orange">{t('mdt.hsFavourite', 'Favourite')}</Pill>}
                 </Row>
@@ -172,8 +172,8 @@ function Calls({ citizenid }: { citizenid: string }) {
                             strokeWidth={2.4}
                         />
                         <span className="min-w-0 flex-1">
-                            <span className={`block truncate ${mdtRowTitle}`}>{c.ownerName || c.name || c.number}</span>
-                            <span className={`block truncate tabular-nums ${mdtRowMeta}`}>{c.number}</span>
+                            <span dir="auto" className={`block truncate ${mdtRowTitle}`}>{c.ownerName || c.name || c.number}</span>
+                            <span className={`block truncate tabular-nums ${mdtRowMeta}`}><span dir="ltr">{c.number}</span></span>
                         </span>
                         <span className={`shrink-0 tabular-nums ${mdtRowMeta}`}>{formatDuration(c.duration || 0)}</span>
                         <span className={`shrink-0 tabular-nums ${mdtRowMeta}`}>{stamp(c.called_at)}</span>
@@ -214,9 +214,9 @@ function Messages({ citizenid }: { citizenid: string }) {
                                 <span className={`truncate text-[13px] font-semibold ${m.outgoing ? 'text-ios-blue' : 'text-black dark:text-white'}`}>
                                     {m.outgoing ? t('mdt.hsHandsetOwner', 'Handset') : (m.senderName || m.sender)}
                                 </span>
-                                <span className={`ml-auto shrink-0 tabular-nums ${mdtRowMeta}`}>{stamp(m.timestamp)}</span>
+                                <span className={`ms-auto shrink-0 tabular-nums ${mdtRowMeta}`}>{stamp(m.timestamp)}</span>
                             </div>
-                            <span className="whitespace-pre-wrap break-words text-[14px] leading-snug text-black/85 dark:text-white/85">
+                            <span dir="auto" className="whitespace-pre-wrap break-words text-[14px] leading-snug text-black/85 dark:text-white/85">
                                 {m.content || (m.attachments ? t('mdt.hsAttachment', 'Attachment') : '')}
                             </span>
                         </div>
@@ -236,11 +236,11 @@ function Messages({ citizenid }: { citizenid: string }) {
                     ? (th.name || t('mdt.hsGroupThread', 'Group thread'))
                     : (th.members[0]?.name || th.members[0]?.number || t('mdt.hsUnknown', 'Unknown'));
                 return (
-                    <button key={th.id} type="button" onClick={() => setOpen(th.id)} className="block w-full text-left">
+                    <button key={th.id} type="button" onClick={() => setOpen(th.id)} className="block w-full text-start">
                         <Row>
                             <span className="min-w-0 flex-1">
-                                <span className={`block truncate ${mdtRowTitle}`}>{who}</span>
-                                <span className={`block truncate ${mdtRowMeta}`}>{th.last_message || ''}</span>
+                                <span dir="auto" className={`block truncate ${mdtRowTitle}`}>{who}</span>
+                                <span dir="auto" className={`block truncate ${mdtRowMeta}`}>{th.last_message || ''}</span>
                             </span>
                             {th.isGroup && <Pill tone="blue">{t('mdt.hsGroup', 'Group')}</Pill>}
                             <span className={`shrink-0 tabular-nums ${mdtRowMeta}`}>{stamp(th.last_message_timestamp)}</span>
@@ -350,14 +350,16 @@ function NoteRow({ note, citizenid, open, onToggle, onView }: {
 
     return (
         <div>
-            <button type="button" onClick={onToggle} aria-expanded={open} className={`flex w-full items-center gap-3 px-4 py-2.5 text-left ${mdtRowHover}`}>
+            <button type="button" onClick={onToggle} aria-expanded={open} className={`flex w-full items-center gap-3 px-4 py-2.5 text-start ${mdtRowHover}`}>
                 <ChevronRight
-                    className={`h-[15px] w-[15px] shrink-0 text-ios-gray transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+                    data-flip-x="off"
+                    className="h-[15px] w-[15px] shrink-0 text-ios-gray transition-transform duration-150"
+                    style={{ transform: open ? 'rotate(90deg)' : 'scaleX(var(--dir-x, 1))' }}
                     strokeWidth={2.4}
                 />
                 <span className="min-w-0 flex-1">
-                    <span className={`block truncate ${mdtRowTitle}`}>{title}</span>
-                    {!open && preview && <span className={`block truncate ${mdtRowMeta}`}>{preview}</span>}
+                    <span dir="auto" className={`block truncate ${mdtRowTitle}`}>{title}</span>
+                    {!open && preview && <span dir="auto" className={`block truncate ${mdtRowMeta}`}>{preview}</span>}
                 </span>
                 {!open && attachments && (
                     <Paperclip className="h-[13px] w-[13px] shrink-0 text-ios-gray" strokeWidth={2.2} />
@@ -366,9 +368,9 @@ function NoteRow({ note, citizenid, open, onToggle, onView }: {
             </button>
 
             {open && (
-                <div className="flex flex-col gap-2 px-4 pb-3.5 pl-[42px] pt-0.5">
+                <div className="flex flex-col gap-2 px-4 pb-3.5 ps-[42px] pt-0.5">
                     {rest && (
-                        <span className="whitespace-pre-wrap break-words text-[14px] leading-snug text-black/85 dark:text-white/85">
+                        <span dir="auto" className="whitespace-pre-wrap break-words text-[14px] leading-snug text-black/85 dark:text-white/85">
                             {rest}
                         </span>
                     )}
@@ -494,8 +496,10 @@ function TabRail({ tab, onTab, accent }: {
         if (!chip) return;
         const lead = chip.offsetLeft - 24;
         const trail = chip.offsetLeft + chip.offsetWidth + 24;
-        if (lead < rail.scrollLeft) rail.scrollLeft = Math.max(0, lead);
-        else if (trail > rail.scrollLeft + rail.clientWidth) rail.scrollLeft = trail - rail.clientWidth;
+        const span = rail.scrollWidth - rail.clientWidth;
+        const at = getComputedStyle(rail).direction === 'rtl' ? rail.scrollLeft + span : rail.scrollLeft;
+        if (lead < at) rail.scrollLeft += lead - at;
+        else if (trail > at + rail.clientWidth) rail.scrollLeft += trail - at - rail.clientWidth;
     }, [tab]);
 
     return (

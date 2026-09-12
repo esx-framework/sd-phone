@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { t } from '@/i18n';
 import { copyToClipboard } from '@/lib/clipboard';
 import { ListGroup, ListRow } from '@/ui/ListGroup';
-import { fieldLabel, fieldValue, type IdCardData } from './data';
+import { fieldDir, fieldLabel, fieldValue, type IdCardData } from './data';
 
 export function DetailsList({ card }: { card: IdCardData }) {
     const [copied, setCopied] = useState<string | null>(null);
@@ -28,7 +28,10 @@ export function DetailsList({ card }: { card: IdCardData }) {
                     <ListRow
                         key={r.key}
                         label={r.label}
-                        value={copied === r.key ? t('id.copied', 'Copied') : r.value}
+                        chevron={false}
+                        right={copied === r.key
+                            ? <span className="text-[17px] font-normal text-ios-gray">{t('id.copied', 'Copied')}</span>
+                            : <span dir={fieldDir(r.key)} className="text-[17px] font-normal text-ios-gray">{r.value}</span>}
                         divider={i < rows.length - 1}
                         onPress={() => copy(r.key, r.value)}
                     />

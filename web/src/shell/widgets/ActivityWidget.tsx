@@ -82,7 +82,7 @@ export function ActivityWidget({ size, width, height, theme = 'dark' }: {
                     <Rings size={ring} values={values} />
                     <div className="text-[12px] font-semibold tabular-nums" style={{ color: p.fg }}>
                         {steps.toLocaleString()}
-                        <span className="ml-1 text-[10px] font-medium" style={{ color: p.sub }}>{t('health.stepsUnit', 'steps')}</span>
+                        <span className="ms-1 text-[10px] font-medium" style={{ color: p.sub }}>{t('health.stepsUnit', 'steps')}</span>
                     </div>
                 </div>
             </WidgetTile>

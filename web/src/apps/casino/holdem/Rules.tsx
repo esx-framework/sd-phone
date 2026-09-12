@@ -25,7 +25,7 @@ export function HoldemRules() {
             {RANKING.map((row, i) => (
                 <div key={row.key} className="flex items-center justify-between border-t py-2 first:border-t-0" style={{ borderColor: SURFACE.hair }}>
                     <span className="text-[15px] font-semibold text-white/85">{row.label()}</span>
-                    <span className="text-[13px] font-semibold tabular-nums" style={{ color: i === 0 ? GOLD.top : 'rgba(255,255,255,0.55)' }}>
+                    <span dir="ltr" className="text-[13px] font-semibold tabular-nums" style={{ color: i === 0 ? GOLD.top : 'rgba(255,255,255,0.55)' }}>
                         {row.example}
                     </span>
                 </div>

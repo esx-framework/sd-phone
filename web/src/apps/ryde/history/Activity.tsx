@@ -55,7 +55,7 @@ export function Activity() {
                                         <p className="truncate text-[17px] text-ios-gray">{when(r.placedAt)}</p>
                                         {r.rated != null && <div className="mt-1.5"><GivenStars value={r.rated} /></div>}
                                     </div>
-                                    <div className="shrink-0 text-right">
+                                    <div className="shrink-0 text-end">
                                         <p className="text-[22px] font-bold text-black dark:text-white">{money(r.fare)}</p>
                                         <p className="text-[15px] font-semibold" style={{ color: r.status === 'cancelled' ? '#ff453a' : r.status === 'completed' ? '#22c55e' : '#FF9600' }}>
                                             {rideStatusLabel[r.status]}
@@ -65,7 +65,7 @@ export function Activity() {
                                 </div>
                                 <div className="mt-3.5 flex items-center gap-2 border-t border-black/[0.07] pt-3.5 text-[17px] text-black/70 dark:border-white/10 dark:text-white/70">
                                     <span className="h-3 w-3 shrink-0 rounded-full bg-[#22c55e]" /><span className="truncate">{r.pickup.name}</span>
-                                    <span className="opacity-50">→</span>
+                                    <span className="inline-block opacity-50" style={{ transform: 'scaleX(var(--dir-x, 1))' }}>→</span>
                                     <span className="h-3 w-3 shrink-0 rounded-full bg-black dark:bg-white" /><span className="truncate">{r.dropoff.name}</span>
                                 </div>
                             </div>

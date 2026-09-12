@@ -77,13 +77,13 @@ export function CommentsSheet({ post, onClose, onCountChange }: {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-1 text-[13px] font-semibold text-white/55">
-                                        {c.user.handle}
+                                        <span dir="auto">{c.user.handle}</span>
                                         {c.user.verified && (
                                             <VerifiedBadge size={14} />
                                         )}
                                     </div>
                                     {c.text !== '' && (
-                                        <p className="mt-0.5 text-[15px] leading-snug text-white">{c.text}</p>
+                                        <p dir="auto" className="mt-0.5 text-[15px] leading-snug text-white">{c.text}</p>
                                     )}
                                     {c.gifUrl && (
                                         <FadeImg
@@ -118,7 +118,7 @@ export function CommentsSheet({ post, onClose, onCountChange }: {
                                     type="button"
                                     aria-label={t('vibez.removeGif', 'Remove GIF')}
                                     onClick={() => setGif(null)}
-                                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white ring-1 ring-white/20 active:opacity-70"
+                                    className="absolute -end-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white ring-1 ring-white/20 active:opacity-70"
                                 >
                                     <X className="h-3.5 w-3.5" strokeWidth={2.6} />
                                 </button>

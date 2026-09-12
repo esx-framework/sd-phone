@@ -36,7 +36,7 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
     return (
         <div className="flex items-center justify-between gap-4 border-t border-white/[0.05] px-4 py-2.5 text-[13px] first:border-t-0">
             <div className="text-zinc-500">{label}</div>
-            <div className="text-right text-zinc-200">{children}</div>
+            <div className="text-end text-zinc-200">{children}</div>
         </div>
     );
 }
@@ -347,7 +347,7 @@ function SimCard({ ov, toast, reload }: {
             </InfoRow>
 
             {sim.sims.length > 0 ? (
-                <table className="w-full text-left text-[12.5px]">
+                <table className="w-full text-start text-[12.5px]">
                     <thead>
                         <tr className="border-t border-white/[0.05] text-[10.5px] uppercase tracking-wide text-zinc-500">
                             <th className="px-4 py-2 font-semibold">Number</th>
@@ -416,7 +416,7 @@ function AppsTab({ ov, onChanged, toast }: {
                 {ov.downloadable.map(app => {
                     const has = installed.has(app.id);
                     return (
-                        <div key={app.id} className="flex items-center justify-between gap-3 border-t border-white/[0.05] px-4 py-2.5 text-[13px] odd:border-r">
+                        <div key={app.id} className="flex items-center justify-between gap-3 border-t border-white/[0.05] px-4 py-2.5 text-[13px] odd:border-e">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-zinc-200">{app.label}</span>
                                 {has && <Badge tone="green">Installed</Badge>}
@@ -575,7 +575,7 @@ function MessagesTab({ cid }: { cid: string }) {
 
     return (
         <Card title="Messages (read-only)">
-            <table className="w-full text-left text-[13px]">
+            <table className="w-full text-start text-[13px]">
                 <thead>
                     <tr className="text-[11px] uppercase tracking-wide text-zinc-500">
                         <th className="px-4 py-2.5 font-semibold">When</th>
@@ -623,7 +623,7 @@ function CallsTab({ cid }: { cid: string }) {
 
     return (
         <Card title="Call log (read-only)">
-            <table className="w-full text-left text-[13px]">
+            <table className="w-full text-start text-[13px]">
                 <thead>
                     <tr className="text-[11px] uppercase tracking-wide text-zinc-500">
                         <th className="px-4 py-2.5 font-semibold">When</th>

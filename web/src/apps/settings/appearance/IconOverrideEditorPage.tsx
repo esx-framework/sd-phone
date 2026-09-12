@@ -130,9 +130,9 @@ export function IconOverrideEditorPage({ app, draft, override, wallpaper, showAp
                         <button
                             type="button"
                             onClick={() => setPicking(true)}
-                            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                         >
-                            <span className="mr-3 flex shrink-0 items-center">
+                            <span className="me-3 flex shrink-0 items-center">
                                 <ThemeTile look={look} icon={icon} label={app.label} size={30} />
                             </span>
                             <span className="min-w-0 flex-1">

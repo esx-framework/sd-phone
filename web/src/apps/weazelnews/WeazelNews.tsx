@@ -87,7 +87,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
             <style>{`
                 @keyframes weazel-ticker {
                     0%   { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
+                    100% { transform: translateX(calc(var(--dir-x, 1) * -50%)); }
                 }
             `}</style>
 
@@ -114,7 +114,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
                             type="button"
                             onClick={() => setManaging(true)}
                             aria-label={t('weazelnews.manageNewsroom', 'Manage newsroom')}
-                            className={`-mr-1 flex h-8 w-8 items-center justify-center rounded-full active:opacity-60 ${dark ? 'text-white/80' : 'text-black/70'}`}
+                            className={`-me-1 flex h-8 w-8 items-center justify-center rounded-full active:opacity-60 ${dark ? 'text-white/80' : 'text-black/70'}`}
                         >
                             <Settings2 className="h-[21px] w-[21px]" strokeWidth={2.2} />
                         </button>
@@ -124,7 +124,7 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
 
             {ticker.length > 0 && (
                 <div className="flex shrink-0 items-stretch overflow-hidden" style={{ background: WEAZEL_RED }}>
-                    <span className="z-10 flex shrink-0 items-center gap-2 bg-black pl-3 pr-3.5 text-[13px] font-extrabold uppercase tracking-[0.14em] text-white">
+                    <span className="z-10 flex shrink-0 items-center gap-2 bg-black ps-3 pe-3.5 text-[13px] font-extrabold uppercase tracking-[0.14em] text-white">
                         <span className="relative flex h-[7px] w-[7px]">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-80" />
                             <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-white" />
@@ -140,8 +140,8 @@ export function WeazelNews({ onClose: _onClose }: { onClose: () => void }) {
                             <TickerRun ticker={ticker} />
                         </div>
                         <div
-                            className="pointer-events-none absolute inset-y-0 right-0 w-9"
-                            style={{ background: `linear-gradient(to right, transparent, ${WEAZEL_RED})` }}
+                            className="pointer-events-none absolute inset-y-0 end-0 w-9"
+                            style={{ background: `linear-gradient(to right, transparent, ${WEAZEL_RED})`, transform: 'scaleX(var(--dir-x, 1))' }}
                         />
                     </div>
                 </div>
@@ -236,7 +236,7 @@ function TickerRun({ ticker }: { ticker: string[] }) {
         <div className="flex shrink-0 items-center" aria-hidden>
             {ticker.map((t, i) => (
                 <span key={i} className="flex items-center">
-                    <span className="px-5">{t}</span>
+                    <span dir="auto" className="px-5">{t}</span>
                     <span className="h-[5px] w-[5px] shrink-0 rounded-full bg-white/70" />
                 </span>
             ))}
@@ -261,22 +261,22 @@ function FeaturedCard({ article, onOpen }: { article: ArticleT; onOpen: () => vo
         <button
             type="button"
             onClick={onOpen}
-            className="relative block h-60 w-full overflow-hidden rounded-2xl text-left shadow-sm active:opacity-95"
+            className="relative block h-60 w-full overflow-hidden rounded-2xl text-start shadow-sm active:opacity-95"
         >
             <Banner image={article.image} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
             <span
-                className="absolute left-3 top-3 rounded-[5px] px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-white"
+                className="absolute start-3 top-3 rounded-[5px] px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-white"
                 style={{ background: WEAZEL_RED }}
             >
                 {article.category}
             </span>
             <div className="absolute inset-x-0 bottom-0 p-4">
-                <h2 className="text-[21px] font-extrabold leading-[1.15] tracking-tight text-white">
+                <h2 dir="auto" className="text-[21px] font-extrabold leading-[1.15] tracking-tight text-white">
                     {article.headline}
                 </h2>
                 <div className="mt-2 flex items-center gap-2 text-[13.5px] font-semibold text-white/90">
-                    <span>{article.author}</span>
+                    <span dir="auto">{article.author}</span>
                     <span className="opacity-50">&bull;</span>
                     <span className="flex items-center gap-1">
                         <Eye className="h-[15px] w-[15px]" strokeWidth={2.3} />
@@ -295,7 +295,7 @@ function ArticleRow({ article, dark, onOpen }: { article: ArticleT; dark: boolea
         <button
             type="button"
             onClick={onOpen}
-            className={`flex w-full gap-3.5 rounded-2xl p-3 text-left transition-colors active:opacity-90 ${
+            className={`flex w-full gap-3.5 rounded-2xl p-3 text-start transition-colors active:opacity-90 ${
                 dark ? 'bg-surface' : 'bg-surface'
             } shadow-sm`}
         >
@@ -306,14 +306,14 @@ function ArticleRow({ article, dark, onOpen }: { article: ArticleT; dark: boolea
                 <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: WEAZEL_RED }}>
                     {article.category}
                 </span>
-                <h3 className="mt-1 line-clamp-2 text-[16.5px] font-bold leading-[1.2] tracking-tight">
+                <h3 dir="auto" className="mt-1 line-clamp-2 text-[16.5px] font-bold leading-[1.2] tracking-tight">
                     {article.headline}
                 </h3>
-                <p className="mt-1.5 line-clamp-2 text-[14.5px] font-medium leading-[1.42] text-black/85 dark:text-white/75">
+                <p dir="auto" className="mt-1.5 line-clamp-2 text-[14.5px] font-medium leading-[1.42] text-black/85 dark:text-white/75">
                     {article.dek}
                 </p>
                 <div className="mt-auto flex items-center gap-2 pt-1.5 text-[13.5px] font-semibold text-black/70 dark:text-white/70">
-                    <span className="min-w-0 truncate">{article.author}</span>
+                    <span dir="auto" className="min-w-0 truncate">{article.author}</span>
                     <span className="shrink-0 opacity-40">&bull;</span>
                     <span className="flex shrink-0 items-center gap-1.5">
                         <Eye className="h-[16px] w-[16px]" strokeWidth={2.4} />

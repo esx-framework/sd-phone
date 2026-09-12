@@ -193,7 +193,7 @@ export function Calculator({ onClose: _onClose }: Props) {
 
 
     return (
-        <div className="absolute inset-0 flex flex-col select-none" style={{ backgroundColor: palette.bg }}>
+        <div dir="ltr" className="absolute inset-0 flex flex-col select-none" style={{ backgroundColor: palette.bg }}>
             <div className="flex flex-1 flex-col items-end justify-end px-5 pb-3 gap-0.5">
                 <span
                     className="text-[22px] font-light leading-none"
@@ -226,7 +226,7 @@ export function Calculator({ onClose: _onClose }: Props) {
                                     onClick={() => handle(btn)}
                                     className={`flex shrink-0 items-center active:opacity-70 transition-colors duration-100 ${
                                         btn.wide
-                                            ? 'flex-[2_2_0%] justify-start pl-7'
+                                            ? 'flex-[2_2_0%] justify-start ps-7'
                                             : 'flex-1 justify-center'
                                     }`}
                                     style={{

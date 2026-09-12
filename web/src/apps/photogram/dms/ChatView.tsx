@@ -141,7 +141,7 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
                         <ChevronLeft className="h-[36px] w-[36px]" strokeWidth={2.4} />
                     </button>
                     <img src={convo.user.avatar} alt="" draggable={false} className="h-[40px] w-[40px] rounded-full object-cover" />
-                    <span className="ml-1 min-w-0 truncate text-[20px] font-semibold text-black">{name}</span>
+                    <span dir="auto" className="ms-1 min-w-0 truncate text-[20px] font-semibold text-black">{name}</span>
                 </div>
                 <div className="mx-[6%] h-[0.5px] bg-black/[0.08]" />
             </div>
@@ -150,7 +150,7 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
                 {messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-8 pb-10 text-center">
                         <img src={convo.user.avatar} alt="" className="h-[96px] w-[96px] rounded-full object-cover" />
-                        <p className="mt-4 text-[20px] font-semibold text-black/85">{name}</p>
+                        <p dir="auto" className="mt-4 text-[20px] font-semibold text-black/85">{name}</p>
                         <p className="mt-1.5 text-[15px] font-medium leading-snug text-black/55">{t('photogram.sendMessageToStart', 'Send a message to start the chat')}</p>
                     </div>
                 ) : null}
@@ -201,7 +201,7 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
                         <div className="w-[3px] self-stretch rounded-full" style={{ background: IG.blue }} />
                         <div className="min-w-0 flex-1">
                             <div className="text-[12px] font-semibold" style={{ color: IG.blue }}>{t('photogram.replyingTo', 'In reply to {name}', { name: replyName(replyTo) })}</div>
-                            <div className="truncate text-[13px] text-black/55">{msgPreview(replyTo)}</div>
+                            <div dir="auto" className="truncate text-[13px] text-black/55">{msgPreview(replyTo)}</div>
                         </div>
                         <button type="button" onClick={() => setReplyTo(null)} className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10 active:opacity-60">
                             <X className="h-[14px] w-[14px] text-black/55" strokeWidth={2.5} />
@@ -214,7 +214,7 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
                         {attachments.map((url, i) => (
                             <div key={`${url}-${i}`} className="relative">
                                 <img src={url} alt="" className="h-[85px] w-[85px] rounded-[12px] object-cover" />
-                                <button type="button" onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} aria-label={t('photogram.removeImage', 'Remove image')} className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70">
+                                <button type="button" onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} aria-label={t('photogram.removeImage', 'Remove image')} className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70">
                                     <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                                 </button>
                             </div>
@@ -223,7 +223,7 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
                 )}
 
                 <div className="px-3 pb-2 pt-1.5">
-                    <div className={`flex items-center gap-1 rounded-[22px] py-[9px] pl-4 ${draft.trim() || attachments.length ? 'pr-[5px]' : 'pr-4'}`} style={{ background: '#e7e7e9' }}>
+                    <div className={`flex items-center gap-1 rounded-[22px] py-[9px] ps-4 ${draft.trim() || attachments.length ? 'pe-[5px]' : 'pe-4'}`} style={{ background: '#e7e7e9' }}>
                         <input
                             ref={inputRef}
                             type="text"
@@ -296,17 +296,17 @@ export function ChatView({ convo, onBack, onSend, onReact, onOpenPost, animateIn
 
 function SharedPostCard({ post, onOpen }: { post: SharedPost; onOpen: () => void }) {
     return (
-        <button type="button" onClick={onOpen} className="w-[274px] overflow-hidden rounded-[18px] border border-black/10 bg-white text-left shadow-sm active:opacity-90">
+        <button type="button" onClick={onOpen} className="w-[274px] overflow-hidden rounded-[18px] border border-black/10 bg-white text-start shadow-sm active:opacity-90">
             <div className="flex items-center gap-2.5 px-3 py-2.5">
                 <img src={avatarFor(post.author, post.avatar)} alt="" draggable={false} className="h-[34px] w-[34px] shrink-0 rounded-full object-cover" />
-                <span className="truncate text-[17px] font-semibold text-black">{post.author}</span>
+                <span dir="auto" className="truncate text-[17px] font-semibold text-black">{post.author}</span>
             </div>
             {post.image
                 ? <MediaThumb url={post.image} className="aspect-square w-full" />
                 : <div className="aspect-square w-full bg-black/5" />}
             {post.caption && (
                 <div className="px-3.5 py-2.5 text-[17px] leading-snug text-black">
-                    <div className="line-clamp-2">
+                    <div dir="auto" className="line-clamp-2">
                         <span className="font-semibold">{post.author}</span> {post.caption}
                     </div>
                 </div>

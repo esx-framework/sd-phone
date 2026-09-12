@@ -119,18 +119,18 @@ module.exports = {
                     '100%': { transform: 'scale(1.00)' },
                 },
                 'swipe-in-left': {
-                    '0%':   { opacity: 0, transform: 'translateX(-48px)' },
+                    '0%':   { opacity: 0, transform: 'translateX(calc(var(--dir-x, 1) * -48px))' },
                     '100%': { opacity: 1, transform: 'translateX(0)' },
                 },
                 // Directional tab-content slides (e.g. Font ↔ Layout in the lock
                 // clock editor): the incoming panel enters from the side matching
                 // the travel direction.
                 'tab-in-right': {
-                    '0%':   { opacity: 0, transform: 'translateX(26px)' },
+                    '0%':   { opacity: 0, transform: 'translateX(calc(var(--dir-x, 1) * 26px))' },
                     '100%': { opacity: 1, transform: 'translateX(0)' },
                 },
                 'tab-in-left': {
-                    '0%':   { opacity: 0, transform: 'translateX(-26px)' },
+                    '0%':   { opacity: 0, transform: 'translateX(calc(var(--dir-x, 1) * -26px))' },
                     '100%': { opacity: 1, transform: 'translateX(0)' },
                 },
                 // Angle is overridable via --jiggle because rotation displaces a corner in
@@ -178,7 +178,7 @@ module.exports = {
                 },
                 // A record drilling in over its master list.
                 'mdt-detail': {
-                    '0%':   { opacity: 0, transform: 'translateX(18px)' },
+                    '0%':   { opacity: 0, transform: 'translateX(calc(var(--dir-x, 1) * 18px))' },
                     '100%': { opacity: 1, transform: 'translateX(0)' },
                 },
             },

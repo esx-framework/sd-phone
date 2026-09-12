@@ -73,7 +73,7 @@ function Row({ label, hint, stacked, disabled, children }: {
 }
 
 function Readout({ children }: { children: ReactNode }) {
-    return <span className="w-[64px] shrink-0 text-right text-[15px] font-semibold tabular-nums text-black dark:text-white">{children}</span>;
+    return <span className="w-[64px] shrink-0 text-end text-[15px] font-semibold tabular-nums text-black dark:text-white">{children}</span>;
 }
 
 export function RaceSetup({ track, onBack }: { track: TrackRow; onBack: () => void }) {
@@ -174,7 +174,7 @@ export function RaceSetup({ track, onBack }: { track: TrackRow; onBack: () => vo
                 <button
                     type="button"
                     onClick={onBack}
-                    className="-ml-1.5 flex shrink-0 items-center gap-0.5 py-1 pr-2 text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
+                    className="-ms-1.5 flex shrink-0 items-center gap-0.5 py-1 pe-2 text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
                 >
                     <ChevronLeft className="h-[20px] w-[20px]" strokeWidth={2.4} />
                     {t('racing.backToTrack', 'Track')}
@@ -355,7 +355,7 @@ export function RaceSetup({ track, onBack }: { track: TrackRow; onBack: () => vo
                             aria-label={t('racing.buyIn', 'Buy-in')}
                             onChange={event => onBuyIn(event.target.value)}
                             onBlur={commitBuyIn}
-                            className={`${stacked ? 'min-w-0 flex-1' : 'w-[132px]'} text-right tabular-nums ${fieldSm}`}
+                            className={`${stacked ? 'min-w-0 flex-1' : 'w-[132px]'} text-end tabular-nums ${fieldSm}`}
                         />
                     </Row>
 

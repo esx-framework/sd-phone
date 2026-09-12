@@ -79,12 +79,12 @@ export function SopsPane() {
                                 key={sop.code}
                                 type="button"
                                 onClick={() => setCode(sop.code)}
-                                className={`flex w-full flex-col gap-0.5 rounded-[10px] px-3 py-2 text-left ${
+                                className={`flex w-full flex-col gap-0.5 rounded-[10px] px-3 py-2 text-start ${
                                     sop.code === code ? 'bg-ios-blue/10' : mdtRowHover
                                 }`}
                             >
                                 <span className="flex w-full items-center gap-2">
-                                    <span className={`shrink-0 ${mdtRef}`}>{sop.code}</span>
+                                    <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{sop.code}</span>
                                     <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-black dark:text-white">
                                         {sop.title}
                                     </span>
@@ -121,7 +121,7 @@ function SopDetail({ sop }: { sop: Sop }) {
 
     return (
         <Scroller className={`h-full ${mdtPanePad} ${enter}`}>
-            <span className={mdtRef}>{sop.code}</span>
+            <span dir="ltr" className={mdtRef}>{sop.code}</span>
             <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
                 {sop.title}
             </h1>

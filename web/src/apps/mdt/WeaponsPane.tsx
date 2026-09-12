@@ -46,7 +46,7 @@ function WeaponListRow({ weapon, selected, onPress }: {
         </>
     );
 
-    const surface = `w-full rounded-[10px] px-3 py-2.5 text-left ${
+    const surface = `w-full rounded-[10px] px-3 py-2.5 text-start ${
         selected ? 'bg-ios-blue/10' : mdtRowHover
     }`;
 

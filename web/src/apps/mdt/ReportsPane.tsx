@@ -36,12 +36,12 @@ function ReportListRow({ report, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-left ${
+            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-start ${
                 selected ? 'bg-ios-blue/10' : mdtRowHover
             }`}
         >
             <span className="flex w-full items-center gap-2">
-                <span className={`shrink-0 ${mdtRef}`}>{report.ref}</span>
+                <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{report.ref}</span>
                 <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{report.title}</span>
                 <Pill tone={reportTypeTone(report.type)}>{reportTypeLabel(report.type)}</Pill>
             </span>
@@ -56,7 +56,7 @@ function ReportListRow({ report, selected, onPress }: {
                             : t('mdt.nCharges', '{n} charges', { n: report.chargeCount })}
                     </span>
                 )}
-                <span className="ml-auto shrink-0 tabular-nums">{formatListDate(report.createdAt * 1000)}</span>
+                <span className="ms-auto shrink-0 tabular-nums">{formatListDate(report.createdAt * 1000)}</span>
             </span>
         </button>
     );

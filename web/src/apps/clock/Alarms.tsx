@@ -88,7 +88,7 @@ function AlarmCard({ alarm, editing, onToggle, onRemove, onEdit, hour24 }: {
                 )}
             </div>
             <div className="mt-1.5 flex items-center gap-1.5 truncate text-[18px] text-ios-gray">
-                <span className="truncate">{alarm.label}</span>
+                <span dir="auto" className="truncate">{alarm.label}</span>
                 {alarm.days && (
                     <>
                         <span className="opacity-50">·</span>
@@ -101,7 +101,7 @@ function AlarmCard({ alarm, editing, onToggle, onRemove, onEdit, hour24 }: {
 
     return (
         <div className="flex items-center rounded-[20px] bg-white/55 px-5 py-5 dark:bg-white/[0.08]">
-            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'mr-3.5 w-[28px] opacity-100' : 'w-0 opacity-0'}`}>
+            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'me-3.5 w-[28px] opacity-100' : 'w-0 opacity-0'}`}>
                 <button
                     type="button"
                     aria-label={t('clock.deleteAlarmAria', 'Delete {time} alarm', { time: `${time.hhmm}${time.ampm ? ' ' + time.ampm : ''}` })}
@@ -117,7 +117,7 @@ function AlarmCard({ alarm, editing, onToggle, onRemove, onEdit, hour24 }: {
                     type="button"
                     onClick={onEdit}
                     aria-label={t('clock.editAlarmAria', 'Edit {time} alarm', { time: `${time.hhmm}${time.ampm ? ' ' + time.ampm : ''}` })}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left active:opacity-60"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-start active:opacity-60"
                 >
                     {body}
                     <ChevronRight className="h-[22px] w-[22px] shrink-0 text-black/30 dark:text-white/30" strokeWidth={2.5} />

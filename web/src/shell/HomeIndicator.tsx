@@ -24,7 +24,7 @@ export function HomeIndicator({ onGoHome, closing = false, passive = false, side
 
     // Split view gives each pane its own bar, so the gesture is unambiguous: this bar belongs to
     // the app above it and closes that one.
-    const span = side === 'left' ? 'left-0 right-1/2' : side === 'right' ? 'left-1/2 right-0' : 'inset-x-0';
+    const span = side === 'left' ? 'start-0 right-1/2' : side === 'right' ? 'left-1/2 end-0' : 'inset-x-0';
 
     return (
         <div

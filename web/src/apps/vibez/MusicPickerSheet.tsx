@@ -52,7 +52,7 @@ export function MusicPickerSheet({ myHandle, onSelect, onClose }: {
                                 onSelect(t('vibez.originalSound', 'original sound — {handle}', { handle: myHandle ?? 'you' }));
                                 close();
                             }}
-                            className="flex w-full items-center gap-3 rounded-[14px] px-2 py-2.5 text-left transition-colors active:bg-white/[0.06]"
+                            className="flex w-full items-center gap-3 rounded-[14px] px-2 py-2.5 text-start transition-colors active:bg-white/[0.06]"
                         >
                             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.08] ring-1 ring-white/10">
                                 <Music2 className="h-5 w-5 text-white" strokeWidth={2} />
@@ -101,7 +101,7 @@ function TrackRow({ track, onPick }: { track: Track; onPick: () => void }) {
         <button
             type="button"
             onClick={onPick}
-            className="flex w-full items-center gap-3 rounded-[14px] px-2 py-2.5 text-left transition-colors active:bg-white/[0.06]"
+            className="flex w-full items-center gap-3 rounded-[14px] px-2 py-2.5 text-start transition-colors active:bg-white/[0.06]"
         >
             <span className="h-12 w-12 shrink-0 overflow-hidden rounded-[10px] bg-white/[0.08] ring-1 ring-white/10">
                 {art
@@ -113,8 +113,8 @@ function TrackRow({ track, onPick }: { track: Track; onPick: () => void }) {
                     )}
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-semibold text-white">{track.title}</span>
-                <span className="block truncate text-[13px] text-white/50">{track.artist}</span>
+                <span dir="auto" className="block truncate text-[15px] font-semibold text-white">{track.title}</span>
+                <span dir="auto" className="block truncate text-[13px] text-white/50">{track.artist}</span>
             </span>
         </button>
     );

@@ -184,13 +184,13 @@ function AppRow({ app, draft, override, divider, disabled = false, onPress }: {
         <button
             type="button"
             onClick={() => { if (!disabled) onPress(); }}
-            className={`relative flex w-full items-center px-4 py-2.5 text-left ${disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5'}`}
+            className={`relative flex w-full items-center px-4 py-2.5 text-start ${disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5'}`}
         >
-            <span className="mr-3 flex shrink-0 items-center">
+            <span className="me-3 flex shrink-0 items-center">
                 <ThemeTile look={look} icon={look.icon ?? app.icon} label={app.label} size={32} />
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-[17px] font-normal text-black dark:text-white">{app.label}</span>
+                <span dir="auto" className="block truncate text-[17px] font-normal text-black dark:text-white">{app.label}</span>
                 {override && (
                     <span className="block truncate text-[13px] text-ios-blue">{summarise(override)}</span>
                 )}

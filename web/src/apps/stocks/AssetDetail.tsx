@@ -17,7 +17,7 @@ function StatRow({ label, value, valueColor, divider }: { label: string; value: 
         <>
             <div className="flex items-center justify-between px-4 py-4">
                 <span className="text-[16px] font-medium text-black/80 dark:text-white/80">{label}</span>
-                <span className="text-[18px] font-semibold tabular-nums" style={valueColor ? { color: valueColor } : undefined}>{value}</span>
+                <span dir="ltr" className="text-[18px] font-semibold tabular-nums" style={valueColor ? { color: valueColor } : undefined}>{value}</span>
             </div>
             {divider && <div className="pointer-events-none bg-hairline/10" style={{ height: '0.5px' }} />}
         </>
@@ -79,7 +79,7 @@ export function AssetDetail({ asset, onBack, onBuy, onSell, onRefresh, animateIn
             style={{
                 background: pageBg,
                 color:      isDark ? '#fff' : '#000',
-                transform:  shown ? 'translateX(0)' : 'translateX(100%)',
+                transform:  shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))',
                 transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
             }}
             onTransitionEnd={() => { if (!shown) exit.current(); }}

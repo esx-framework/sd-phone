@@ -49,7 +49,7 @@ export function StartScreen({ config, stats, hasInvite, chips, buyIn, onCashier,
                 <button type="button" onClick={onCashier} className="mx-auto mt-2.5 flex items-center gap-1.5 active:opacity-70">
                     <Coins className="h-[19px] w-[19px]" strokeWidth={2.5} style={{ color: accent }} />
                     <span className="text-[22px] font-extrabold tabular-nums text-white">{chips.toLocaleString('en-US')}</span>
-                    <span className="ml-0.5 text-[13px] font-semibold text-white/50">{t('games.chips', 'chips')}</span>
+                    <span className="ms-0.5 text-[13px] font-semibold text-white/50">{t('games.chips', 'chips')}</span>
                 </button>
             )}
 
@@ -94,7 +94,7 @@ export function StartScreen({ config, stats, hasInvite, chips, buyIn, onCashier,
                     <div className="mb-1 flex items-center gap-2 text-[15px] font-bold text-white">
                         <Globe className="h-[18px] w-[18px]" strokeWidth={2.2} /> {t('games.online', 'Online')}
                         {hasInvite && (
-                            <span className="ml-0.5 rounded-full px-2 py-[2px] text-[10px] font-extrabold uppercase tracking-wide text-white" style={{ background: accent }}>{t('games.inviteBadge', 'Invite')}</span>
+                            <span className="ms-0.5 rounded-full px-2 py-[2px] text-[10px] font-extrabold uppercase tracking-wide text-white" style={{ background: accent }}>{t('games.inviteBadge', 'Invite')}</span>
                         )}
                     </div>
                     <p className="mb-3 text-[13px] text-white/55">{onlineBlurb}</p>
@@ -153,8 +153,8 @@ export function StartScreen({ config, stats, hasInvite, chips, buyIn, onCashier,
                                     <Coins className="h-[17px] w-[17px]" strokeWidth={2.2} style={{ color: accent }} /> {t('games.chipsLabel', 'Chips')}
                                 </span>
                                 <span className="flex items-center gap-3.5 text-[14px] font-semibold">
-                                    <span><span className="font-extrabold text-[#9CCC65]">+{stats.won.toLocaleString('en-US')}</span> {t('games.wonSuffix', 'won')}</span>
-                                    <span><span className="font-extrabold text-[#FF8A80]">-{stats.lost.toLocaleString('en-US')}</span> {t('games.lostSuffix', 'lost')}</span>
+                                    <span><span dir="ltr" className="font-extrabold text-[#9CCC65]">+{stats.won.toLocaleString('en-US')}</span> {t('games.wonSuffix', 'won')}</span>
+                                    <span><span dir="ltr" className="font-extrabold text-[#FF8A80]">-{stats.lost.toLocaleString('en-US')}</span> {t('games.lostSuffix', 'lost')}</span>
                                 </span>
                             </div>
                         </>

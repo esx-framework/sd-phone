@@ -68,7 +68,7 @@ export function WallpaperPage({ onBack }: { onBack: () => void }) {
                             onClick={() => setPickerTarget('both')}
                             className="relative flex w-full items-center px-4 py-3.5 active:bg-black/5 dark:active:bg-white/5"
                         >
-                            <span className="flex-1 text-left text-[17px] text-black dark:text-white">
+                            <span className="flex-1 text-start text-[17px] text-black dark:text-white">
                                 {t('settings.pickAWallpaper', 'Pick a Wallpaper')}
                             </span>
                             <ChevronRight className="h-[17px] w-[17px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
@@ -109,7 +109,7 @@ function BlurRow({ label, on, onToggle }: { label: string; on: boolean; onToggle
             onClick={onToggle}
             className="flex w-full items-center px-4 py-3 active:bg-black/5 dark:active:bg-white/5"
         >
-            <span className="flex-1 text-left text-[17px] font-normal text-black dark:text-white">{label}</span>
+            <span className="flex-1 text-start text-[17px] font-normal text-black dark:text-white">{label}</span>
             <div className="pointer-events-none">
                 <Toggle on={on} />
             </div>
@@ -143,7 +143,7 @@ function PreviewThumb({ caption, onPress, children }: { caption: string; onPress
                 style={{ aspectRatio: `${SW}/${SH}` }}
             >
                 {scale > 0 && (
-                    <div className="pointer-events-none absolute left-0 top-0" style={{ width: SW, height: SH, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                    <div className="pointer-events-none absolute start-0 top-0" style={{ width: SW, height: SH, transform: `scale(${scale})`, transformOrigin: 'top var(--dir-start, left)' }}>
                         {children}
                     </div>
                 )}
@@ -193,11 +193,11 @@ function LockPreview({ wallpaper, blurred, time, date, lockClock, animating }: {
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/5 to-black/55" />
 
-            <div className={`relative flex pt-28 ${lockClock.layout === 'left' ? 'justify-start pl-9' : lockClock.layout === 'right' ? 'justify-end pr-9' : 'justify-center'}`}>
+            <div className={`relative flex pt-28 ${lockClock.layout === 'left' ? 'justify-start ps-9' : lockClock.layout === 'right' ? 'justify-end pe-9' : 'justify-center'}`}>
                 <Clockface time={time} date={date} config={lockClock} size={94} />
             </div>
 
-            <div className="absolute bottom-[46px] left-0 right-0 flex items-center justify-between px-10">
+            <div className="absolute bottom-[46px] start-0 end-0 flex items-center justify-between px-10">
                 <QuickCircle animating={animating}><Flashlight className="h-[29px] w-[29px] text-white" strokeWidth={2.2} /></QuickCircle>
                 <QuickCircle animating={animating}><Camera className="h-[29px] w-[29px] text-white" strokeWidth={2.2} /></QuickCircle>
             </div>
@@ -242,20 +242,20 @@ function HomePreview({ wallpaper, blurred, animating }: { wallpaper: string; blu
                 <div
                     key={app.icon}
                     className="absolute"
-                    style={{ left: PAD_X + (i % COLS) * COL_STRIDE, top: stripTop + ROW_Y0 + Math.floor(i / COLS) * ROW_STRIDE, width: ICON }}
+                    style={{ insetInlineStart: PAD_X + (i % COLS) * COL_STRIDE, top: stripTop + ROW_Y0 + Math.floor(i / COLS) * ROW_STRIDE, width: ICON }}
                 >
                     <PreviewIcon icon={app.icon} label={appLabel({ id: app.icon, label: app.label })} />
                 </div>
             ))}
 
-            <div className="absolute bottom-[132px] left-0 right-0 flex justify-center">
+            <div className="absolute bottom-[132px] start-0 end-0 flex justify-center">
                 <div className={`flex items-center gap-[7px] rounded-full px-2.5 py-[7px] shadow-sm ${animating ? 'bg-black/55' : 'bg-black/35 backdrop-blur-md'}`}>
                     <div className="h-[7px] w-[7px] rounded-full bg-white" />
                     <div className="h-[7px] w-[7px] rounded-full bg-white opacity-[0.38]" />
                 </div>
             </div>
 
-            <div className="absolute bottom-5 left-4 right-4">
+            <div className="absolute bottom-5 start-4 end-4">
                 <div className={`flex items-center justify-around rounded-[28px] border border-white/20 px-4 py-3.5 ${animating ? 'bg-white/30' : 'bg-white/15 backdrop-blur-2xl'}`}>
                     {DOCK_APPS.map(id => <PreviewIcon key={id} icon={id} />)}
                 </div>
@@ -275,6 +275,7 @@ function PreviewIcon({ icon, label }: { icon: string; label?: string }) {
     return (
         <div className="flex w-full flex-col items-center gap-[7px]">
             <div
+                dir="ltr"
                 className="relative overflow-hidden"
                 style={{
                     width:        TILE,

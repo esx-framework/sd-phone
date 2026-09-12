@@ -56,6 +56,7 @@ export function weaponClassLabel(weaponClass: string): string {
 export function SerialChip({ serial, large }: { serial: string; large?: boolean }) {
     return (
         <span
+            dir="ltr"
             className={`inline-flex min-w-0 max-w-full items-center truncate rounded-[6px] border border-black/15 bg-elevated font-bold uppercase tabular-nums tracking-[0.08em] text-black dark:border-white/20 dark:bg-base/50 dark:text-white ${
                 large ? 'px-3 py-1.5 text-[19px]' : 'px-2 py-1 text-[13px]'
             }`}
@@ -93,7 +94,7 @@ function Fact({ label, value, onPress }: { label: string; value?: string | numbe
                 <button
                     type="button"
                     onClick={onPress}
-                    className="block max-w-full truncate text-left text-[15px] font-medium text-ios-blue active:opacity-60"
+                    className="block max-w-full truncate text-start text-[15px] font-medium text-ios-blue active:opacity-60"
                 >
                     {text}
                 </button>
@@ -291,7 +292,7 @@ export function WeaponRecord({ serial }: { serial: string }) {
                                     {t('mdt.weaponNotes', 'Notes')}
                                 </div>
                                 {weapon.notes ? (
-                                    <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+                                    <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                                         {weapon.notes}
                                     </p>
                                 ) : (

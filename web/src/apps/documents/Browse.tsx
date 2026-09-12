@@ -76,7 +76,7 @@ function FolderView({ folderId, title, backLabel, list, onBack, onOpenFolder, on
                 </div>
             )}
 
-            <div className={`flex items-center justify-between pl-4 pr-2.5 ${onBack ? 'pt-0.5' : 'pt-1'}`}>
+            <div className={`flex items-center justify-between ps-4 pe-2.5 ${onBack ? 'pt-0.5' : 'pt-1'}`}>
                 <h1 className="min-w-0 truncate text-[34px] font-bold tracking-tight">{title}</h1>
                 {!onBack && (
                     <button

@@ -108,7 +108,7 @@ export function AudioPlayer({ src, className }: { src: string; className?: strin
             >
                 <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-white/10" />
                 <div
-                    className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#6db4ff]"
+                    className="absolute start-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#6db4ff]"
                     style={{ width: `${pct}%` }}
                 />
                 <div

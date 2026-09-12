@@ -40,7 +40,7 @@ function Shell() {
                         type="button"
                         onClick={() => g.setAccountOpen(true)}
                         aria-label={t('ryde.account', 'Account')}
-                        className="absolute right-4 z-30 flex h-[42px] w-[42px] items-center justify-center rounded-full bg-elevated text-black shadow-md ring-1 ring-black/5 active:scale-95 dark:bg-surface dark:text-white dark:ring-white/10"
+                        className="absolute end-4 z-30 flex h-[42px] w-[42px] items-center justify-center rounded-full bg-elevated text-black shadow-md ring-1 ring-black/5 active:scale-95 dark:bg-surface dark:text-white dark:ring-white/10"
                         style={{ top: 'calc(var(--safe-top) + 8px)' }}
                     >
                         {g.authed && g.me

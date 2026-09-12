@@ -39,10 +39,10 @@ export function RouteMap({ request, onClose }: { request: Ride; onClose: () => v
     const view = (
         <div
             className="absolute inset-0 z-[70] flex flex-col bg-base font-sf"
-            style={{ transform: shown ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)' }}
+            style={{ transform: shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))', transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)' }}
         >
             <div className="flex shrink-0 items-center px-3 pb-1" style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}>
-                <button onClick={close} className="flex items-center gap-0.5 py-1 pr-3 text-[17px] font-semibold text-ios-blue active:opacity-60">
+                <button onClick={close} className="flex items-center gap-0.5 py-1 pe-3 text-[17px] font-semibold text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[26px] w-[26px]" strokeWidth={2.4} /> {t('ryde.offer', 'Offer')}
                 </button>
             </div>
@@ -50,7 +50,7 @@ export function RouteMap({ request, onClose }: { request: Ride; onClose: () => v
                 <h1 className="text-[30px] font-bold tracking-tight text-black dark:text-white">{t('ryde.route', 'Route')}</h1>
             </div>
 
-            <div className="relative min-h-0 flex-1 overflow-hidden">
+            <div dir="ltr" className="relative min-h-0 flex-1 overflow-hidden">
                 <MapView fitTo={fitTo} stageOverlay={<RouteLine a={r.pickup} b={r.dropoff} />}>
                     <Pin x={r.pickup.x} y={r.pickup.y}><PickupDot /></Pin>
                     <Pin x={r.dropoff.x} y={r.dropoff.y}><DropoffPin /></Pin>

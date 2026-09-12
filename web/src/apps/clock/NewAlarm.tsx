@@ -57,7 +57,7 @@ export function NewAlarm({ isDark, alarm, onSave, onCancel }: {
                 </div>
             </div>
 
-            <div className={`flex items-center justify-center pt-12 pb-9 ${hour24 ? 'gap-3' : 'gap-1.5'}`}>
+            <div dir="ltr" className={`flex items-center justify-center pt-12 pb-9 ${hour24 ? 'gap-3' : 'gap-1.5'}`}>
                 {hour24 ? (
                     <>
                         <DrumWheel values={HOURS_24} index={hour}   onChange={setHour}   showBand={false} />
@@ -85,7 +85,7 @@ export function NewAlarm({ isDark, alarm, onSave, onCancel }: {
                             onChange={e => setLabel(e.target.value)}
                             maxLength={30}
                             placeholder={t('clock.alarm', 'Alarm')}
-                            className="ml-3 min-w-0 flex-1 bg-transparent text-right text-[19px] text-ios-gray outline-none placeholder:text-ios-gray"
+                            className="ms-3 min-w-0 flex-1 bg-transparent text-end text-[19px] text-ios-gray outline-none placeholder:text-ios-gray"
                         />
                     </div>
                     <Hairline isDark={isDark} />
@@ -104,7 +104,7 @@ export function NewAlarm({ isDark, alarm, onSave, onCancel }: {
                                 value={snoozeSecs}
                                 disabled={!snooze}
                                 onChange={e => setSnoozeSecs(Math.min(3600, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
-                                className="w-[56px] bg-transparent text-right text-[19px] text-ios-gray outline-none"
+                                className="w-[56px] bg-transparent text-end text-[19px] text-ios-gray outline-none"
                             />
                             <span className="text-[17px] text-ios-gray">{t('clock.sec', 'sec')}</span>
                         </div>

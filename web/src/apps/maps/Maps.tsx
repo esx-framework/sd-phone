@@ -353,7 +353,7 @@ export function Maps({ onClose }: { onClose: () => void }) {
 
                 <button
                     onClick={() => { setPlacing(p => !p); setPending(null); }}
-                    className="absolute -top-[60px] right-3 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg active:scale-90"
+                    className="absolute -top-[60px] end-3 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg active:scale-90"
                     style={{
                         background: placing ? '#ff3b30' : '#0a84ff',
                         opacity: mapLayer === 'pins' ? 1 : 0,
@@ -470,12 +470,12 @@ export function Maps({ onClose }: { onClose: () => void }) {
                                     <div
                                         key={c.id}
                                         ref={el => { if (el) compRowRefs.current.set(c.id, el); else compRowRefs.current.delete(c.id); }}
-                                        className={'relative flex h-[78px] items-center gap-3.5 pl-3.5 pr-2 ' +
+                                        className={'relative flex h-[78px] items-center gap-3.5 ps-3.5 pe-2 ' +
                                             (selectedCompany === c.id ? 'bg-ios-blue/10' : 'active:bg-black/5 dark:active:bg-white/5')}
                                     >
                                         <button
                                             onClick={() => focusCompany(c)}
-                                            className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
+                                            className="flex min-w-0 flex-1 items-center gap-3.5 text-start"
                                         >
                                             <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full text-[28px] leading-none shadow-sm" style={{ background: c.color }}>{c.emoji}</span>
                                             <span className="flex min-w-0 flex-col leading-tight">
@@ -491,7 +491,7 @@ export function Maps({ onClose }: { onClose: () => void }) {
                                             <Navigation className="h-[18px] w-[18px]" strokeWidth={2.2} />
                                         </button>
                                         {i < companyMatches.length - 1 && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-px bg-hairline/[0.08]" />
+                                            <div className="absolute bottom-0 start-0 end-0 h-px bg-hairline/[0.08]" />
                                         )}
                                     </div>
                                 ))}
@@ -516,17 +516,17 @@ export function Maps({ onClose }: { onClose: () => void }) {
                                     <div
                                         key={m.id}
                                         ref={el => { if (el) pinRowRefs.current.set(m.id, el); else pinRowRefs.current.delete(m.id); }}
-                                        className={'relative flex h-[78px] items-center gap-3.5 pl-3.5 pr-2 ' +
+                                        className={'relative flex h-[78px] items-center gap-3.5 ps-3.5 pe-2 ' +
                                             (selected === m.id ? 'bg-ios-blue/10' : 'active:bg-black/5 dark:active:bg-white/5')}
                                     >
-                                        <button onClick={() => focusMarker(m)} className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
+                                        <button onClick={() => focusMarker(m)} className="flex min-w-0 flex-1 items-center gap-3.5 text-start">
                                             <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full shadow-sm" style={{ background: m.color }}>
                                                 <Icon className="h-[26px] w-[26px] text-white" strokeWidth={2.2} />
                                             </span>
                                             <span className="flex min-w-0 flex-col leading-tight">
-                                                <span className="truncate text-[21px] font-semibold text-black dark:text-white">{m.label}</span>
+                                                <span dir="auto" className="truncate text-[21px] font-semibold text-black dark:text-white">{m.label}</span>
                                                 <span className="mt-[2px] text-[16px] font-medium tabular-nums text-ios-gray">
-                                                    {m.x.toFixed(0)}, {m.y.toFixed(0)}
+                                                    <span dir="ltr">{m.x.toFixed(0)}, {m.y.toFixed(0)}</span>
                                                 </span>
                                             </span>
                                         </button>
@@ -543,7 +543,7 @@ export function Maps({ onClose }: { onClose: () => void }) {
                                             <Trash2 className="h-[18px] w-[18px]" strokeWidth={2.2} />
                                         </button>
                                         {i < shown.length - 1 && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-px bg-hairline/[0.08]" />
+                                            <div className="absolute bottom-0 start-0 end-0 h-px bg-hairline/[0.08]" />
                                         )}
                                     </div>
                                 );
@@ -605,6 +605,7 @@ function ImportPanel({ onImport, onCancel, onError }: {
             <div className="mx-4 mb-2 flex h-[52px] items-center gap-2 rounded-[10px] bg-[#e5e5e5] px-3.5 dark:bg-white/10">
                 <input
                     autoFocus
+                    dir="ltr"
                     value={value}
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onCancel(); }}
@@ -615,7 +616,7 @@ function ImportPanel({ onImport, onCancel, onError }: {
 
             <div className="no-scrollbar overflow-y-auto px-4 pb-4" style={{ height: 232 }}>
                 <p className="px-1 pt-1 text-[14px] font-medium text-ios-gray">
-                    {t('maps.importHintStart', 'Paste a waypoint code (starts with ')}<span className="font-mono">SDW1:</span>{t('maps.importHintEnd', ') someone shared with you. Press Ctrl+V in the field to paste.')}
+                    {t('maps.importHintStart', 'Paste a waypoint code (starts with ')}<span dir="ltr" className="font-mono">SDW1:</span>{t('maps.importHintEnd', ') someone shared with you. Press Ctrl+V in the field to paste.')}
                 </p>
                 <button
                     onClick={submit}

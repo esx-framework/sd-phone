@@ -43,7 +43,7 @@ export function CctvOverlay({ active }: { active: CctvActive }) {
     const secs = String(elapsed % 60).padStart(2, '0');
 
     return (
-        <div className="pointer-events-none fixed inset-0 z-[999] select-none font-mono">
+        <div dir="ltr" className="pointer-events-none fixed inset-0 z-[999] select-none font-mono">
             <div
                 className="absolute inset-0"
                 style={{
@@ -66,7 +66,7 @@ export function CctvOverlay({ active }: { active: CctvActive }) {
                 }}
             />
 
-            <div className="absolute left-0 right-0 top-0 flex items-start justify-between px-8 pt-7 text-[15px] tracking-[0.06em] text-white/85">
+            <div className="absolute start-0 end-0 top-0 flex items-start justify-between px-8 pt-7 text-[15px] tracking-[0.06em] text-white/85">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2.5">
                         <span className="flex h-[9px] w-[9px] animate-pulse rounded-full bg-[#ff4b4b]" />
@@ -77,13 +77,13 @@ export function CctvOverlay({ active }: { active: CctvActive }) {
                     <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">{active.category}</div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1 text-right">
+                <div className="flex flex-col items-end gap-1 text-end">
                     <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">{t('mdt.cctvChannel', 'CH')} {active.cameraId.slice(0, 12).toUpperCase()}</div>
                     <div className="tabular-nums text-white/85">{stamp(now)}</div>
                 </div>
             </div>
 
-            <div className="absolute left-8 right-8 bottom-7 flex items-end justify-between text-[13px] tracking-[0.08em] text-white/55">
+            <div className="absolute start-8 end-8 bottom-7 flex items-end justify-between text-[13px] tracking-[0.08em] text-white/55">
                 <div className="flex flex-col gap-1">
                     <span>{t('mdt.cctvHintLook', 'Move the mouse to pan and tilt')}</span>
                     <span>{t('mdt.cctvHintZoom', 'Scroll to zoom')}</span>
@@ -93,8 +93,8 @@ export function CctvOverlay({ active }: { active: CctvActive }) {
                 </div>
             </div>
 
-            <div className="absolute left-7 top-1/2 h-9 w-[2px] -translate-y-1/2 bg-white/25" />
-            <div className="absolute right-7 top-1/2 h-9 w-[2px] -translate-y-1/2 bg-white/25" />
+            <div className="absolute start-7 top-1/2 h-9 w-[2px] -translate-y-1/2 bg-white/25" />
+            <div className="absolute end-7 top-1/2 h-9 w-[2px] -translate-y-1/2 bg-white/25" />
             <div className="absolute left-1/2 top-6 h-[2px] w-9 -translate-x-1/2 bg-white/25" />
             <div className="absolute left-1/2 bottom-6 h-[2px] w-9 -translate-x-1/2 bg-white/25" />
         </div>

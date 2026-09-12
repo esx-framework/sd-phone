@@ -13,7 +13,8 @@ export function trackFraction(el: HTMLElement, clientX: number): number | null {
     const w = el.offsetWidth;
     if (w <= 0 || r.width <= 0) return null;
     const factor = (r.width / w) / ancestorZoom(el);
-    return Math.max(0, Math.min(1, (clientX * factor - r.left) / r.width));
+    const f = Math.max(0, Math.min(1, (clientX * factor - r.left) / r.width));
+    return getComputedStyle(el).direction === 'rtl' ? 1 - f : f;
 }
 
 export function trackFractionY(el: HTMLElement, clientY: number): number | null {

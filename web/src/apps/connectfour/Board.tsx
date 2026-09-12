@@ -36,7 +36,7 @@ export function Board({ board, onDrop, locked, winLine, lastDrop, previewDisc }:
     const preview = discColor(previewDisc);
 
     return (
-        <div className="relative" style={{ width: BOARD_W, height: BOARD_H }} onPointerLeave={() => setHoverCol(null)}>
+        <div dir="ltr" className="relative" style={{ width: BOARD_W, height: BOARD_H }} onPointerLeave={() => setHoverCol(null)}>
             <div
                 className="absolute inset-0 rounded-[22px]"
                 style={{

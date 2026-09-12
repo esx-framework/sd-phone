@@ -253,7 +253,7 @@ export function ReportEditor({ reportRef, onSaved, onDeleted, onClose }: {
             <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 grow basis-[280px]">
                     <div className="flex items-center gap-2">
-                        <span className={mdtRef}>{report.ref}</span>
+                        <span dir="ltr" className={mdtRef}>{report.ref}</span>
                         <Pill tone={reportTypeTone(report.type)}>{reportTypeLabel(report.type)}</Pill>
                     </div>
                     <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
@@ -309,7 +309,7 @@ export function ReportEditor({ reportRef, onSaved, onDeleted, onClose }: {
                 <button
                     type="button"
                     onClick={() => open('cases', report.caseRef ?? null)}
-                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-left active:opacity-70"
+                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-start active:opacity-70"
                 >
                     <FolderOpen className="h-[15px] w-[15px] shrink-0 text-ios-blue" strokeWidth={2.25} />
                     <span className="text-[14.5px] font-medium text-ios-blue">
@@ -353,7 +353,7 @@ export function ReportEditor({ reportRef, onSaved, onDeleted, onClose }: {
                                 key={person.citizenid}
                                 type="button"
                                 onClick={() => open('profiles', person.citizenid)}
-                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left ${mdtRowHover}`}
+                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-start ${mdtRowHover}`}
                             >
                                 <InitialsAvatar name={person.name} color={colorFor(person.citizenid)} size={32} />
                                 <span className="min-w-0 flex-1">
@@ -392,7 +392,7 @@ export function ReportEditor({ reportRef, onSaved, onDeleted, onClose }: {
                                     </span>
                                     <span className={`block truncate ${mdtRowMeta}`}>{charge.name}</span>
                                 </span>
-                                <span className={`shrink-0 text-right tabular-nums ${mdtRowMeta}`}>
+                                <span className={`shrink-0 text-end tabular-nums ${mdtRowMeta}`}>
                                     <span className="block">{sentenceLabel(charge.months * charge.count)}</span>
                                     <span className="block">{formatMoney(charge.fine * charge.count, { whole: true })}</span>
                                 </span>
@@ -619,7 +619,7 @@ function DraftView({ draft, saving, error, enter, onChange, onAddPerson, onSave,
                     {saving ? t('mdt.saving', 'Saving') : t('mdt.fileReport', 'File report')}
                 </MdtButton>
                 <MdtButton variant="text" onClick={onCancel}>{t('common.cancel', 'Cancel')}</MdtButton>
-                <span className={`ml-auto tabular-nums ${mdtRowMeta}`}>
+                <span className={`ms-auto tabular-nums ${mdtRowMeta}`}>
                     {sentenceLabel(totals.months)}
                     {' · '}
                     {formatMoney(totals.fine, { whole: true })}
@@ -700,9 +700,9 @@ export function ReportLinker({ linked = [], title, onPick, onClose }: {
                                     key={row.ref}
                                     type="button"
                                     onClick={() => onPick(row.ref)}
-                                    className={`flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left ${mdtRowHover}`}
+                                    className={`flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-start ${mdtRowHover}`}
                                 >
-                                    <span className={`shrink-0 ${mdtRef}`}>{row.ref}</span>
+                                    <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{row.ref}</span>
                                     <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{row.title}</span>
                                     <Pill tone={reportTypeTone(row.type)}>{reportTypeLabel(row.type)}</Pill>
                                 </button>

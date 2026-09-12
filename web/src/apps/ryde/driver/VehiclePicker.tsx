@@ -24,7 +24,7 @@ export function VehiclePicker({ onPick, onClose }: {
                             <div key={v.plate + i} className="relative">
                                 <button
                                     onClick={() => onPick(v)}
-                                    className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                    className="flex w-full items-center gap-3.5 rounded-xl px-1 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                 >
                                     <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-black/[0.07] text-black/70 dark:bg-white/10 dark:text-white/80">
                                         <Car className="h-[24px] w-[24px]" />
@@ -35,7 +35,7 @@ export function VehiclePicker({ onPick, onClose }: {
                                     </span>
                                 </button>
                                 {i < vehicles.length - 1 && (
-                                    <div className="absolute bottom-0 left-1 right-0 h-px bg-hairline/[0.08]" />
+                                    <div className="absolute bottom-0 start-1 end-0 h-px bg-hairline/[0.08]" />
                                 )}
                             </div>
                         ))}

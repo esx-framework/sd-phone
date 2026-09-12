@@ -56,9 +56,10 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, ariaLabe
                 <div className="h-full rounded-full bg-ios-blue" style={{ width: `${pct}%` }} />
             </div>
             <div
-                className="pointer-events-none absolute top-1/2 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+                className="pointer-events-none absolute top-1/2 h-[22px] w-[22px] rounded-full bg-white"
                 style={{
-                    left:      `${pct}%`,
+                    insetInlineStart: `${pct}%`,
+                    transform: 'translate(calc(var(--dir-x, 1) * -50%), -50%)',
                     boxShadow: '0 2px 7px rgba(0,0,0,0.24), 0 0.5px 1.5px rgba(0,0,0,0.16)',
                 }}
             />

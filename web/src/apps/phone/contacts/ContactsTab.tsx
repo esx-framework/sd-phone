@@ -70,7 +70,7 @@ export function ContactsTab({ contacts, myNumber, myName, card, onRequestCall, o
             <SearchBar value={query} onChange={setQuery} className="mx-4 mb-3" />
 
             <div className="relative min-h-0 flex-1 overflow-hidden">
-                <div className="absolute inset-0 overflow-y-auto no-scrollbar pl-4 pr-5 pb-6">
+                <div className="absolute inset-0 overflow-y-auto no-scrollbar ps-4 pe-5 pb-6">
                     {searching ? (
                         results.length > 0 ? (
                             <div className="overflow-hidden rounded-[10px] bg-surface">
@@ -88,7 +88,7 @@ export function ContactsTab({ contacts, myNumber, myName, card, onRequestCall, o
                             <button
                                 type="button"
                                 onClick={() => setShowMyCard(true)}
-                                className="mb-5 flex w-full items-center gap-3.5 rounded-[10px] bg-surface px-3.5 py-3 text-left active:opacity-80"
+                                className="mb-5 flex w-full items-center gap-3.5 rounded-[10px] bg-surface px-3.5 py-3 text-start active:opacity-80"
                             >
                                 <ContactAvatar contact={myCard} size={60} />
                                 <div className="min-w-0 flex-1">
@@ -117,7 +117,7 @@ export function ContactsTab({ contacts, myNumber, myName, card, onRequestCall, o
                 </div>
 
                 {!searching && (
-                    <div className="absolute inset-y-1 right-0 flex w-5 flex-col items-center justify-center gap-1.5">
+                    <div className="absolute inset-y-1 end-0 flex w-5 flex-col items-center justify-center gap-1.5">
                         {ALPHABET.map(letter => (
                             <button
                                 key={letter}
@@ -175,12 +175,12 @@ function ContactRow({ contact, divider, onOpen }: { contact: Contact; divider: b
                 type="button"
                 onClick={() => onOpen(contact)}
                 style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 84px' }}
-                className="flex w-full items-center gap-3.5 px-3.5 py-3.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                className="flex w-full items-center gap-3.5 px-3.5 py-3.5 text-start active:bg-black/5 dark:active:bg-white/5"
             >
                 <ContactAvatar contact={contact} size={56} />
                 <div className="min-w-0 flex-1">
                     <div className="truncate text-[20px] font-semibold text-black dark:text-white">{contact.name}</div>
-                    <div className="truncate text-[17px] font-medium text-black/60 dark:text-white/60">{phone(contact.phone)}</div>
+                    <div className="truncate text-[17px] font-medium text-black/60 dark:text-white/60"><span dir="ltr">{phone(contact.phone)}</span></div>
                 </div>
             </button>
             {divider && (

@@ -77,14 +77,14 @@ export function LobbyRoom({ lobby, inviteError, accent, sideLabel, wagered = tru
                     </div>
                     <div className="flex gap-2">
                         <div className="relative min-w-0 flex-1">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[17px] font-semibold text-white/40">$</span>
+                            <span className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-[17px] font-semibold text-white/40">$</span>
                             <input
                                 value={wagerInput}
                                 onChange={e => setWagerInput(e.target.value)}
                                 disabled={oppReady}
                                 inputMode="numeric"
                                 placeholder={t('games.wagerPlaceholder', '0 for a friendly game')}
-                                className="w-full rounded-[12px] bg-black/30 py-2.5 pl-8 pr-4 text-[17px] text-white outline-none placeholder-white/30 disabled:opacity-50"
+                                className="w-full rounded-[12px] bg-black/30 py-2.5 ps-8 pe-4 text-[17px] text-white outline-none placeholder-white/30 disabled:opacity-50"
                             />
                         </div>
                         <button type="button" disabled={oppReady || parsedWager === lobby.wager} onClick={() => onSetWager(parsedWager)} className="shrink-0 rounded-[12px] px-5 text-[15px] font-bold text-white active:opacity-80 disabled:opacity-40" style={{ background: accent }}>{t('games.update', 'Update')}</button>
@@ -163,7 +163,7 @@ function MemberRow({ m, sideLabel, canKick, onKick }: { m: LobbyMember; sideLabe
         <div className="flex min-h-[54px] items-center justify-between rounded-[11px] px-3 py-3" style={{ background: 'rgba(0,0,0,0.2)' }}>
             <span className="flex min-w-0 items-center gap-2 text-[16px] font-semibold text-white">
                 {m.host && <Crown className="h-[16px] w-[16px] shrink-0 text-[#FFD54F]" strokeWidth={2.2} />}
-                <span className="truncate">{m.name}</span>
+                <span dir="auto" className="truncate">{m.name}</span>
                 {m.you && <span className="shrink-0 text-[13px] font-medium text-white/45">{t('games.youSuffix', '(you)')}</span>}
             </span>
             <span className="flex shrink-0 items-center gap-2.5">

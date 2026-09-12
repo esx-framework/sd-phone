@@ -74,7 +74,7 @@ function Row({ row, dark }: { row: LeaderboardEntry; dark: boolean }) {
             )}
 
             <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate text-[18.5px] font-bold tracking-tight">{row.name}</span>
+                <span dir="auto" className="truncate text-[18.5px] font-bold tracking-tight">{row.name}</span>
                 {row.isMe && (
                     <span
                         className="shrink-0 rounded-full px-2 py-[2px] text-[10.5px] font-extrabold uppercase tracking-wide text-white"

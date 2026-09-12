@@ -195,7 +195,7 @@ export function MediaLightbox({ media, index, onIndex, onClose, caption }: {
                         <button
                             type="button"
                             onMouseDown={e => { e.stopPropagation(); step(-1); }}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-zinc-200 ring-1 ring-white/10 transition-colors hover:bg-black/70 hover:text-white"
+                            className="absolute start-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-zinc-200 ring-1 ring-white/10 transition-colors hover:bg-black/70 hover:text-white"
                             title="Previous"
                         >
                             <ChevronLeft size={19} />
@@ -203,7 +203,7 @@ export function MediaLightbox({ media, index, onIndex, onClose, caption }: {
                         <button
                             type="button"
                             onMouseDown={e => { e.stopPropagation(); step(1); }}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-zinc-200 ring-1 ring-white/10 transition-colors hover:bg-black/70 hover:text-white"
+                            className="absolute end-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-zinc-200 ring-1 ring-white/10 transition-colors hover:bg-black/70 hover:text-white"
                             title="Next"
                         >
                             <ChevronRight size={19} />

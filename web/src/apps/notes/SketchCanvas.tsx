@@ -191,7 +191,7 @@ export function SketchCanvas({ initial, onSave, onCancel }: Props) {
                 <div className="pointer-events-none absolute inset-x-0 flex justify-center">
                     <span className="text-[17px] font-semibold">{t('notes.sketch', 'Sketch')}</span>
                 </div>
-                <button type="button" onClick={save} className="ml-auto text-ios-blue active:opacity-60">
+                <button type="button" onClick={save} className="ms-auto text-ios-blue active:opacity-60">
                     <Check className="h-[22px] w-[22px]" strokeWidth={2.75} />
                 </button>
             </div>

@@ -75,7 +75,7 @@ export function OffencesPane() {
                                 key={offence.code}
                                 type="button"
                                 onClick={() => setCode(offence.code)}
-                                className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left ${
+                                className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2 text-start ${
                                     offence.code === code ? 'bg-ios-blue/10' : mdtRowHover
                                 }`}
                             >
@@ -150,7 +150,7 @@ function OffenceDetail({ offence }: { offence: Offence }) {
 
             <MdtCard className="mt-4 p-4">
                 <div className={mdtSectionHeader}>{t('mdt.description', 'Description')}</div>
-                <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+                <p dir="auto" className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                     {offence.description || t('mdt.noDescription', 'No description on file for this code.')}
                 </p>
             </MdtCard>

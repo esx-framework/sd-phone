@@ -135,7 +135,7 @@ export function PromptDialog({
             cancel={{ label: cancelLabel, onClick: () => dismiss(onCancel) }}
             confirm={{ label: confirmLabel, onClick: confirm, disabled: !canConfirm || busy, busy }}
         >
-            <div className="mt-4 space-y-3 text-left">
+            <div className="mt-4 space-y-3 text-start">
                 <div>
                     {label && <div className={labelCls}>{label}</div>}
                     <input
@@ -171,7 +171,7 @@ export function PromptDialog({
             </div>
 
             {error && (
-                <div className="mt-2 text-left text-[14px] leading-snug text-ios-red">{error}</div>
+                <div className="mt-2 text-start text-[14px] leading-snug text-ios-red">{error}</div>
             )}
         </DialogShell>
     );

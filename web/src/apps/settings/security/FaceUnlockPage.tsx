@@ -105,13 +105,13 @@ function ActionRow({
             type="button"
             onClick={color === 'disabled' ? undefined : onPress}
             disabled={color === 'disabled'}
-            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5 disabled:active:bg-transparent"
+            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5 disabled:active:bg-transparent"
         >
             <span className={`text-[17px] font-normal ${textClass}`}>{label}</span>
             {divider && (
                 <div
-                    className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control"
-                    style={{ left: 0, height: '0.5px' }}
+                    className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control"
+                    style={{ insetInlineStart: 0, height: '0.5px' }}
                 />
             )}
         </button>
@@ -210,7 +210,7 @@ function PinFlow({
                 <p className="text-[17px] font-semibold text-black dark:text-white mb-1">{title}</p>
                 <p className="text-[13px] text-ios-gray text-center mb-10">{subtitle}</p>
 
-                <div className="flex gap-5 mb-4">
+                <div dir="ltr" className="flex gap-5 mb-4">
                     {[0, 1, 2, 3].map(i => (
                         <div
                             key={i}
@@ -227,7 +227,7 @@ function PinFlow({
                     <p className="text-[13px] text-ios-red text-center mb-4">{error}</p>
                 )}
 
-                <div className="mt-6 grid grid-cols-3 gap-3 w-full max-w-[300px]">
+                <div dir="ltr" className="mt-6 grid grid-cols-3 gap-3 w-full max-w-[300px]">
                     {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => {
                         if (k === '') return <div key={i} />;
                         if (k === '⌫') {

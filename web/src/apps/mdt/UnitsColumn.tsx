@@ -40,7 +40,7 @@ export function UnitRow({ unit, onPress, selected = false, divider = true }: {
         <button
             type="button"
             onClick={onPress}
-            className={`relative w-full px-4 py-3 text-left transition-colors ${
+            className={`relative w-full px-4 py-3 text-start transition-colors ${
                 selected ? 'bg-ios-blue/10' : 'active:bg-black/[0.05] dark:active:bg-white/[0.06]'
             }`}
         >

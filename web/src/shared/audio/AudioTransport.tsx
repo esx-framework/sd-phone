@@ -39,7 +39,7 @@ export function AudioTransport({ src, armed, active, duration = 0, actions }: {
     const pct = total ? Math.min(100, (at / total) * 100) : 0;
 
     return (
-        <div className="flex items-center gap-3">
+        <div dir="ltr" className="flex items-center gap-3">
             {armed && (
                 <audio
                     ref={audioRef}
@@ -73,7 +73,7 @@ export function AudioTransport({ src, armed, active, duration = 0, actions }: {
                 }}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios-blue text-white active:opacity-70"
             >
-                {playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="ml-[2px] h-4 w-4 fill-current" />}
+                {playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="ms-[2px] h-4 w-4 fill-current" />}
             </button>
 
             <div
@@ -91,7 +91,7 @@ export function AudioTransport({ src, armed, active, duration = 0, actions }: {
             >
                 <div className="relative h-5">
                     <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/15 dark:bg-white/20" />
-                    <div className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/45 dark:bg-white/55" style={{ width: `${pct}%` }} />
+                    <div className="absolute start-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/45 dark:bg-white/55" style={{ width: `${pct}%` }} />
                     <div className="absolute top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black shadow-sm dark:bg-white" style={{ left: `${pct}%` }} />
                 </div>
             </div>

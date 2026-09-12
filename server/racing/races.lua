@@ -56,6 +56,9 @@ local CURRENCY = config.Currency or 'bank'
 local FALLBACK_ACCOUNT = CURRENCY == 'cash' and 'bank' or 'cash'
 ---@type integer Seconds of 3-2-1 the client runs between the dispatch and the green light.
 local COUNTDOWN = math.max(0, math.floor(tonumber((config.Race or {}).CountdownSeconds) or 3))
+---@type number Maximum horizontal distance from the expected gate accepted by the server. The
+---client uses CheckpointRadius exactly; ten extra metres cover position replication lag at speed.
+local CHECKPOINT_RADIUS = math.max(1.0, tonumber((config.Race or {}).CheckpointRadius) or 14.0) + 10.0
 ---@type integer Seconds before an abandoned run is swept out of memory.
 local RUN_MAX_AGE = math.max(60, math.floor(tonumber((config.Race or {}).RunMaxAgeSeconds) or 3600))
 
@@ -242,14 +245,35 @@ end
 ---Gates per lap for a run. The route the client drives is the authority: gate 1 is the start line
 ---and never a target, so a track's own point list settles the count without trusting a denormalised
 ---field on the lobby record.
----@param trackId integer|nil
+---@param points table[] the authoritative route loaded from the track store
 ---@param race table the racegen entry
 ---@return integer cpPerLap at least 1
-local function checkpointsPerLap(trackId, race)
-    local points = trackId and store.routeFor(trackId) or nil
-    local count  = points and #points or 0
+local function checkpointsPerLap(points, race)
+    local count = type(points) == 'table' and #points or 0
     if count < 2 then count = math.floor(tonumber(race.gates) or 0) end
     return math.max(1, count - 1)
+end
+
+---Whether the player's server-owned position is close enough to the checkpoint their client
+---reported. Gates use the same midpoint-based 2D hit test as the client.
+---@param src integer player server id
+---@param run table live run carrying the authoritative route
+---@param idx integer overall checkpoint index across every lap
+---@return boolean near
+local function nearCheckpoint(src, run, idx)
+    local route = run.route
+    if type(route) ~= 'table' or #route < 2 then return false end
+
+    local gate = route[((idx - 1) % run.cpPerLap) + 2]
+    if type(gate) ~= 'table' then return false end
+    local x, y = tonumber(gate[1]), tonumber(gate[2])
+    if not x or not y then return false end
+
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local coords = GetEntityCoords(ped)
+    local dx, dy = coords.x - x, coords.y - y
+    return dx * dx + dy * dy <= CHECKPOINT_RADIUS * CHECKPOINT_RADIUS
 end
 
 ---Takes an amount from one account, but only when the balance actually covers it. The pre-check
@@ -412,6 +436,7 @@ function races.beginRun(race, members, now)
     end
 
     local trackId  = tonumber(race.trackId)
+    local route    = trackId and store.routeFor(trackId) or {}
     local isCustom = race.isCustom == true
     local run = {
         id          = race.id,
@@ -423,7 +448,8 @@ function races.beginRun(race, members, now)
         finishCount = 0,
         ratings     = ratings,
         racerCount  = #members,
-        cpPerLap    = checkpointsPerLap(trackId, race),
+        cpPerLap    = checkpointsPerLap(route, race),
+        route       = route,
         laps        = math.max(1, math.floor(tonumber(race.laps) or 1)),
         prizePool   = isCustom and (util.wholeAmount(race.entryFee) * #members) or util.wholeAmount(race.prizePool),
         isCustom    = isCustom,
@@ -459,8 +485,8 @@ function races.beginRun(race, members, now)
     broadcastStandings(race.id, run)
 end
 
----A racer reported a checkpoint. The index must be strictly ahead of the one already stored and
----within the run's gate count; a replayed or out-of-order index is discarded without a broadcast.
+---A racer reported a checkpoint. It must be the exact next gate, arrive after the green light and
+---match the player's server-side position; skipped, forged and pre-countdown reports are discarded.
 ---`clientMs` is advisory and only ever feeds the display gaps in the standings.
 ---@param src integer player server id
 ---@param raceId string
@@ -472,6 +498,7 @@ function races.checkpoint(src, raceId, index, clientMs)
 
     local run = type(raceId) == 'string' and ActiveRuns[raceId] or nil
     if not run or not run.memberSet[cid] or run.finished[cid] ~= nil then return end
+    if GetGameTimer() < run.startedAt then return end
 
     local idx = util.wholeAmount(index)
     if idx <= 0 or idx > run.cpPerLap * run.laps then return end
@@ -481,7 +508,7 @@ function races.checkpoint(src, raceId, index, clientMs)
         p = { idx = 0, times = {} }
         run.progress[cid] = p
     end
-    if idx <= p.idx then return end
+    if idx ~= p.idx + 1 or not nearCheckpoint(src, run, idx) then return end
 
     p.idx = idx
     p.times[idx] = util.wholeAmount(clientMs)
@@ -510,7 +537,9 @@ function races.finish(src, raceId, modelHash, clientMs)
     local p = run.progress[cid]
     if not p or p.idx ~= run.cpPerLap * run.laps then return end
 
-    local elapsedMs = math.max(1, GetGameTimer() - run.startedAt)
+    local now = GetGameTimer()
+    if now < run.startedAt then return end
+    local elapsedMs = now - run.startedAt
     p.times[p.idx] = util.wholeAmount(clientMs)
 
     run.finished[cid] = elapsedMs

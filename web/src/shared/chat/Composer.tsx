@@ -70,7 +70,7 @@ export const Composer = forwardRef<ComposerHandle, {
     return (
         <div className="px-3 pb-2 pt-1.5">
             <div
-                className={`flex items-center gap-1 rounded-[22px] bg-base py-[9px] pl-4 dark:bg-surface ${canSend ? 'pr-[5px]' : 'pr-4'}`}
+                className={`flex items-center gap-1 rounded-[22px] bg-base py-[9px] ps-4 dark:bg-surface ${canSend ? 'pe-[5px]' : 'pe-4'}`}
                 style={{ boxShadow: `inset 0 0 0 var(--hairline-w, 1px) ${borderColor}` }}
             >
                 <input

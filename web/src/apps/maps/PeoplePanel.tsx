@@ -154,7 +154,7 @@ export function FriendDot({ f, selected, interactive, showAvatar = true, onSelec
                 </div>
             </button>
             {selected && (
-                <div className="mt-1 whitespace-nowrap rounded-md bg-black/80 px-2 py-0.5 text-[11px] font-bold text-white">
+                <div dir="auto" className="mt-1 whitespace-nowrap rounded-md bg-black/80 px-2 py-0.5 text-[11px] font-bold text-white">
                     {f.name}
                 </div>
             )}
@@ -183,6 +183,7 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                 <div className="flex h-[44px] min-w-0 flex-1 items-center gap-2 rounded-[10px] bg-[#e5e5e5] px-3 dark:bg-white/10">
                     <UserPlus className="h-[18px] w-[18px] shrink-0 text-black/60 dark:text-white/60" strokeWidth={2.4} />
                     <input
+                        dir="ltr"
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') submit(); }}
@@ -222,10 +223,10 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                             return (
                                 <div
                                     key={f.id}
-                                    className={'relative flex h-[78px] items-center gap-3.5 pl-3.5 pr-2 ' +
+                                    className={'relative flex h-[78px] items-center gap-3.5 ps-3.5 pe-2 ' +
                                         (selectedId === f.id ? 'bg-ios-blue/10' : 'active:bg-black/5 dark:active:bg-white/5')}
                                 >
-                                    <button onClick={() => onFocus(f)} disabled={!live} className="flex min-w-0 flex-1 items-center gap-3.5 text-left disabled:cursor-default">
+                                    <button onClick={() => onFocus(f)} disabled={!live} className="flex min-w-0 flex-1 items-center gap-3.5 text-start disabled:cursor-default">
                                         <span
                                             className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full text-[17px] font-bold text-white shadow-sm"
                                             style={{ background: f.color }}
@@ -233,10 +234,10 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                                             {showAvatars && f.avatar
                                                 ? <img src={f.avatar} alt="" className="h-full w-full rounded-full object-cover" />
                                                 : initials(f.name)}
-                                            {live && <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-ios-green" />}
+                                            {live && <span className="absolute -bottom-0.5 -end-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-ios-green" />}
                                         </span>
                                         <span className="flex min-w-0 flex-col leading-tight">
-                                            <span className="truncate text-[20px] font-semibold text-black dark:text-white">{f.name}</span>
+                                            <span dir="auto" className="truncate text-[20px] font-semibold text-black dark:text-white">{f.name}</span>
                                             <span className={'mt-[2px] truncate text-[16px] font-medium ' + (f.incoming ? 'text-ios-blue' : !f.pending && !unavailable && f.youShare ? 'text-ios-green' : 'text-ios-gray')}>
                                                 {f.incoming
                                                     ? t('maps.wantsToShare', 'Wants to share locations')
@@ -268,7 +269,7 @@ export function PeoplePanel({ friends, selectedId, showAvatars, onFocus, onToggl
                                         <Trash2 className="h-[18px] w-[18px]" strokeWidth={2.2} />
                                     </button>
                                     {i < friends.length - 1 && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-px bg-hairline/[0.08]" />
+                                        <div className="absolute bottom-0 start-0 end-0 h-px bg-hairline/[0.08]" />
                                     )}
                                 </div>
                             );
@@ -350,7 +351,7 @@ export function ContactsPanel({ existing, onPick, onCancel }: {
                                     key={c.id}
                                     disabled={added}
                                     onClick={() => onPick(c)}
-                                    className={'relative flex h-[78px] w-full items-center gap-3.5 pl-3.5 pr-4 text-left ' +
+                                    className={'relative flex h-[78px] w-full items-center gap-3.5 ps-3.5 pe-4 text-start ' +
                                         (added ? 'opacity-55' : 'active:bg-black/5 dark:active:bg-white/5')}
                                 >
                                     <span
@@ -360,14 +361,14 @@ export function ContactsPanel({ existing, onPick, onCancel }: {
                                         {c.avatar ? <img src={c.avatar} alt="" className="h-full w-full object-cover" /> : c.initials}
                                     </span>
                                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                                        <span className="truncate text-[20px] font-semibold text-black dark:text-white">{c.name}</span>
-                                        <span className="mt-[2px] truncate text-[16px] font-medium tabular-nums text-ios-gray">{c.phone}</span>
+                                        <span dir="auto" className="truncate text-[20px] font-semibold text-black dark:text-white">{c.name}</span>
+                                        <span className="mt-[2px] truncate text-[16px] font-medium tabular-nums text-ios-gray"><span dir="ltr">{c.phone}</span></span>
                                     </span>
                                     {added
                                         ? <Check className="h-[20px] w-[20px] shrink-0 text-ios-green" strokeWidth={2.6} />
                                         : <UserPlus className="h-[20px] w-[20px] shrink-0 text-ios-blue" strokeWidth={2.3} />}
                                     {i < shown.length - 1 && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-px bg-hairline/[0.08]" />
+                                        <div className="absolute bottom-0 start-0 end-0 h-px bg-hairline/[0.08]" />
                                     )}
                                 </button>
                             );

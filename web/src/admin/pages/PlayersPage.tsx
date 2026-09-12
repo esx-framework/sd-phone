@@ -56,7 +56,7 @@ export function PlayersPage({ initialQuery, onOpenPlayer }: {
                     ? <Btn variant="subtle" onClick={() => { setQ(''); setSubmitted(''); }}>Clear</Btn>
                     : undefined}
             >
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full text-start text-[13px]">
                     <thead>
                         <tr className="text-[11px] uppercase tracking-wide text-zinc-500">
                             <th className="px-4 py-2.5 font-semibold">Player</th>
@@ -82,7 +82,7 @@ export function PlayersPage({ initialQuery, onOpenPlayer }: {
                                 <td className="px-4 py-2.5 font-mono text-[12px] text-zinc-400">{h.citizenid}</td>
                                 <td className="px-4 py-2.5 text-zinc-300">{fmtPhone(h.phoneNumber)}</td>
                                 <td className="px-4 py-2.5">{h.matchedOn && <Badge>{h.matchedOn}</Badge>}</td>
-                                <td className="pr-3 text-zinc-600"><ChevronRight size={15} /></td>
+                                <td className="pe-3 text-zinc-600"><ChevronRight size={15} /></td>
                             </tr>
                         ))}
                     </tbody>

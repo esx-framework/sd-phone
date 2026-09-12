@@ -21,7 +21,7 @@ export function ScheduledRow({ title, eyebrow, body, publishAt, accent, onOpen, 
 
     return (
         <div className="rounded-[16px] bg-surface p-3.5 shadow-sm">
-            <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 text-left active:opacity-80">
+            <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 text-start active:opacity-80">
                 <span
                     className={`mt-[3px] flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${accent ? '' : 'bg-ios-blue'}`}
                     style={accent ? { background: accent } : undefined}

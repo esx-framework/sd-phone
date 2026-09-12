@@ -89,7 +89,7 @@ export function EditContact({ contact, onCancel, onSave, onDelete, lockPhone = f
 
                 {allowDelete && (
                     <div className="mt-5 overflow-hidden rounded-[10px] bg-surface">
-                        <button type="button" onClick={() => setConfirmDelete(true)} className="w-full px-4 py-3 text-left text-[18px] text-ios-red active:bg-black/5 dark:active:bg-white/5">
+                        <button type="button" onClick={() => setConfirmDelete(true)} className="w-full px-4 py-3 text-start text-[18px] text-ios-red active:bg-black/5 dark:active:bg-white/5">
                             {t('phone.deleteContact','Delete Contact')}
                         </button>
                     </div>
@@ -128,6 +128,7 @@ function Field({ placeholder, value, onChange, inputMode, tint, readOnly }: {
     return (
         <input
             type="text"
+            dir={inputMode === 'tel' ? 'ltr' : 'auto'}
             inputMode={inputMode}
             value={value}
             readOnly={readOnly}

@@ -67,7 +67,7 @@ export function Timer({ topPad = 0, isDark }: { topPad?: number; isDark: boolean
         <div className="relative flex flex-1 flex-col overflow-hidden">
             <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
                 <div style={{ height: topPad }} className="shrink-0" />
-                <div className="mt-6 flex items-center justify-center gap-0 px-4">
+                <div dir="ltr" className="mt-6 flex items-center justify-center gap-0 px-4">
                     <DrumWheel values={DRUM_HOURS}  index={pickH} label={t('clock.hours', 'hours')} onChange={setPickH} bandHeight={58} width={102} fontSize={40} inactiveFontSize={33} inactiveFontWeight={200} />
                     <DrumWheel values={DRUM_MINSEC} index={pickM} label={t('clock.min', 'min')}   onChange={setPickM} bandHeight={58} width={102} fontSize={40} inactiveFontSize={33} inactiveFontWeight={200} />
                     <DrumWheel values={DRUM_MINSEC} index={pickS} label={t('clock.sec', 'sec')}   onChange={setPickS} bandHeight={58} width={102} fontSize={40} inactiveFontSize={33} inactiveFontWeight={200} />
@@ -91,7 +91,7 @@ export function Timer({ topPad = 0, isDark }: { topPad?: number; isDark: boolean
                                         setPickM(Math.floor((secs % 3600) / 60));
                                         setPickS(secs % 60);
                                     }}
-                                    className="flex w-full items-center px-4 py-3 text-left text-[18px] text-black active:bg-black/5 dark:text-white dark:active:bg-white/5"
+                                    className="flex w-full items-center px-4 py-3 text-start text-[18px] text-black active:bg-black/5 dark:text-white dark:active:bg-white/5"
                                     style={{ borderTop: `0.5px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)'}` }}
                                 >
                                     {fmtTimerLabel(secs)}

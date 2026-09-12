@@ -75,7 +75,7 @@ function HomeCard({ h, onOpen }: { h: Home; onOpen: () => void }) {
         <button
             type="button"
             onClick={onOpen}
-            className="block w-full rounded-[18px] bg-surface px-[18px] py-[17px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] active:bg-black/[0.03] dark:shadow-none dark:ring-white/[0.06] dark:active:bg-white/[0.04]"
+            className="block w-full rounded-[18px] bg-surface px-[18px] py-[17px] text-start shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] active:bg-black/[0.03] dark:shadow-none dark:ring-white/[0.06] dark:active:bg-white/[0.04]"
         >
             <div className="flex items-center gap-3.5">
                 <div className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[14px]" style={{ background: h.accent }}>
@@ -84,7 +84,7 @@ function HomeCard({ h, onOpen }: { h: Home; onOpen: () => void }) {
 
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <h3 className="truncate text-[18px] font-semibold leading-tight text-black dark:text-white">{h.address}</h3>
+                        <h3 dir="auto" className="truncate text-[18px] font-semibold leading-tight text-black dark:text-white">{h.address}</h3>
                         <Pill>{t('homes.owned','Owned')}</Pill>
                     </div>
                     <p className="mt-0.5 truncate text-[16px] font-medium text-black/85 dark:text-white/80">{h.type}</p>
@@ -96,7 +96,7 @@ function HomeCard({ h, onOpen }: { h: Home; onOpen: () => void }) {
             {h.area ? (
                 <div className="mt-3 flex items-center gap-1.5 text-black/70 dark:text-white/70">
                     <MapPin className="h-[16px] w-[16px] shrink-0" strokeWidth={2.2} />
-                    <span className="truncate text-[16px] font-medium">{h.area}</span>
+                    <span dir="auto" className="truncate text-[16px] font-medium">{h.area}</span>
                 </div>
             ) : null}
         </button>
@@ -173,7 +173,7 @@ function HomeDetail({ h, caps, onBack, animateIn = true }: { h: Home; caps: Home
                     <div className="flex h-[132px] w-[132px] items-center justify-center rounded-[26px]" style={{ background: h.accent }}>
                         <House className="h-[62px] w-[62px] text-white" strokeWidth={1.6} />
                     </div>
-                    <h2 className="mt-3 text-[24px] font-bold tracking-tight text-black dark:text-white">{h.address}</h2>
+                    <h2 dir="auto" className="mt-3 text-[24px] font-bold tracking-tight text-black dark:text-white">{h.address}</h2>
                     <p className="text-[15px] text-ios-gray">{h.type}</p>
 
                     <div className="mt-3 flex items-center gap-2">
@@ -278,13 +278,13 @@ function Row({ label, value, icon, divider, onAction }: { label: string; value: 
         <div className={`flex items-center gap-2.5 px-4 py-3.5 ${divider ? 'border-t border-black/[0.06] dark:border-white/[0.08]' : ''}`}>
             {icon && <span className="text-black/40 dark:text-white/40">{icon}</span>}
             <span className="text-[17px] text-black dark:text-white">{label}</span>
-            <span className="ml-auto min-w-0 truncate pl-3 text-right text-[17px] text-ios-gray">{value}</span>
+            <span className="ms-auto min-w-0 truncate ps-3 text-end text-[17px] text-ios-gray">{value}</span>
             {onAction && (
                 <button
                     type="button"
                     onClick={onAction}
                     aria-label={t('homes.setWaypointTo','Set waypoint to {value}', { value })}
-                    className="ml-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue active:opacity-60"
+                    className="ms-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue active:opacity-60"
                 >
                     <Navigation className="h-[16px] w-[16px]" strokeWidth={2.2} fill="currentColor" />
                 </button>
@@ -300,7 +300,7 @@ function KeyHolderRow({ name, divider, onRemove }: { name: string; divider?: boo
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-[14px] font-semibold text-ios-blue">
                 {initials}
             </div>
-            <span className="min-w-0 flex-1 truncate text-[17px] text-black dark:text-white">{name}</span>
+            <span dir="auto" className="min-w-0 flex-1 truncate text-[17px] text-black dark:text-white">{name}</span>
             {onRemove && (
                 <button
                     type="button"

@@ -46,19 +46,19 @@ function OrderRow({ order, onPress }: { order: StandingOrder; onPress: () => voi
         <button
             type="button"
             onClick={onPress}
-            className="flex w-full items-center gap-3.5 px-4 py-[16px] text-left transition-colors active:bg-black/[0.06] dark:active:bg-white/[0.08]"
+            className="flex w-full items-center gap-3.5 px-4 py-[16px] text-start transition-colors active:bg-black/[0.06] dark:active:bg-white/[0.08]"
         >
             <div className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full" style={{ background: `${color}22`, color }}>
                 <Repeat className="h-[22px] w-[22px]" strokeWidth={2.2} />
             </div>
             <div className="min-w-0 flex-1">
-                <div className="truncate text-[18.5px] font-semibold leading-tight">{order.label}</div>
-                <div className="mt-1 truncate text-[16px]">{order.recipientName ?? formatPhone(order.recipient)}</div>
+                <div dir="auto" className="truncate text-[18.5px] font-semibold leading-tight">{order.label}</div>
+                <div dir="auto" className="mt-1 truncate text-[16px]">{order.recipientName ?? formatPhone(order.recipient)}</div>
                 <div className="mt-0.5 text-[15px] leading-snug text-ios-gray">{schedule}</div>
                 {order.active && <div className="mt-0.5 truncate text-[15px] text-ios-gray">{untilLabel(order.nextRun)}</div>}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5">
-                <span className="text-[19px] font-semibold tabular-nums tracking-tight">{formatMoney(order.amount, { whole: true })}</span>
+                <span dir="ltr" className="text-[19px] font-semibold tabular-nums tracking-tight">{formatMoney(order.amount, { whole: true })}</span>
                 {status && <Pill tone={status.tone}>{status.label()}</Pill>}
             </div>
             <ChevronRight className="h-[20px] w-[20px] shrink-0 text-ios-gray/60" strokeWidth={2.2} />

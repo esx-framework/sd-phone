@@ -60,7 +60,7 @@ function FollowRow({ user }: { user: BirdyFollowUser }) {
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[19px] font-bold text-label">{user.name}</span>
+                    <span dir="auto" className="truncate text-[19px] font-bold text-label">{user.name}</span>
                     {user.verified && <VerifiedBadge size={19} type={user.verifiedType} />}
                     {user.followsYou && (
                         <span className="shrink-0 rounded-md border px-2 py-[3px] text-[14px] font-semibold leading-none" style={{ background: PILL, borderColor: LINE_STRONG, color: TEXT }}>
@@ -68,9 +68,9 @@ function FollowRow({ user }: { user: BirdyFollowUser }) {
                         </span>
                     )}
                 </div>
-                <div className="truncate text-[17px]" style={{ color: BLUE }}>@{user.handle}</div>
+                <div className="truncate text-[17px]" style={{ color: BLUE }}><span dir="ltr">@{user.handle}</span></div>
                 {user.bio && (
-                    <div className="mt-0.5 truncate text-[17px]" style={{ color: META }}>
+                    <div dir="auto" className="mt-0.5 truncate text-[17px]" style={{ color: META }}>
                         <RichText text={user.bio} />
                     </div>
                 )}

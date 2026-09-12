@@ -70,19 +70,19 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
 
             <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">
                 <div className="px-4 pt-3">
-                    <button type="button" onClick={openAuthor} className="flex items-center gap-3 text-left">
+                    <button type="button" onClick={openAuthor} className="flex items-center gap-3 text-start">
                         <Avatar size={52} src={post.author.avatar} />
                         <div className="min-w-0 leading-tight">
                             <div className="flex items-center gap-1">
-                                <span className="text-[18px] font-bold text-label">{post.author.name}</span>
+                                <span dir="auto" className="text-[18px] font-bold text-label">{post.author.name}</span>
                                 {post.author.verified && <VerifiedBadge size={18} type={post.author.verifiedType} />}
                             </div>
-                            <div className="text-[16px]" style={{ color: META }}>@{post.author.handle}</div>
+                            <div className="text-[16px]" style={{ color: META }}><span dir="ltr">@{post.author.handle}</span></div>
                         </div>
                     </button>
 
                     {post.body && (
-                        <p className="mt-3 whitespace-pre-wrap break-words text-[22px] leading-[1.35] text-label">
+                        <p dir="auto" className="mt-3 whitespace-pre-wrap break-words text-[22px] leading-[1.35] text-label">
                             <RichText text={post.body} />
                         </p>
                     )}
@@ -98,7 +98,7 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
 
                 <div className="mx-4 mt-4 text-[16px]" style={{ color: META }}>
                     <span className="font-bold text-label">{compactCount(post.reposts)}</span> {t('squawk.reposts', 'Reposts')}
-                    <span className="ml-5 font-bold text-label">{compactCount(post.likes)}</span> {t('squawk.likes', 'Likes')}
+                    <span className="ms-5 font-bold text-label">{compactCount(post.likes)}</span> {t('squawk.likes', 'Likes')}
                 </div>
 
                 <div className="mx-4 flex items-center justify-around py-4" style={{ color: META }}>
@@ -148,7 +148,7 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
                                         type="button"
                                         onClick={() => setMedia(prev => prev.filter((_, idx) => idx !== i))}
                                         aria-label={t('squawk.removeImage', 'Remove image')}
-                                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 active:opacity-70"
+                                        className="absolute -end-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 active:opacity-70"
                                     >
                                         <X className="h-[12px] w-[12px] text-white" strokeWidth={2.6} />
                                     </button>
@@ -171,7 +171,7 @@ export function PostDetail({ post, me, onBack, onToggleLike, onToggleRepost, onT
                             aria-label={t('squawk.addGif', 'Add GIF')}
                             disabled={media.length >= MAX_REPLY_IMAGES}
                             onClick={() => setPicking('gif')}
-                            className="mr-1 flex h-10 w-9 shrink-0 items-center justify-center rounded-full active:bg-hairline/5 disabled:opacity-40"
+                            className="me-1 flex h-10 w-9 shrink-0 items-center justify-center rounded-full active:bg-hairline/5 disabled:opacity-40"
                         >
                             <span className="rounded-[6px] border-[1.5px] px-[4px] py-[2px] text-[12px] font-extrabold leading-none" style={{ borderColor: BLUE, color: BLUE }}>GIF</span>
                         </button>

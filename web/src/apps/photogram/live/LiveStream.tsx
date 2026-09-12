@@ -200,11 +200,11 @@ export function LiveStream({ onClose }: { onClose: () => void }) {
                     {comments.map(c => (
                         <div key={c.id} className="flex items-start gap-2" style={{ animation: 'live-comment-in 0.25s ease-out' }}>
                             <img src={c.user.avatar} alt="" draggable={false} className="mt-[1px] h-[28px] w-[28px] shrink-0 rounded-full object-cover" />
-                            <div className="min-w-0 text-[14px] leading-snug" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                            <div dir="auto" className="min-w-0 text-[14px] leading-snug" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                                 <span className="inline-flex items-center gap-1 font-semibold">
                                     {c.user.handle}{c.user.verified && <VerifiedCheck size={13} />}
                                 </span>
-                                <span className="ml-1.5 text-white/95">{c.text}</span>
+                                <span className="ms-1.5 text-white/95">{c.text}</span>
                             </div>
                         </div>
                     ))}
@@ -218,7 +218,7 @@ export function LiveStream({ onClose }: { onClose: () => void }) {
                                 onAnimationEnd={() => setHearts(prev => prev.filter(x => x.id !== h.id))}
                                 className="absolute bottom-0 h-[26px] w-[26px] text-[#ED4956]"
                                 fill="currentColor"
-                                style={{ left: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
+                                style={{ insetInlineStart: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
                             />
                         ))}
                     </div>

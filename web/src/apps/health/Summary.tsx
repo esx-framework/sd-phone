@@ -137,7 +137,7 @@ function WeekChart({ history, goal }: { history: HealthDay[]; goal: number }) {
                 <span>{t('health.last7Days', 'Last 7 Days')}</span>
             </div>
 
-            <div className="mt-3 flex h-[100px] items-end gap-1.5">
+            <div dir="ltr" className="mt-3 flex h-[100px] items-end gap-1.5">
                 {history.map((day, i) => {
                     const today = i === history.length - 1;
                     return (
@@ -197,7 +197,7 @@ function Metric({ accent, icon, title, value, unit, pulse }: {
 function HeartPulse({ hr }: { hr: number }) {
     return (
         <span
-            className="ml-auto inline-block"
+            className="ms-auto inline-block"
             style={{ animation: `sdph-pulse ${(60 / Math.max(30, hr)).toFixed(2)}s ease-in-out infinite` }}
         >
             <Heart className="h-[18px] w-[18px]" fill={ACCENT.heart} color={ACCENT.heart} strokeWidth={0} />

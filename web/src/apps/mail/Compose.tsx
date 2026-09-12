@@ -124,7 +124,7 @@ export function Compose({ accounts, defaultAccountId, initialTo = '', initialSub
                         onClick={() => setAttachSheet(true)}
                         disabled={attachments.length >= MAX_ATTACHMENTS}
                         aria-label={t('mail.addAttachment', 'Add attachment')}
-                        className="ml-auto mr-3 text-ios-blue active:opacity-60 disabled:opacity-30"
+                        className="ms-auto me-3 text-ios-blue active:opacity-60 disabled:opacity-30"
                     >
                         <Paperclip className="h-[21px] w-[21px]" strokeWidth={2.1} />
                     </button>
@@ -145,7 +145,7 @@ export function Compose({ accounts, defaultAccountId, initialTo = '', initialSub
                                 type="button"
                                 onClick={() => accounts.length > 1 && setPickerOpen(v => !v)}
                                 disabled={accounts.length <= 1}
-                                className="flex flex-1 items-center gap-1 text-left active:opacity-60 disabled:active:opacity-100"
+                                className="flex flex-1 items-center gap-1 text-start active:opacity-60 disabled:active:opacity-100"
                             >
                                 <span className="truncate text-[18px]">{account?.email ?? ''}</span>
                                 {accounts.length > 1 && (
@@ -183,7 +183,7 @@ export function Compose({ accounts, defaultAccountId, initialTo = '', initialSub
                                         type="button"
                                         tabIndex={suggestionsOpen ? 0 : -1}
                                         onClick={() => setTo(applySuggestion(to, s))}
-                                        className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                        className="flex w-full items-center gap-3 px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                     >
                                         <BookUser className="h-[18px] w-[18px] shrink-0 text-ios-gray" strokeWidth={2} />
                                         <span className="truncate text-[16px] text-ios-blue">{s}</span>
@@ -209,7 +209,7 @@ export function Compose({ accounts, defaultAccountId, initialTo = '', initialSub
                                     <button
                                         type="button"
                                         onClick={() => { setAccountId(a.id); setPickerOpen(false); }}
-                                        className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 dark:active:bg-white/5"
+                                        className="flex w-full items-center gap-3 px-4 py-3.5 text-start active:bg-black/5 dark:active:bg-white/5"
                                     >
                                         <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                                             {a.id === account?.id && (

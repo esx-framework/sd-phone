@@ -262,12 +262,12 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
                             <span className="text-[13px] font-semibold tracking-wide text-white">{t('phone.videoCall','Video Call')}</span>
                         </div>
                     )}
-                    <div className="text-center text-[34px] font-semibold leading-tight text-white">{title}</div>
-                    <div className="mt-1 text-[18px] font-light tabular-nums text-white/60">{subtitle}</div>
+                    <div dir={name ? 'auto' : 'ltr'} className="text-center text-[34px] font-semibold leading-tight text-white">{title}</div>
+                    <div dir={phase === 'active' ? 'ltr' : undefined} className="mt-1 text-[18px] font-light tabular-nums text-white/60">{subtitle}</div>
                     {(others.length > 0 || pending) && (
                         <div className="mt-3 flex w-full flex-col items-center gap-1">
                             {others.map(p => (
-                                <div key={p.number} className="text-[16px] font-medium text-white/85">
+                                <div key={p.number} dir={p.name ? 'auto' : 'ltr'} className="text-[16px] font-medium text-white/85">
                                     {p.name || phoneFmt(p.number)}
                                 </div>
                             ))}
@@ -390,7 +390,7 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
             {keypadOpen && (
                 <Sheet onClose={() => setKeypadOpen(false)} fit="content" zIndex={68} className="font-sf bg-base">
                     {() => (
-                        <div className="flex flex-col items-center px-6 pb-9 pt-2">
+                        <div dir="ltr" className="flex flex-col items-center px-6 pb-9 pt-2">
                             <div className="mb-5 flex h-[44px] items-center text-[32px] tracking-[0.02em] tabular-nums text-black dark:text-white">
                                 {dtmfDialed.slice(-12) || (
                                     <span className="text-[17px] text-black/40 dark:text-white/40">{t('phone.keypad','Keypad')}</span>
@@ -410,7 +410,7 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
                             <div className="text-[15px] font-semibold text-black/50 dark:text-white/50">
                                 {t('phone.addCall','Add call')}
                             </div>
-                            <div className="mb-4 mt-2 flex h-[44px] items-center text-[32px] tracking-[0.02em] tabular-nums text-black dark:text-white">
+                            <div dir="ltr" className="mb-4 mt-2 flex h-[44px] items-center text-[32px] tracking-[0.02em] tabular-nums text-black dark:text-white">
                                 {addDigits || (
                                     <span className="text-[17px] text-black/40 dark:text-white/40">{t('phone.enterNumber','Enter a number')}</span>
                                 )}
@@ -442,7 +442,7 @@ export function CallLayer({ wallpaper }: { wallpaper?: string }) {
                         <button
                             type="button"
                             onClick={() => { setContactsOpen(false); setAddOpen(true); }}
-                            className="mb-4 flex w-full items-center gap-4 rounded-[12px] bg-surface px-4 py-3.5 text-left shadow-sm active:bg-black/[0.06] dark:active:bg-white/[0.06]"
+                            className="mb-4 flex w-full items-center gap-4 rounded-[12px] bg-surface px-4 py-3.5 text-start shadow-sm active:bg-black/[0.06] dark:active:bg-white/[0.06]"
                         >
                             <span className="flex h-[56px] w-[56px] items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue">
                                 <KeypadDots />

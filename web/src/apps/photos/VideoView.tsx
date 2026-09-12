@@ -114,12 +114,13 @@ export function VideoView({ src, active }: { src: string; active: boolean }) {
 
             {/* Bottom scrubber: elapsed | track | remaining | mute. */}
             <div
+                dir="ltr"
                 onPointerDown={e => e.stopPropagation()}
                 className={`absolute inset-x-0 bottom-0 flex items-center gap-3 px-5 pb-4 transition-opacity duration-300 ${
                     chrome ? 'opacity-100' : 'pointer-events-none opacity-0'
                 }`}
             >
-                <span className="w-[42px] shrink-0 text-right text-[13px] tabular-nums text-white/85">{formatDuration(current)}</span>
+                <span className="w-[42px] shrink-0 text-end text-[13px] tabular-nums text-white/85">{formatDuration(current)}</span>
                 <div className="flex-1">
                     <Scrubber thick value={current} max={duration} onSeek={sec => {
                         const v = videoRef.current;

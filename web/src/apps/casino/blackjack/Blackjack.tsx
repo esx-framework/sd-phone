@@ -175,7 +175,7 @@ export function Blackjack({ chips, onChips, onBack, onCashier }: CasinoGameProps
             <button type="button" onClick={onCashier} className="flex shrink-0 items-center justify-center gap-1.5 pb-0.5 active:opacity-70">
                 <Coins className="h-[17px] w-[17px]" strokeWidth={2.5} style={{ color: FELT.gold }} />
                 <span className="text-[18px] font-extrabold tabular-nums" style={{ color: FELT.gold }}>{fmtChips(chips)}</span>
-                <span className="ml-0.5 text-[12px] font-semibold text-white/55">{t('blackjack.chips', 'chips')}</span>
+                <span className="ms-0.5 text-[12px] font-semibold text-white/55">{t('blackjack.chips', 'chips')}</span>
             </button>
 
             <SoloTable
@@ -211,7 +211,7 @@ function SoloTable({ phase, bet, chips, player, dealer, holeUp, outcome, payout,
     return (
         <>
             <div className="relative flex min-h-0 flex-1 flex-col px-4 pt-2" style={{ paddingBottom: 24 }}>
-                <div className="flex min-h-0 flex-1 flex-col rounded-[26px] px-3 py-3" style={{ background: `radial-gradient(120% 70% at 50% 0%, ${FELT.bgTop} 0%, ${FELT.bgMid} 55%, ${FELT.bgBot} 100%)`, boxShadow: `inset 0 0 0 6px ${FELT.rail}, inset 0 0 36px rgba(0,0,0,0.32), 0 8px 24px rgba(0,0,0,0.30)` }}>
+                <div dir="ltr" className="flex min-h-0 flex-1 flex-col rounded-[26px] px-3 py-3" style={{ background: `radial-gradient(120% 70% at 50% 0%, ${FELT.bgTop} 0%, ${FELT.bgMid} 55%, ${FELT.bgBot} 100%)`, boxShadow: `inset 0 0 0 6px ${FELT.rail}, inset 0 0 36px rgba(0,0,0,0.32), 0 8px 24px rgba(0,0,0,0.30)` }}>
                     <HandRow label={t('blackjack.dealer', 'Dealer')} cards={dealer} hideHole={!holeUp} total={dShown} showTotal={dealer.length > 0 && (holeUp || phase !== 'betting')} soft={holeUp && handValue(dealer).soft} emptyHint={phase === 'betting' ? t('blackjack.dealerWaiting', 'Dealer waiting') : undefined} />
                     <div className="relative my-1 flex flex-1 items-center justify-center">
                         {phase === 'betting' && player.length === 0 ? (

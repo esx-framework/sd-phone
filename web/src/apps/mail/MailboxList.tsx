@@ -195,14 +195,14 @@ export function MailboxList({
                                             type="button"
                                             onClick={() => !editing && onOpenFolder(id)}
                                             disabled={editing}
-                                            className="flex flex-1 items-center text-left active:opacity-60 disabled:active:opacity-100"
+                                            className="flex flex-1 items-center text-start active:opacity-60 disabled:active:opacity-100"
                                         >
                                             <span className="flex-1 text-[18px]">{label}</span>
                                             {!editing && count > 0 && (
                                                 <span className="text-[18px] text-ios-gray">{count}</span>
                                             )}
                                             {!editing && (
-                                                <ChevronRight className="ml-1 h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
+                                                <ChevronRight className="ms-1 h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
                                             )}
                                         </button>
                                         {editing && (
@@ -234,8 +234,8 @@ export function MailboxList({
                     >
                         <div className="flex w-full items-center gap-4 px-4 py-[15px]">
                             <BookUser className="h-[25px] w-[25px] shrink-0 text-ios-blue" />
-                            <span className="flex-1 text-left text-[18px]">{t('mail.savedEmails', 'Saved Emails')}</span>
-                            <ChevronRight className="ml-1 h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
+                            <span className="flex-1 text-start text-[18px]">{t('mail.savedEmails', 'Saved Emails')}</span>
+                            <ChevronRight className="ms-1 h-[19px] w-[19px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
                         </div>
                     </button>
                 )}
@@ -252,7 +252,7 @@ export function MailboxList({
                                     type="button"
                                     onClick={() => !editing && onSelectAccount(a.id)}
                                     disabled={editing}
-                                    className="flex min-w-0 flex-1 items-center gap-2 text-left active:opacity-60 disabled:active:opacity-100"
+                                    className="flex min-w-0 flex-1 items-center gap-2 text-start active:opacity-60 disabled:active:opacity-100"
                                 >
                                     <span className="flex min-w-0 flex-1 flex-col">
                                         <span className="truncate text-[18px]">{a.name}</span>
@@ -283,7 +283,7 @@ export function MailboxList({
                     <button
                         type="button"
                         onClick={onAddAccount}
-                        className="flex w-full items-center gap-4 px-4 py-[15px] text-left active:bg-black/5 dark:active:bg-white/5"
+                        className="flex w-full items-center gap-4 px-4 py-[15px] text-start active:bg-black/5 dark:active:bg-white/5"
                     >
                         <Plus className="h-[25px] w-[25px] shrink-0 text-ios-blue" strokeWidth={2.2} />
                         <span className="flex-1 text-[18px] text-ios-blue">{t('mail.addMailbox', 'Add Mailbox')}</span>
@@ -294,7 +294,7 @@ export function MailboxList({
                             <button
                                 type="button"
                                 onClick={() => setConfirmOutAll(true)}
-                                className="flex w-full items-center gap-4 px-4 py-[15px] text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center gap-4 px-4 py-[15px] text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <LogOut className="h-[25px] w-[25px] shrink-0 text-ios-red" strokeWidth={2.2} />
                                 <span className="flex-1 text-[18px] text-ios-red">{t('mail.signOutAllMailboxes', 'Sign Out of All Mailboxes')}</span>

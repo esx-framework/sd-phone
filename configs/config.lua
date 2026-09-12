@@ -7,6 +7,11 @@ local config = {
     -- Locale file under `locales/<Locale>.json`. Falls back to `en` if missing.
     Locale = 'en',
 
+    -- Keep the screen left-to-right even when the language reads right-to-left.
+    -- Arabic mirrors the whole interface by default, the way an Arabic iPhone does.
+    -- Turn this on only if you want the old left-to-right layout with Arabic text.
+    ForceLeftToRight = false,
+
     -- Debug / dev logging toggle.
     Debug  = false,
 

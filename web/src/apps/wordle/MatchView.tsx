@@ -78,14 +78,14 @@ export function MatchView({ pal, state, you, youDone, input, timeLeft, low, keyS
                 </div>
             </div>
 
-            <div className="flex flex-1 items-center justify-center gap-3 px-3">
+            <div dir="ltr" className="flex flex-1 items-center justify-center gap-3 px-3">
                 <div className="flex flex-col items-center gap-1.5">
                     <span className="max-w-[190px] truncate text-[12px] font-bold" style={{ color: pal.text }}>{t('wordle.you', 'You')}</span>
                     {grid(you?.rows ?? [], { guesses: you?.guesses ?? [], input })}
                     <span className="text-[11px] font-semibold" style={{ color: youStatus.color }}>{youStatus.text}</span>
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
-                    <span className="max-w-[190px] truncate text-[12px] font-bold" style={{ color: pal.text }}>{oppPlayer?.name.split(' ')[0] ?? t('wordle.opponent', 'Opponent')}</span>
+                    <span dir="auto" className="max-w-[190px] truncate text-[12px] font-bold" style={{ color: pal.text }}>{oppPlayer?.name.split(' ')[0] ?? t('wordle.opponent', 'Opponent')}</span>
                     {grid(opp?.rows ?? [])}
                     <span className="text-[11px] font-semibold" style={{ color: oppStatus.color }}>{oppStatus.text}</span>
                 </div>
@@ -99,7 +99,7 @@ export function MatchView({ pal, state, you, youDone, input, timeLeft, low, keyS
                 </div>
             )}
 
-            <div className="flex shrink-0 flex-col gap-[6px] px-1.5" style={{ paddingBottom: 44 }}>
+            <div dir="ltr" className="flex shrink-0 flex-col gap-[6px] px-1.5" style={{ paddingBottom: 44 }}>
                 {KEY_ROWS.map((row, ri) => (
                     <div key={ri} className="flex justify-center gap-[5px]">
                         {row.map(k => {

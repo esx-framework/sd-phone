@@ -19,7 +19,7 @@ export function Scrubber({ value, max, onSeek, thick }: { value: number; max: nu
         return f === null ? null : f * max;
     }
     return (
-        <div ref={ref} className={`relative my-3 cursor-pointer touch-none ${thick ? 'h-7' : 'h-6'}`}
+        <div ref={ref} dir="ltr" className={`relative my-3 cursor-pointer touch-none ${thick ? 'h-7' : 'h-6'}`}
             onPointerDown={e => { const p = posFrom(e); if (p === null) return; dragging.current = true; ref.current?.setPointerCapture?.(e.pointerId); setDrag(p); onSeek(p); }}
             onPointerMove={e => { if (!dragging.current) return; const p = posFrom(e); if (p !== null) { setDrag(p); onSeek(p); } }}
             onPointerUp={() => { dragging.current = false; setDrag(null); }}

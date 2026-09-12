@@ -147,7 +147,7 @@ function PublishedTab({ onToast }: { onToast: (text: string, error?: boolean) =>
 
             {settled && rows.length === 0 && (
                 <CenterNote>
-                    <Flag size={15} className="mr-1.5 inline" />
+                    <Flag size={15} className="me-1.5 inline" />
                     {term
                         ? 'No track matches that search.'
                         : 'No tracks recorded yet. They are drawn in the world with the gate creator.'}
@@ -296,14 +296,14 @@ function PendingTab({ onToast, onCountChange }: {
         <div className="space-y-3">
             <div className="flex items-center gap-2">
                 <span className="text-[12px] text-zinc-500">Tracks waiting on review before players can race them.</span>
-                <span className="ml-auto shrink-0 text-[12px] text-zinc-500">{total} pending</span>
+                <span className="ms-auto shrink-0 text-[12px] text-zinc-500">{total} pending</span>
             </div>
 
             {loading && !settled && <CenterNote><Spinner /></CenterNote>}
 
             {settled && rows.length === 0 && (
                 <CenterNote>
-                    <Clock size={15} className="mr-1.5 inline" />
+                    <Clock size={15} className="me-1.5 inline" />
                     Nothing waiting on review right now.
                 </CenterNote>
             )}
@@ -409,7 +409,7 @@ export function RacingPage({ onToast }: { onToast: (text: string, error?: boolea
                 >
                     <Clock size={13} />
                     Pending approval
-                    {pendingCount > 0 && <Badge tone="amber" className="ml-1">{pendingCount}</Badge>}
+                    {pendingCount > 0 && <Badge tone="amber" className="ms-1">{pendingCount}</Badge>}
                 </Btn>
             </div>
 

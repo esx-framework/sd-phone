@@ -144,16 +144,17 @@ function Row({ rec, open, onToggle, onRequestRename, onRequestDelete }: {
     }, [open, armed]);
 
     const Icon = rec.direction === 'incoming' ? PhoneIncoming : PhoneOutgoing;
+    const numeric = !rec.label?.trim() && !rec.peerName?.trim();
 
     return (
         <div>
-            <button type="button" onClick={onToggle} className="flex w-full items-center gap-3.5 px-3.5 py-3.5 text-left active:opacity-60">
+            <button type="button" onClick={onToggle} className="flex w-full items-center gap-3.5 px-3.5 py-3.5 text-start active:opacity-60">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue">
                     <AudioLines className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                        <span className="truncate text-[17px] text-black dark:text-white">{titleOf(rec)}</span>
+                        <span className="truncate text-[17px] text-black dark:text-white">{numeric ? <span dir="ltr">{titleOf(rec)}</span> : titleOf(rec)}</span>
                         {rec.oneSided && <TriangleAlert className="h-[13px] w-[13px] shrink-0 text-ios-orange" />}
                     </span>
                     <span className="flex items-center gap-1.5 text-[15px] text-black/50 dark:text-white/50">

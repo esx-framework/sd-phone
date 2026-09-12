@@ -124,7 +124,7 @@ export function TextEditor({ doc, backLabel, onBack, onSave, onSigned, animateIn
                     <span className="text-[17px]">{backLabel}</span>
                 </button>
                 <span className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">{doc.name}</span>
-                <span className="flex min-w-[68px] shrink-0 items-center justify-end pr-1.5">
+                <span className="flex min-w-[68px] shrink-0 items-center justify-end pe-1.5">
                     {signed ? (
                         <span className="flex items-center gap-1.5 rounded-full bg-ios-blue/15 px-3 py-[5px] text-[14px] font-medium text-ios-blue">
                             <BadgeCheck className="h-[16px] w-[16px]" strokeWidth={2.2} />
@@ -322,7 +322,7 @@ function EditImage({ url, onRemove }: { url: string; onRemove: () => void }) {
     return (
         <div className="relative">
             {failed ? (
-                <p className="break-all pr-10 text-[15px] text-ios-blue">{url}</p>
+                <p dir="ltr" className="break-all pe-10 text-[15px] text-ios-blue">{url}</p>
             ) : (
                 <img
                     src={url}
@@ -337,7 +337,7 @@ function EditImage({ url, onRemove }: { url: string; onRemove: () => void }) {
                 type="button"
                 onClick={onRemove}
                 aria-label={t('documents.removeImage', 'Remove image')}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 active:opacity-70"
             >
                 <X className="h-[16px] w-[16px] text-white" strokeWidth={2.6} />
             </button>
@@ -378,7 +378,7 @@ export function RichBody({ content }: { content: string }) {
             {blocks.map((b, i) => (
                 b.kind === 'image'
                     ? <RichImage key={i} url={b.value} />
-                    : <p key={i} className="whitespace-pre-wrap text-[17px] leading-snug">{b.value}</p>
+                    : <p key={i} dir="auto" className="whitespace-pre-wrap text-[17px] leading-snug">{b.value}</p>
             ))}
         </div>
     );
@@ -387,7 +387,7 @@ export function RichBody({ content }: { content: string }) {
 function RichImage({ url }: { url: string }) {
     const [failed, setFailed] = useState(false);
     if (failed) {
-        return <p className="break-all text-[15px] text-ios-blue">{url}</p>;
+        return <p dir="ltr" className="break-all text-[15px] text-ios-blue">{url}</p>;
     }
     return (
         <img
@@ -561,7 +561,7 @@ export function SignSheet({ docId, docName, onClose, onSigned, signAction }: {
                                                 key={s.id}
                                                 type="button"
                                                 onClick={() => setStyleId(s.id)}
-                                                className={`flex h-[58px] items-center justify-between rounded-[12px] border bg-white px-4 text-left ${
+                                                className={`flex h-[58px] items-center justify-between rounded-[12px] border bg-white px-4 text-start ${
                                                     styleId === s.id ? 'border-ios-blue ring-1 ring-ios-blue' : 'border-black/10'
                                                 }`}
                                             >
@@ -577,7 +577,7 @@ export function SignSheet({ docId, docName, onClose, onSigned, signAction }: {
                                                 >
                                                     {typed.trim() || t('documents.typeYourName', 'Type your name')}
                                                 </span>
-                                                <span className="ml-3 shrink-0 text-[12px] text-ios-gray">{s.label}</span>
+                                                <span className="ms-3 shrink-0 text-[12px] text-ios-gray">{s.label}</span>
                                             </button>
                                         ))}
                                     </div>

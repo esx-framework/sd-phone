@@ -64,7 +64,7 @@ function Ring({ src, label, seen, addBadge, live, onClick }: {
                 <div className="relative">
                     <img src={src} alt="" draggable={false} className="block h-[78px] w-[78px] rounded-full object-cover" />
                     {addBadge && (
-                        <span className="absolute -bottom-[1px] -right-[1px] flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2.5px] border-white" style={{ background: IG.blue }}>
+                        <span className="absolute -bottom-[1px] -end-[1px] flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2.5px] border-white" style={{ background: IG.blue }}>
                             <Plus className="h-[19px] w-[19px] text-white" strokeWidth={3} />
                         </span>
                     )}

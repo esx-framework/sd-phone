@@ -1629,7 +1629,7 @@ export function AppIconSVG({ icon, size }: { icon: IconId; size?: number }) {
     if (size == null) return <Component />;
     return (
         <div style={{ position: 'relative', width: size, height: size, overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: S, height: S, transform: `scale(${size / S})`, transformOrigin: 'top left' }}>
+            <div style={{ position: 'absolute', top: 0, insetInlineStart: 0, width: S, height: S, transform: `scale(${size / S})`, transformOrigin: 'top var(--dir-start, left)' }}>
                 <Component />
             </div>
         </div>

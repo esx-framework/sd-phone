@@ -136,7 +136,7 @@ export function Id({ onClose: _onClose }: { onClose: () => void }) {
                                 type="button"
                                 onClick={() => setOpenKey(card.key)}
                                 aria-label={cardTitle(card)}
-                                className="absolute inset-x-0 block w-full text-left transition-transform duration-200 active:scale-[0.985]"
+                                className="absolute inset-x-0 block w-full text-start transition-transform duration-200 active:scale-[0.985]"
                                 style={{ top: i * PEEK, zIndex: i + 1 }}
                             >
                                 <IdCard card={card} />

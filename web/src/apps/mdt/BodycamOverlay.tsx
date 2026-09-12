@@ -130,7 +130,7 @@ export function BodycamOverlay({ active }: { active: BodycamActive }) {
     const vehicle = [active.model, active.plate].filter(Boolean).join(' · ');
 
     return (
-        <div className="pointer-events-none fixed inset-0 z-[999] select-none font-mono uppercase">
+        <div dir="ltr" className="pointer-events-none fixed inset-0 z-[999] select-none font-mono uppercase">
             {!isFiveM && (
                 <div
                     className="absolute inset-0 -z-10"
@@ -151,7 +151,7 @@ export function BodycamOverlay({ active }: { active: BodycamActive }) {
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/70 to-transparent" />
 
-            <div className="absolute left-8 right-8 top-7 flex items-start justify-between gap-6">
+            <div className="absolute start-8 end-8 top-7 flex items-start justify-between gap-6">
                 <div className="flex items-center gap-3">
                     {rec.recording ? (
                         <span className="flex items-center gap-2 bg-[#d51616] px-2.5 py-[5px]">
@@ -173,7 +173,7 @@ export function BodycamOverlay({ active }: { active: BodycamActive }) {
                     </span>
                 </div>
 
-                <div className="flex flex-col items-end gap-1 text-right">
+                <div className="flex flex-col items-end gap-1 text-end">
                     <span className="text-[17px] font-bold leading-none tracking-[0.2em] text-white" style={BURN}>
                         {kindLabel}
                         {active.callsign ? ` ${active.callsign}` : ''}
@@ -186,7 +186,7 @@ export function BodycamOverlay({ active }: { active: BodycamActive }) {
                 </div>
             </div>
 
-            <div className="absolute left-8 right-8 bottom-[76px] flex items-end justify-between gap-6">
+            <div className="absolute start-8 end-8 bottom-[76px] flex items-end justify-between gap-6">
                 <div className="flex min-w-0 flex-col gap-1.5">
                     {rec.error && (
                         <span className="self-start bg-[#d51616] px-2.5 py-[5px] text-[15px] font-bold leading-none tracking-[0.08em] text-white">

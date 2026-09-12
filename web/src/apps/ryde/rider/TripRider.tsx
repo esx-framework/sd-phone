@@ -80,7 +80,7 @@ function TripRiderView({ r }: { r: Ride }) {
                 <h1 className="text-[28px] font-extrabold tracking-tight text-black dark:text-white">Ryde</h1>
             </div>
 
-            <div className="relative min-h-0 flex-1 overflow-hidden">
+            <div dir="ltr" className="relative min-h-0 flex-1 overflow-hidden">
                 <MapView>
                     <Pin x={r.pickup.x} y={r.pickup.y}><PickupDot /></Pin>
                     <Pin x={r.dropoff.x} y={r.dropoff.y}><DropoffPin /></Pin>

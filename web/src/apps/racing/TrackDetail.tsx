@@ -157,7 +157,7 @@ function RecordRow({ record, narrow, onRacer }: { record: TrackRecord; narrow: b
         <button
             type="button"
             onClick={onRacer}
-            className="min-w-0 flex-1 truncate text-left text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
+            className="min-w-0 flex-1 truncate text-start text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
         >
             {record.racer}
         </button>
@@ -175,11 +175,11 @@ function RecordRow({ record, narrow, onRacer }: { record: TrackRecord; narrow: b
                 <div className="flex items-center gap-3">
                     {rank}
                     {racer}
-                    <span className="shrink-0 text-right text-[15px] font-bold tabular-nums text-black dark:text-white">
-                        {formatLapTime(record.timeSec)}
+                    <span className="shrink-0 text-end text-[15px] font-bold tabular-nums text-black dark:text-white">
+                        <span dir="ltr">{formatLapTime(record.timeSec)}</span>
                     </span>
                 </div>
-                <div className="flex items-center gap-2 pl-[34px]">
+                <div className="flex items-center gap-2 ps-[34px]">
                     {badge}
                     <span className={`min-w-0 flex-1 truncate ${rowMeta}`}>{record.vehicle}</span>
                     <span className={`shrink-0 ${rowMeta}`}>{relTimeCompact(record.at * 1000)}</span>
@@ -193,10 +193,10 @@ function RecordRow({ record, narrow, onRacer }: { record: TrackRecord; narrow: b
             {rank}
             {racer}
             {badge}
-            <span className={`w-[132px] shrink-0 truncate text-right ${rowMeta}`}>{record.vehicle}</span>
-            <span className={`w-[70px] shrink-0 text-right ${rowMeta}`}>{relTimeCompact(record.at * 1000)}</span>
-            <span className="w-[92px] shrink-0 text-right text-[15px] font-bold tabular-nums text-black dark:text-white">
-                {formatLapTime(record.timeSec)}
+            <span className={`w-[132px] shrink-0 truncate text-end ${rowMeta}`}>{record.vehicle}</span>
+            <span className={`w-[70px] shrink-0 text-end ${rowMeta}`}>{relTimeCompact(record.at * 1000)}</span>
+            <span className="w-[92px] shrink-0 text-end text-[15px] font-bold tabular-nums text-black dark:text-white">
+                <span dir="ltr">{formatLapTime(record.timeSec)}</span>
             </span>
         </div>
     );
@@ -374,6 +374,7 @@ export function TrackDetail({ trackId }: { trackId: number }) {
                                 {t('racing.trackJsonHint', 'Copy this, then paste it into Import tracks on any server running sd-phone.')}
                             </p>
                             <textarea
+                                dir="ltr"
                                 readOnly
                                 value={json}
                                 spellCheck={false}

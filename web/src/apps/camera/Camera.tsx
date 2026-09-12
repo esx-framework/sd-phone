@@ -705,6 +705,7 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
 
             <div
                 ref={viewportRef}
+                dir="ltr"
                 className="relative flex-1 min-h-0 overflow-hidden bg-black"
                 onWheel={(e) => {
                     // deltaY is negative scrolling up, which reads as zooming in. Exponential so a
@@ -734,8 +735,8 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
 
                 {showGrid && (
                     <div className="pointer-events-none absolute inset-0 z-[15]">
-                        <div className="absolute inset-y-0 left-1/3  w-px bg-white/40" />
-                        <div className="absolute inset-y-0 left-2/3  w-px bg-white/40" />
+                        <div className="absolute inset-y-0 start-1/3  w-px bg-white/40" />
+                        <div className="absolute inset-y-0 start-2/3  w-px bg-white/40" />
                         <div className="absolute inset-x-0 top-1/3   h-px bg-white/40" />
                         <div className="absolute inset-x-0 top-2/3   h-px bg-white/40" />
                     </div>
@@ -798,7 +799,7 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
                 </div>
 
                 <div
-                    className="absolute bottom-[68px] left-3 right-3 z-30 overflow-hidden rounded-[20px] border transition-all ease-[cubic-bezier(0.32,0.72,0,1)]"
+                    className="absolute bottom-[68px] start-3 end-3 z-30 overflow-hidden rounded-[20px] border transition-all ease-[cubic-bezier(0.32,0.72,0,1)]"
                     style={{
                         transform:            pickerOpen ? 'translateY(0)' : 'translateY(14px)',
                         backgroundColor:      pickerOpen ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0)',
@@ -889,7 +890,7 @@ export function Camera({ onClose, onLandscapeChange, onOpenApp, photoOnly = fals
 
                 {/* pb clears the home indicator: its pill sits 5-10px off the bottom inside a 21px
                     hit area, so pb-7 left the shutter ring almost against it. */}
-                <div className={`flex items-center justify-center gap-10 px-6 pb-11 ${photoOnly ? 'pt-4' : 'pt-1'}`}>
+                <div dir="ltr" className={`flex items-center justify-center gap-10 px-6 pb-11 ${photoOnly ? 'pt-4' : 'pt-1'}`}>
                     {photoOnly ? (
                         <button
                             type="button"

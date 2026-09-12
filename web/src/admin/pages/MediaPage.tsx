@@ -88,7 +88,7 @@ export function MediaPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => voi
                             className="group relative aspect-square overflow-hidden rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06] transition-transform hover:scale-[1.02]"
                         >
                             <img src={m.url} alt="" draggable={false} className="h-full w-full object-cover" />
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-1.5 pt-5 text-left">
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-1.5 pt-5 text-start">
                                 <div className="truncate text-[11px] font-semibold text-zinc-100">{m.author}</div>
                                 <div className="flex items-center justify-between gap-1">
                                     <span className="text-[10px] text-zinc-400">{APP_LABEL[m.app] ?? m.app}</span>

@@ -200,7 +200,7 @@ export function AdminPanel() {
                 {item.icon}
                 {item.label}
                 {item.id === 'flags' && openFlags > 0 && (
-                    <span className="ml-auto rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-amber-300">
+                    <span className="ms-auto rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-amber-300">
                         {openFlags}
                     </span>
                 )}
@@ -223,6 +223,7 @@ export function AdminPanel() {
                 bench's registration marks. */}
             <div
                 data-admin-surface
+                dir="ltr"
                 className={`admin-panel-in relative flex overflow-hidden bg-[#101114] ${
                     demoAdminOnly
                         ? 'h-full w-full rounded-xl'
@@ -231,7 +232,7 @@ export function AdminPanel() {
                 onMouseDown={e => e.stopPropagation()}
             >
                 {/* Sidebar */}
-                <div className="flex w-52 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.02]">
+                <div className="flex w-52 shrink-0 flex-col border-e border-white/[0.06] bg-white/[0.02]">
                     <div className="flex items-center gap-2.5 px-4 pb-4 pt-5">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ios-blue/20 text-ios-blue">
                             <ShieldCheck size={17} />

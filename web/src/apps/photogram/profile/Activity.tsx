@@ -28,10 +28,10 @@ export function Activity({ items, requests, onRespond, onOpenProfile, onOpenPost
                                 </button>
                                 <div className="min-w-0 flex-1 leading-snug">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[19px] font-semibold text-black">{r.handle}</span>
+                                        <span dir="auto" className="text-[19px] font-semibold text-black">{r.handle}</span>
                                         {r.verified && <VerifiedCheck size={20} />}
                                     </div>
-                                    {r.name && <div className="truncate text-[16px]" style={{ color: IG.sub }}>{r.name}</div>}
+                                    {r.name && <div dir="auto" className="truncate text-[16px]" style={{ color: IG.sub }}>{r.name}</div>}
                                 </div>
                                 <button type="button" onClick={() => onRespond(r.handle, true)} className="shrink-0 rounded-[10px] px-4 py-2.5 text-[16px] font-semibold text-white active:opacity-80" style={{ background: IG.blue }}>
                                     {t('photogram.confirm', 'Confirm')}

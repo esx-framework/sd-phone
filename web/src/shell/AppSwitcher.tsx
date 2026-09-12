@@ -9,6 +9,7 @@ import { useBadges } from '@/stores/badgeStore';
 import { useScreenW } from '@/stores/foldStore';
 import type { AppDef } from '@/core/types';
 import { t, appLabel } from '@/i18n';
+import { dirSign } from '@/stores/directionStore';
 
 const SH         = device.screen.h;
 const SR         = 49;   // card corner, drawn scaled - deliberately rounder than the screen's own radius
@@ -64,8 +65,8 @@ function CardStage({ appId }: { appId: string }) {
     return (
         <div
             ref={ref}
-            className="pointer-events-none absolute left-0 top-0"
-            style={{ width: sw, height: SH, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}
+            className="pointer-events-none absolute start-0 top-0"
+            style={{ width: sw, height: SH, transform: `scale(${SCALE})`, transformOrigin: 'top var(--dir-start, left)' }}
         />
     );
 }
@@ -139,7 +140,7 @@ export function AppSwitcher({
 
     function onPointerMove(e: React.PointerEvent) {
         if (!isDraggingRef.current) return;
-        const dx = e.clientX - startXRef.current;
+        const dx = (e.clientX - startXRef.current) * dirSign();
         const dy = e.clientY - startYRef.current;
 
         if (!axisRef.current && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
@@ -156,7 +157,7 @@ export function AppSwitcher({
             const now = performance.now();
             const last = lastMoveRef.current;
             const dt = Math.max(1, now - last.t);
-            lastMoveRef.current = { x: e.clientX, t: now, vx: (e.clientX - last.x) / dt };
+            lastMoveRef.current = { x: e.clientX, t: now, vx: ((e.clientX - last.x) * dirSign()) / dt };
             const atStart = focusedRef.current === 0 && dx > 0;
             const atEnd   = focusedRef.current === recents.length - 1 && dx < 0;
             const eased = atStart || atEnd ? dx * 0.35 : dx;
@@ -273,11 +274,11 @@ export function AppSwitcher({
                             key={appId}
                             className="absolute"
                             style={{
-                                left:            0,
+                                insetInlineStart: 0,
                                 top:             0,
                                 width:           cardW,
                                 zIndex:          cz,
-                                transform:       `translateX(${tx}px) translateY(${ty}px) scale(${cScale})`,
+                                transform:       `translateX(calc(var(--dir-x, 1) * ${tx}px)) translateY(${ty}px) scale(${cScale})`,
                                 transformOrigin: '50% 0%',
                                 opacity:         cardOpacity,
                                 transition: isEjecting
@@ -289,7 +290,7 @@ export function AppSwitcher({
                             }}
                         >
                             <div
-                                className="mb-2 flex items-center gap-2.5 pl-3 pr-1"
+                                className="mb-2 flex items-center gap-2.5 ps-3 pe-1"
                                 style={{
                                     opacity:       headerOpacity,
                                     pointerEvents: headerFocused ? 'auto' : 'none',
@@ -305,7 +306,7 @@ export function AppSwitcher({
                                             width:           ICON_NATIVE,
                                             height:          ICON_NATIVE,
                                             transform:       `scale(${ICON_SCALE})`,
-                                            transformOrigin: 'top left',
+                                            transformOrigin: 'top var(--dir-start, left)',
                                         }}>
                                             <AppIconSVG icon={appDef?.icon ?? ''} />
                                         </div>
@@ -366,7 +367,7 @@ export function AppSwitcher({
                                     live app host over it. Non-preview apps stay on this. */}
                                 <div className="absolute inset-0 flex items-center justify-center bg-[#1c1c1e]">
                                     <div className="overflow-hidden" style={{ width: 76, height: 76, borderRadius: '22%' }}>
-                                        <div style={{ width: 60, height: 60, transform: 'scale(1.2667)', transformOrigin: 'top left' }}>
+                                        <div style={{ width: 60, height: 60, transform: 'scale(1.2667)', transformOrigin: 'top var(--dir-start, left)' }}>
                                             <AppIconSVG icon={appDef?.icon ?? ''} />
                                         </div>
                                     </div>
@@ -402,7 +403,7 @@ export function AppSwitcher({
                 })}
             </div>
 
-            <div className="absolute bottom-7 left-0 right-0 flex justify-center">
+            <div className="absolute bottom-7 start-0 end-0 flex justify-center">
                 <button
                     type="button"
                     onClick={e => { e.stopPropagation(); onRemoveAll(); }}

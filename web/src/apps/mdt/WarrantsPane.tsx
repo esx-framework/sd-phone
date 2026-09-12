@@ -53,12 +53,12 @@ function WarrantListRow({ warrant, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-left ${
+            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-start ${
                 selected ? 'bg-ios-blue/10' : mdtRowHover
             }`}
         >
             <span className="flex w-full items-center gap-2">
-                <span className={`shrink-0 ${mdtRef}`}>{warrant.ref}</span>
+                <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{warrant.ref}</span>
                 <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{warrant.subject}</span>
                 <span className={`shrink-0 tabular-nums ${mdtRowMeta}`}>{expiryLabel(warrant)}</span>
             </span>
@@ -66,7 +66,7 @@ function WarrantListRow({ warrant, selected, onPress }: {
                 <Counter tone="red" value={warrant.felonies} label={t('mdt.abbrFelony', 'F')} />
                 <Counter tone="orange" value={warrant.misdemeanors} label={t('mdt.abbrMisdemeanor', 'M')} />
                 <Counter tone="blue" value={warrant.infractions} label={t('mdt.abbrInfraction', 'I')} />
-                <span className={`ml-auto shrink-0 truncate tabular-nums ${mdtRowMeta}`}>
+                <span className={`ms-auto shrink-0 truncate tabular-nums ${mdtRowMeta}`}>
                     {warrant.reportRef ?? warrant.citizenid}
                 </span>
             </span>
@@ -269,7 +269,7 @@ function WarrantDetail({ warrantRef, canClose, canVoid, onClosed }: {
             <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <span className={mdtRef}>{warrant.ref}</span>
+                        <span dir="ltr" className={mdtRef}>{warrant.ref}</span>
                         <Pill tone={warrant.active ? 'red' : 'green'}>
                             {warrant.active ? t('mdt.active', 'Active') : t('mdt.closed', 'Closed')}
                         </Pill>
@@ -300,7 +300,7 @@ function WarrantDetail({ warrantRef, canClose, canVoid, onClosed }: {
             <button
                 type="button"
                 onClick={() => open('profiles', warrant.citizenid)}
-                className="mt-4 flex w-full items-center gap-3 rounded-[16px] bg-ios-blue/10 px-4 py-3 text-left active:opacity-70"
+                className="mt-4 flex w-full items-center gap-3 rounded-[16px] bg-ios-blue/10 px-4 py-3 text-start active:opacity-70"
             >
                 <InitialsAvatar name={warrant.subject} color={colorFor(warrant.citizenid)} size={40} />
                 <span className="min-w-0 flex-1">
@@ -327,7 +327,7 @@ function WarrantDetail({ warrantRef, canClose, canVoid, onClosed }: {
                 <button
                     type="button"
                     onClick={() => open('reports', warrant.reportRef ?? null)}
-                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-left active:opacity-70"
+                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-start active:opacity-70"
                 >
                     <FileText className="h-[15px] w-[15px] shrink-0 text-ios-blue" strokeWidth={2.25} />
                     <span className="text-[14.5px] font-medium text-ios-blue">
@@ -458,7 +458,7 @@ function IssueWarrant({ onIssued, onClose }: {
                         <button
                             type="button"
                             onClick={() => setPicking(true)}
-                            className={`flex w-full items-center gap-2 px-4 py-3.5 text-left text-[15px] font-medium text-ios-blue ${mdtRowHover}`}
+                            className={`flex w-full items-center gap-2 px-4 py-3.5 text-start text-[15px] font-medium text-ios-blue ${mdtRowHover}`}
                         >
                             <UserPlus className="h-[16px] w-[16px]" strokeWidth={2.4} />
                             {t('mdt.pickCitizen', 'Pick a citizen')}
@@ -490,7 +490,7 @@ function IssueWarrant({ onIssued, onClose }: {
                         <button
                             type="button"
                             onClick={() => setLinking(true)}
-                            className={`flex w-full items-center gap-2 px-4 py-3.5 text-left text-[15px] font-medium text-ios-blue ${mdtRowHover}`}
+                            className={`flex w-full items-center gap-2 px-4 py-3.5 text-start text-[15px] font-medium text-ios-blue ${mdtRowHover}`}
                         >
                             <FileText className="h-[16px] w-[16px]" strokeWidth={2.4} />
                             {t('mdt.attachReport', 'Attach a filed report (optional)')}
@@ -529,7 +529,7 @@ function IssueWarrant({ onIssued, onClose }: {
                         {saving ? t('mdt.issuing', 'Issuing') : t('mdt.issue', 'Issue warrant')}
                     </MdtButton>
                     {!reportRef && charges.length > 0 && (
-                        <span className={`ml-auto tabular-nums ${mdtRowMeta}`}>
+                        <span className={`ms-auto tabular-nums ${mdtRowMeta}`}>
                             {sentenceLabel(totals.months)}
                             {' · '}
                             {formatMoney(totals.fine, { whole: true })}

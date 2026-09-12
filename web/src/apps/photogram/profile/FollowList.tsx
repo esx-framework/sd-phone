@@ -31,7 +31,7 @@ export function FollowList({ username, initial, onBack, onOpenProfile, onChanged
                 <button type="button" onClick={goBack} aria-label={t('photogram.back', 'Back')} className="text-black active:opacity-50">
                     <ChevronLeft className="h-[36px] w-[36px]" strokeWidth={2.2} />
                 </button>
-                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[22px] font-semibold text-black">{username}</div>
+                <div dir="auto" className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[22px] font-semibold text-black">{username}</div>
             </div>
 
             <div className="flex shrink-0 border-b border-black/[0.08]">
@@ -91,14 +91,14 @@ function Row({ u, onOpenProfile, onChanged }: { u: FollowUser; onOpenProfile: (h
 
     return (
         <div className="flex items-center gap-4 px-4 py-3.5">
-            <button type="button" onClick={() => onOpenProfile(u.handle)} className="flex min-w-0 flex-1 items-center gap-4 text-left active:opacity-70">
+            <button type="button" onClick={() => onOpenProfile(u.handle)} className="flex min-w-0 flex-1 items-center gap-4 text-start active:opacity-70">
                 <img src={u.avatar} alt="" draggable={false} className="h-[70px] w-[70px] shrink-0 rounded-full object-cover" />
                 <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="truncate text-[22px] font-semibold text-black">{u.handle}</span>
+                        <span dir="auto" className="truncate text-[22px] font-semibold text-black">{u.handle}</span>
                         {u.verified && <VerifiedCheck size={22} />}
                     </div>
-                    {u.name && <div className="truncate text-[18px]" style={{ color: IG.sub }}>{u.name}</div>}
+                    {u.name && <div dir="auto" className="truncate text-[18px]" style={{ color: IG.sub }}>{u.name}</div>}
                 </div>
             </button>
             {status !== 'self' && (

@@ -92,24 +92,25 @@ export function MessagesList({ me, conversations, onOpen, onOpenProfile, onCompo
                                     key={c.id}
                                     type="button"
                                     onClick={() => onOpen(c.id)}
-                                    className="flex w-full items-center gap-3.5 px-4 py-[14px] text-left active:bg-hairline/5"
+                                    className="flex w-full items-center gap-3.5 px-4 py-[14px] text-start active:bg-hairline/5"
                                 >
                                     <Avatar size={64} src={c.user.avatar} />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="truncate text-[21px] font-bold text-label">{c.user.name}</span>
+                                            <span dir="auto" className="truncate text-[21px] font-bold text-label">{c.user.name}</span>
                                             {c.user.verified && <VerifiedBadge size={18} type={c.user.verifiedType} />}
-                                            <span className="truncate text-[16px]" style={{ color: META }}>@{c.user.handle}</span>
-                                            <span className="ml-auto shrink-0 text-[15px]" style={{ color: META }}>{c.updated}</span>
+                                            <span dir="ltr" className="truncate text-[16px]" style={{ color: META }}>@{c.user.handle}</span>
+                                            <span className="ms-auto shrink-0 text-[15px]" style={{ color: META }}>{c.updated}</span>
                                         </div>
                                         <div
+                                            dir="auto"
                                             className={`mt-0.5 truncate text-[19px] ${unread ? 'font-semibold' : ''}`}
                                             style={{ color: unread ? TEXT : META }}
                                         >
                                             {previewText(last)}
                                         </div>
                                     </div>
-                                    {unread && <span className="ml-1 shrink-0 h-[11px] w-[11px] rounded-full" style={{ background: BLUE }} aria-label={t('squawk.unread', 'Unread')} />}
+                                    {unread && <span className="ms-1 shrink-0 h-[11px] w-[11px] rounded-full" style={{ background: BLUE }} aria-label={t('squawk.unread', 'Unread')} />}
                                 </button>
                             );
                         })}
@@ -156,14 +157,14 @@ function NewDm({ onSelect, onBack }: { onSelect: (handle: string) => void; onBac
 
             <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">
                 {users.map(u => (
-                    <button key={u.handle} type="button" onClick={() => onSelect(u.handle)} className="flex w-full items-center gap-3.5 px-4 py-3 text-left active:bg-hairline/5">
+                    <button key={u.handle} type="button" onClick={() => onSelect(u.handle)} className="flex w-full items-center gap-3.5 px-4 py-3 text-start active:bg-hairline/5">
                         <Avatar size={48} src={u.avatar} />
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                                <span className="truncate text-[18px] font-bold text-label">{u.name}</span>
+                                <span dir="auto" className="truncate text-[18px] font-bold text-label">{u.name}</span>
                                 {u.verified && <VerifiedBadge size={16} type={u.verifiedType} />}
                             </div>
-                            <div className="truncate text-[15px]" style={{ color: META }}>@{u.handle}</div>
+                            <div className="truncate text-[15px]" style={{ color: META }}><span dir="ltr">@{u.handle}</span></div>
                         </div>
                     </button>
                 ))}

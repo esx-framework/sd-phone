@@ -41,7 +41,7 @@ export function AlbumDetail({
             <div className="flex h-11 shrink-0 items-center justify-between px-2">
                 <button type="button" onClick={goBack} className="flex items-center text-ios-blue">
                     <ChevronLeft className="h-7 w-7" strokeWidth={2.4} />
-                    <span className="-ml-1 text-[16px] font-medium">{t('photos.albums','Albums')}</span>
+                    <span className="-ms-1 text-[16px] font-medium">{t('photos.albums','Albums')}</span>
                 </button>
                 {isCustom && (
                     <button
@@ -61,7 +61,7 @@ export function AlbumDetail({
                     transition:    'padding-bottom 0.28s cubic-bezier(0.32,0.72,0,1)',
                 }}
             >
-                <h1 className="px-4 pb-3 pt-1 text-[26px] font-bold tracking-tight">{title}</h1>
+                <h1 dir="auto" className="px-4 pb-3 pt-1 text-[26px] font-bold tracking-tight">{title}</h1>
 
                 {photos.length === 0 && !isCustom ? (
                     <p className="px-4 pt-6 text-center text-[14px] text-black/45 dark:text-white/45">

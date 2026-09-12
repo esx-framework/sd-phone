@@ -80,15 +80,15 @@ function SearchRow({ u, onOpenProfile }: { u: FollowUser; onOpenProfile: (handle
         <button
             type="button"
             onClick={() => onOpenProfile(u.handle)}
-            className="flex w-full items-center gap-4 px-4 py-4 text-left active:opacity-70"
+            className="flex w-full items-center gap-4 px-4 py-4 text-start active:opacity-70"
         >
             <img src={u.avatar} alt="" draggable={false} className="h-[76px] w-[76px] shrink-0 rounded-full object-cover" />
             <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[24px] font-semibold text-black">{u.handle}</span>
+                    <span dir="auto" className="truncate text-[24px] font-semibold text-black">{u.handle}</span>
                     {u.verified && <VerifiedCheck size={24} />}
                 </div>
-                {u.name && <div className="truncate text-[19px]" style={{ color: IG.sub }}>{u.name}</div>}
+                {u.name && <div dir="auto" className="truncate text-[19px]" style={{ color: IG.sub }}>{u.name}</div>}
             </div>
         </button>
     );

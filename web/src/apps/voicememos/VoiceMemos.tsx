@@ -188,10 +188,11 @@ function MemoRow({ memo, expanded, onToggle, onRename, onShare, onDelete }: {
 
     return (
         <div className="mb-2.5 overflow-hidden rounded-[16px] bg-surface">
-            <button type="button" onClick={onToggle} className="flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-black/[0.03] dark:active:bg-white/[0.03]">
+            <button type="button" onClick={onToggle} className="flex w-full items-center gap-3.5 px-5 py-4 text-start active:bg-black/[0.03] dark:active:bg-white/[0.03]">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                         <span
+                            dir="auto"
                             onClick={expanded ? (e) => { e.stopPropagation(); onRename(); } : undefined}
                             className="min-w-0 truncate text-[19px] font-semibold"
                         >
@@ -271,6 +272,7 @@ function Player({ memo, active, onShare, onDelete }: { memo: VoiceMemo; active: 
 
             <div
                 ref={trackRef}
+                dir="ltr"
                 onPointerDown={onDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
@@ -278,10 +280,10 @@ function Player({ memo, active, onShare, onDelete }: { memo: VoiceMemo; active: 
                 className="relative mb-1.5 h-5 cursor-pointer touch-none"
             >
                 <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/15 dark:bg-white/20" />
-                <div className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/45 dark:bg-white/55" style={{ width: `${pct}%` }} />
+                <div className="absolute start-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-black/45 dark:bg-white/55" style={{ width: `${pct}%` }} />
                 <div className="absolute top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black shadow-sm dark:bg-white" style={{ left: `${pct}%` }} />
             </div>
-            <div className="mb-3.5 flex justify-between text-[12px] tabular-nums text-ios-gray">
+            <div dir="ltr" className="mb-3.5 flex justify-between text-[12px] tabular-nums text-ios-gray">
                 <span>{fmtDuration(cur)}</span>
                 <span>{fmtDuration(dur)}</span>
             </div>
@@ -291,7 +293,7 @@ function Player({ memo, active, onShare, onDelete }: { memo: VoiceMemo; active: 
                     <ShareGlyph className="h-[28px] w-[28px]" />
                 </button>
 
-                <div className="flex items-center gap-7 text-black dark:text-white">
+                <div dir="ltr" className="flex items-center gap-7 text-black dark:text-white">
                     <button type="button" onClick={() => skip(-15)} aria-label={t('voicememos.skipBack', 'Skip back')} className="active:opacity-50">
                         <Rewind className="h-[26px] w-[26px]" fill="currentColor" strokeWidth={0} />
                     </button>

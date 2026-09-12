@@ -39,12 +39,12 @@ function CaseListRow({ file, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-left ${
+            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-start ${
                 selected ? 'bg-ios-blue/10' : mdtRowHover
             }`}
         >
             <span className="flex w-full items-center gap-2">
-                <span className={`shrink-0 ${mdtRef}`}>{file.ref}</span>
+                <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{file.ref}</span>
                 <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{file.title}</span>
                 <Pill tone={STATUS_TONE[file.status] ?? 'blue'}>{caseStatusLabel(file.status)}</Pill>
             </span>
@@ -55,7 +55,7 @@ function CaseListRow({ file, selected, onPress }: {
                         ? t('mdt.oneOfficer', '1 officer')
                         : t('mdt.nOfficers', '{n} officers', { n: file.officers })}
                 </span>
-                <span className="ml-auto shrink-0 tabular-nums">{formatListDate(file.updatedAt * 1000)}</span>
+                <span className="ms-auto shrink-0 tabular-nums">{formatListDate(file.updatedAt * 1000)}</span>
             </span>
         </button>
     );

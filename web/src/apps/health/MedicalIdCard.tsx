@@ -11,7 +11,7 @@ export function MedicalIdHeader({ record }: { record: MedicalId }) {
         <GroupCard radius={14} className="px-4 py-4">
             <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
-                    <p className="truncate text-[24px] font-bold leading-tight tracking-tight text-black dark:text-white">
+                    <p dir="auto" className="truncate text-[24px] font-bold leading-tight tracking-tight text-black dark:text-white">
                         {record.name || t('medical.noName', 'Unnamed')}
                     </p>
                     {record.dob && (
@@ -36,7 +36,7 @@ function Fact({ label, value, divider }: { label: string; value: string; divider
     return (
         <div className="relative px-4 py-3">
             <p className="text-[13px] uppercase tracking-wider text-ios-gray">{label}</p>
-            <p className="mt-0.5 whitespace-pre-wrap break-words text-[17px] leading-snug text-black dark:text-white">
+            <p dir="auto" className="mt-0.5 whitespace-pre-wrap break-words text-[17px] leading-snug text-black dark:text-white">
                 {value || t('medical.noneListed', 'None listed')}
             </p>
             {divider && (
@@ -76,8 +76,8 @@ export function MedicalIdFacts({ record }: { record: MedicalId }) {
                     <Phone className="h-[19px] w-[19px] shrink-0 text-ios-green" strokeWidth={2.2} />
                     {record.contactName ? (
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[17px] text-black dark:text-white">{record.contactName}</span>
-                            <span className="block truncate text-[14px] text-ios-gray">{record.contactNumber}</span>
+                            <span dir="auto" className="block truncate text-[17px] text-black dark:text-white">{record.contactName}</span>
+                            <span className="block truncate text-[14px] text-ios-gray"><span dir="ltr">{record.contactNumber}</span></span>
                         </span>
                     ) : (
                         <span className="flex-1 text-[17px] text-ios-gray">

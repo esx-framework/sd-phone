@@ -169,7 +169,7 @@ export function Composer({ me, onClose, onPost }: {
                                         type="button"
                                         onClick={() => removeImage(i)}
                                         aria-label={t('squawk.removeImage', 'Remove image')}
-                                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                        className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 active:opacity-70"
                                     >
                                         <X className="h-[16px] w-[16px] text-white" strokeWidth={2.6} />
                                     </button>
@@ -337,7 +337,7 @@ function CounterRing({ len }: { len: number }) {
     const C = 2 * Math.PI * R;
     const color = remaining <= 0 ? '#f4212e' : remaining <= 20 ? '#ffad1f' : BLUE;
     return (
-        <span className="ml-auto mr-1 flex items-center gap-1.5">
+        <span className="ms-auto me-1 flex items-center gap-1.5">
             {remaining <= 20 && (
                 <span className={`text-[13px] tabular-nums ${remaining <= 0 ? 'font-semibold text-[#f4212e]' : 'text-[#536471]'}`}>
                     {remaining}

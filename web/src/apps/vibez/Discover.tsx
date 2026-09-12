@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Play, Search, Video } from 'lucide-react';
 
 import { t } from '@/i18n';
+import { dirSign } from '@/stores/directionStore';
 import { SearchBar } from '@/ui/SearchBar';
 import { EmptyState } from '@/ui/EmptyState';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -44,20 +45,25 @@ export function Discover({ onOpenPost, onOpenProfile, refreshKey }: {
             return el ? el.scrollWidth - el.clientWidth : 0;
         }
 
+        function bounds() {
+            const max = limit();
+            return dirSign() < 0 ? { lo: -max, hi: 0 } : { lo: 0, hi: max };
+        }
+
         function onWheel(e: WheelEvent) {
             if (!el) return;
             const delta = e.deltaX || e.deltaY;
             if (!delta) return;
 
-            const max = limit();
-            const spent = delta > 0 ? el.scrollLeft >= max - 0.5 : el.scrollLeft <= 0.5;
-            if (max <= 0 || spent) return;
+            const { lo, hi } = bounds();
+            const spent = delta > 0 ? el.scrollLeft >= hi - 0.5 : el.scrollLeft <= lo + 0.5;
+            if (hi - lo <= 0 || spent) return;
 
             e.preventDefault();
             e.stopPropagation();
 
             if (glide === undefined) aim = el.scrollLeft;
-            aim = Math.max(0, Math.min(max, aim + delta));
+            aim = Math.max(lo, Math.min(hi, aim + delta));
             stopGlide();
             glide = window.setInterval(() => {
                 if (!el) return stopGlide();
@@ -105,7 +111,8 @@ export function Discover({ onOpenPost, onOpenProfile, refreshKey }: {
             glide = window.setInterval(() => {
                 if (!el) return stopGlide();
                 v *= 0.94;
-                const next = Math.max(0, Math.min(limit(), el.scrollLeft + v));
+                const { lo, hi } = bounds();
+                const next = Math.max(lo, Math.min(hi, el.scrollLeft + v));
                 if (Math.abs(v) < 0.3 || next === el.scrollLeft) { aim = el.scrollLeft; return stopGlide(); }
                 el.scrollLeft = next;
                 aim = next;
@@ -170,13 +177,14 @@ export function Discover({ onOpenPost, onOpenProfile, refreshKey }: {
                     textClassName="text-[14px] text-white placeholder-white/45"
                 />
                 {!searching && trends.length > 0 && (
-                    <div ref={railRef} className="no-scrollbar -mx-3 mt-3 flex gap-2 overflow-x-auto pl-3">
+                    <div ref={railRef} className="no-scrollbar -mx-3 mt-3 flex gap-2 overflow-x-auto ps-3">
                         {trends.map(tag => {
                             const on = trend === tag;
                             return (
                                 <button
                                     key={tag}
                                     type="button"
+                                    dir="auto"
                                     onClick={() => setTrend(on ? null : tag)}
                                     className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-semibold transition-colors active:scale-95 ${
                                         on
@@ -207,16 +215,16 @@ export function Discover({ onOpenPost, onOpenProfile, refreshKey }: {
                         )}
                         {users.map(u => (
                         <div key={u.handle} className="flex items-center gap-3 px-4 py-3 transition-colors active:bg-white/[0.05]">
-                            <button type="button" onClick={() => onOpenProfile(u.handle)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                            <button type="button" onClick={() => onOpenProfile(u.handle)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
                                 <Avatar size={46} src={u.avatar} />
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-1 text-[15px] font-semibold">
-                                        @{u.handle}
+                                        <span dir="ltr">@{u.handle}</span>
                                         {u.verified && (
                                             <VerifiedBadge size={15} />
                                         )}
                                     </div>
-                                    {u.name && u.name !== '' && <div className="truncate text-[13px] text-white/50">{u.name}</div>}
+                                    {u.name && u.name !== '' && <div dir="auto" className="truncate text-[13px] text-white/50">{u.name}</div>}
                                 </div>
                             </button>
                             <button
@@ -270,7 +278,7 @@ function PostGrid({ posts, onOpenPost }: {
                     <Thumb post={p} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                     <div
-                        className="absolute bottom-2 left-2 flex items-center gap-1.5 text-white"
+                        className="absolute bottom-2 start-2 flex items-center gap-1.5 text-white"
                         style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}
                     >
                         <Play className="h-[13px] w-[13px]" fill="#fff" strokeWidth={0} />

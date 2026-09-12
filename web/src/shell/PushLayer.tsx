@@ -30,7 +30,7 @@ export function PushLayer({
 
     const behind = hasSub && !returning;
     const layerStyle: CSSProperties = {
-        transform:  behind ? 'translateX(-28%)' : 'translateX(0)',
+        transform:  behind ? 'translateX(calc(var(--dir-x, 1) * -28%))' : 'translateX(0)',
         transition: `transform ${behind ? '0.34s' : '0.28s'} cubic-bezier(0.32,0.72,0,1)`,
     };
     const dimStyle: CSSProperties = {

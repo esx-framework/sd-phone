@@ -36,7 +36,7 @@ export function SettingsRow({ row, divider, onPress }: { row: SettingsRowDef; di
             disabled={row.disabled}
             aria-disabled={row.disabled}
             className={[
-                'relative flex w-full items-center gap-3.5 px-4 text-left',
+                'relative flex w-full items-center gap-3.5 px-4 text-start',
                 row.disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5',
                 hasSubtitle ? 'py-3' : 'py-2.5',
             ].join(' ')}

@@ -50,8 +50,9 @@ export function useAnchoredMenu({ anchor, onClose, align = 'end', matchWidth = f
         const anchorTop    = (a.top    - (p?.top  ?? 0)) / zoom;
         const anchorBottom = (a.bottom - (p?.top  ?? 0)) / zoom;
 
-        let left = align === 'start' ? anchorLeft : anchorRight - w;
-        if (left < EDGE) left = Math.min(align === 'start' ? anchorLeft : anchorRight - w, boxW - w - EDGE);
+        const startsLeft = getComputedStyle(host).direction === 'rtl' ? align !== 'start' : align === 'start';
+        let left = startsLeft ? anchorLeft : anchorRight - w;
+        if (left < EDGE) left = Math.min(startsLeft ? anchorLeft : anchorRight - w, boxW - w - EDGE);
         left = Math.max(EDGE, Math.min(left, boxW - w - EDGE));
 
         const roomBelow = boxH - EDGE - (anchorBottom + GAP);
@@ -68,7 +69,7 @@ export function useAnchoredMenu({ anchor, onClose, align = 'end', matchWidth = f
             top,
             maxHeight,
             minWidth: matchWidth ? a.width / zoom : undefined,
-            origin: `${below ? 'top' : 'bottom'} ${align === 'start' ? 'left' : 'right'}`,
+            origin: `${below ? 'top' : 'bottom'} ${startsLeft ? 'left' : 'right'}`,
         });
     }, [anchor, align, matchWidth, revision]);
 

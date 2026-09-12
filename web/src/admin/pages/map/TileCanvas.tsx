@@ -97,7 +97,7 @@ export const TileCanvas = memo(function TileCanvas({ style, view, width }: {
 
     return (
         <div
-            className="absolute left-0 top-0 will-change-transform"
+            className="absolute start-0 top-0 will-change-transform"
             style={{
                 width,
                 height: width,

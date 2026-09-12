@@ -214,7 +214,7 @@ export function MdtRichField({ label, value, onChange, rows = 8, maxLength, plac
         <div className="block min-w-0">
             <div className="mb-1 flex items-center gap-1">
                 {label && <span className={mdtSectionHeader}>{label}</span>}
-                <span ref={bar} className="ml-auto flex items-center gap-0.5">
+                <span ref={bar} className="ms-auto flex items-center gap-0.5">
                     {TOOLS.map(tool => {
                         const Icon = tool.icon;
                         const on = !!active[tool.id];
@@ -259,11 +259,11 @@ export function MdtRichField({ label, value, onChange, rows = 8, maxLength, plac
                         e.preventDefault();
                         document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
                     }}
-                    className={`w-full overflow-y-auto px-3 py-2 text-[15px] leading-snug ${mdtFieldBase} [&_code]:rounded-[4px] [&_code]:bg-black/[0.07] [&_code]:px-1 [&_code]:font-mono [&_code]:text-[0.92em] dark:[&_code]:bg-white/[0.14] [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_h1]:mb-1 [&_h1]:mt-3 [&_h1]:text-[1.3em] [&_h1]:font-bold [&_h1]:leading-tight [&_h2]:mb-1 [&_h2]:mt-3 [&_h2]:text-[1.15em] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:mb-0.5 [&_h3]:mt-2.5 [&_h3]:text-[1.02em] [&_h3]:font-semibold [&_h3]:leading-tight [&>*:first-child]:mt-0`}
+                    className={`w-full overflow-y-auto px-3 py-2 text-[15px] leading-snug ${mdtFieldBase} [&_code]:rounded-[4px] [&_code]:bg-black/[0.07] [&_code]:px-1 [&_code]:font-mono [&_code]:text-[0.92em] dark:[&_code]:bg-white/[0.14] [&_ul]:my-1 [&_ul]:list-disc [&_ul]:ps-5 [&_h1]:mb-1 [&_h1]:mt-3 [&_h1]:text-[1.3em] [&_h1]:font-bold [&_h1]:leading-tight [&_h2]:mb-1 [&_h2]:mt-3 [&_h2]:text-[1.15em] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:mb-0.5 [&_h3]:mt-2.5 [&_h3]:text-[1.02em] [&_h3]:font-semibold [&_h3]:leading-tight [&>*:first-child]:mt-0`}
                     style={{ minHeight: rows * 22, maxHeight: rows * 34 }}
                 />
                 {empty && placeholder && (
-                    <span className="pointer-events-none absolute left-3 top-2 text-[15px] leading-snug text-black/35 dark:text-white/35">
+                    <span className="pointer-events-none absolute start-3 top-2 text-[15px] leading-snug text-black/35 dark:text-white/35">
                         {placeholder}
                     </span>
                 )}

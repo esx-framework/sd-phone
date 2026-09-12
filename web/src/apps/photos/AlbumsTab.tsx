@@ -139,7 +139,7 @@ export function AlbumsTab({
                                     className="flex w-full items-center gap-3.5 px-4 py-4 active:bg-black/[0.06] dark:active:bg-white/10"
                                 >
                                     <Icon className="h-[24px] w-[24px] shrink-0 text-ios-blue" strokeWidth={2} />
-                                    <span className="flex-1 text-left text-[17px] text-ios-blue">{mt.label}</span>
+                                    <span className="flex-1 text-start text-[17px] text-ios-blue">{mt.label}</span>
                                     <span className="text-[16px] tabular-nums text-black/55 dark:text-white/55">{typeCounts[mt.type]}</span>
                                     <ChevronRight className="h-[18px] w-[18px] text-black/45 dark:text-white/45" strokeWidth={2.5} />
                                 </button>
@@ -163,7 +163,7 @@ function AlbumCardTile({ card, editMode, onOpen, onDelete }: {
             <button
                 type="button"
                 onClick={editMode ? undefined : onOpen}
-                className="block w-full text-left active:opacity-90"
+                className="block w-full text-start active:opacity-90"
             >
                 <div className="relative aspect-square overflow-hidden rounded-[14px] bg-hairline/10">
                     {card.cover ? (
@@ -174,17 +174,17 @@ function AlbumCardTile({ card, editMode, onOpen, onDelete }: {
                         </div>
                     )}
                     {card.isFavourites && (
-                        <div className="absolute bottom-2 left-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/85 shadow">
+                        <div className="absolute bottom-2 start-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/85 shadow">
                             <Heart className="h-4 w-4 fill-ios-blue text-ios-blue" />
                         </div>
                     )}
                     {card.isShared && (
-                        <div className="absolute bottom-2 left-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/85 shadow">
+                        <div className="absolute bottom-2 start-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/85 shadow">
                             <Users className="h-4 w-4 text-ios-blue" strokeWidth={2.4} />
                         </div>
                     )}
                 </div>
-                <div className="mt-1.5 text-[15px] font-semibold tracking-tight">{card.title}</div>
+                <div dir="auto" className="mt-1.5 text-[15px] font-semibold tracking-tight">{card.title}</div>
                 <div className="text-[13px] text-black/45 dark:text-white/45">{card.count}</div>
             </button>
 
@@ -193,7 +193,7 @@ function AlbumCardTile({ card, editMode, onOpen, onDelete }: {
                     type="button"
                     onClick={onDelete}
                     aria-label={t('photos.deleteName', 'Delete {name}', { name: card.title })}
-                    className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow"
+                    className="absolute -start-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow"
                 >
                     <Minus className="h-4 w-4" strokeWidth={3} />
                 </button>

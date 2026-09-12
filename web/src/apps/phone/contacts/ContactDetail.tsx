@@ -88,7 +88,7 @@ export function ContactDetail({ contact, onBack, backLabel = t('phone.contacts',
         <div
             className="absolute inset-0 flex flex-col bg-base"
             style={{
-                transform:  shown ? 'translateX(0)' : 'translateX(100%)',
+                transform:  shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))',
                 transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
             }}
             onTransitionEnd={() => { if (!shown) onBack(); }}
@@ -96,7 +96,7 @@ export function ContactDetail({ contact, onBack, backLabel = t('phone.contacts',
             <div className="flex items-center justify-between px-3 py-2">
                 <button type="button" onClick={() => setShown(false)} className="flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{backLabel}</span>
+                    <span className="-ms-0.5 text-[18px]">{backLabel}</span>
                 </button>
                 {(!minimal || onSaveCard) && (
                     <button type="button" onClick={() => setEditing(true)} className="px-1 text-[18px] text-ios-blue active:opacity-60">{t('phone.edit','Edit')}</button>
@@ -119,7 +119,7 @@ export function ContactDetail({ contact, onBack, backLabel = t('phone.contacts',
                 <div className="mb-4 flex items-center rounded-[10px] bg-surface px-4 py-3">
                     <div className="min-w-0 flex-1">
                         <div className="text-[13px] text-black/80 dark:text-white/80">{t('phone.phoneLabel','phone')}</div>
-                        <div className="truncate text-[19px] text-ios-blue">{phoneFmt(current.phone)}</div>
+                        <div className="truncate text-[19px] text-ios-blue"><span dir="ltr">{phoneFmt(current.phone)}</span></div>
                     </div>
                     <button
                         type="button"
@@ -129,7 +129,7 @@ export function ContactDetail({ contact, onBack, backLabel = t('phone.contacts',
                             setPhoneCopied(true);
                             window.setTimeout(() => setPhoneCopied(false), 1500);
                         }}
-                        className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ios-blue active:opacity-50"
+                        className="ms-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ios-blue active:opacity-50"
                     >
                         {phoneCopied
                             ? <Check className="h-[20px] w-[20px]" strokeWidth={2.5} />
@@ -242,7 +242,7 @@ function InfoField({ label, value, divider }: { label: string; value: string; di
             <div className="flex items-center px-4 py-3">
                 <div className="min-w-0 flex-1">
                     <div className="text-[13px] text-black/80 dark:text-white/80">{label}</div>
-                    <div className="break-all text-[19px] text-ios-blue">{value}</div>
+                    <div className="break-all text-[19px] text-ios-blue"><span dir="auto">{value}</span></div>
                 </div>
                 <button
                     type="button"
@@ -252,7 +252,7 @@ function InfoField({ label, value, divider }: { label: string; value: string; di
                         setCopied(true);
                         window.setTimeout(() => setCopied(false), 1500);
                     }}
-                    className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-ios-blue active:opacity-50"
+                    className="ms-3 flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-ios-blue active:opacity-50"
                 >
                     {copied
                         ? <Check className="h-[20px] w-[20px]" strokeWidth={2.5} />
@@ -269,7 +269,7 @@ function ActionRow({ label, tone = 'blue', onClick }: { label: string; tone?: 'b
         <button
             type="button"
             onClick={onClick}
-            className={`w-full px-4 py-3.5 text-left text-[19px] active:bg-black/5 dark:active:bg-white/5 ${
+            className={`w-full px-4 py-3.5 text-start text-[19px] active:bg-black/5 dark:active:bg-white/5 ${
                 tone === 'red' ? 'text-ios-red' : 'text-ios-blue'
             }`}
         >

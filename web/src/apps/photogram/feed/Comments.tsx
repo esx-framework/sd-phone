@@ -62,7 +62,7 @@ export function Comments({ post, me, comments, onBack, onSubmit, onToggleLike, o
                     <div className="px-4 pt-3">
                         <div className="relative inline-block">
                             <img src={gif} alt="" draggable={false} className="h-[96px] rounded-xl object-cover" />
-                            <button type="button" onClick={() => setGif(null)} aria-label={t('photogram.removeGif', 'Remove GIF')} className="absolute -right-2 -top-2 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-black/60 active:opacity-70">
+                            <button type="button" onClick={() => setGif(null)} aria-label={t('photogram.removeGif', 'Remove GIF')} className="absolute -end-2 -top-2 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-black/60 active:opacity-70">
                                 <X className="h-[14px] w-[14px] text-white" strokeWidth={2.75} />
                             </button>
                         </div>
@@ -70,7 +70,7 @@ export function Comments({ post, me, comments, onBack, onSubmit, onToggleLike, o
                 )}
                 <div className="flex items-center gap-3 px-4 py-3 pb-9">
                     <img src={me.avatar} alt="" draggable={false} className="h-[48px] w-[48px] shrink-0 rounded-full object-cover" />
-                    <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-black/15 py-2 pl-3.5 pr-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-black/15 py-2 ps-3.5 pe-4">
                         <button type="button" aria-label={t('photogram.emoji', 'Emoji')} onClick={() => setEmojiOpen(o => !o)} className="shrink-0 active:opacity-50" style={{ color: emojiOpen ? IG.blue : '#555555' }}>
                             <Smile className="h-[24px] w-[24px]" strokeWidth={1.9} />
                         </button>
@@ -113,10 +113,10 @@ function Row({ user, text, time, gifUrl, likes, liked, onLike, onOpenProfile }: 
             </button>
             <div className="min-w-0 flex-1 leading-snug">
                 <button type="button" onClick={() => onOpenProfile(user.handle)} className="flex items-center gap-1.5 active:opacity-60">
-                    <span className="text-[20px] font-semibold text-black">{user.handle}</span>
+                    <span dir="auto" className="text-[20px] font-semibold text-black">{user.handle}</span>
                     {user.verified && <VerifiedCheck size={24} />}
                 </button>
-                {text && <div className="break-words text-[20px] text-black">{text}</div>}
+                {text && <div dir="auto" className="break-words text-[20px] text-black">{text}</div>}
                 {gifUrl && <img src={gifUrl} alt="" draggable={false} className="mt-1.5 max-h-[200px] rounded-xl object-cover" />}
                 <div className="mt-[4px] flex items-center gap-4 text-[16px] font-medium" style={{ color: '#555555' }}>
                     <span>{time}</span>

@@ -188,7 +188,7 @@ export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPa
                     </button>
                     <div className="flex min-w-0 items-center gap-2">
                         <Avatar size={46} src={convo.user.avatar} />
-                        <span className="ml-1 min-w-0 truncate text-[24px] font-semibold text-label">{name}</span>
+                        <span dir="auto" className="ms-1 min-w-0 truncate text-[24px] font-semibold text-label">{name}</span>
                     </div>
                 </div>
                 <div className="mx-[6%] h-[0.5px] bg-hairline/15" />
@@ -198,7 +198,7 @@ export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPa
                 {!loading && messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-8 pb-10 text-center">
                         <Avatar size={104} src={convo.user.avatar} />
-                        <p className="mt-4 text-[21px] font-semibold text-label/85">{name}</p>
+                        <p dir="auto" className="mt-4 text-[21px] font-semibold text-label/85">{name}</p>
                         <p className="mt-1.5 text-[16px] font-medium leading-snug text-label/65">{t('squawk.sayHello', 'Say hello to @{handle}', { handle: convo.user.handle })}</p>
                     </div>
                 ) : null}
@@ -254,7 +254,7 @@ export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPa
                         <div className="w-[3px] self-stretch rounded-full" style={{ background: BLUE }} />
                         <div className="min-w-0 flex-1">
                             <div className="text-[12px] font-semibold" style={{ color: BLUE }}>{t('squawk.replyTo', 'In reply to {name}', { name: replyName(replyTo) })}</div>
-                            <div className="truncate text-[13px] text-label/55">{msgPreview(replyTo)}</div>
+                            <div dir="auto" className="truncate text-[13px] text-label/55">{msgPreview(replyTo)}</div>
                         </div>
                         <button
                             type="button"
@@ -275,7 +275,7 @@ export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPa
                                     type="button"
                                     onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
                                     aria-label={t('squawk.removeImage', 'Remove image')}
-                                    className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                    className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
                                 >
                                     <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                                 </button>
@@ -285,7 +285,7 @@ export function ChatView({ convo, loading = false, onBack, onSend, onReact, onPa
                 )}
 
                 <div className="px-3 pb-2 pt-1.5">
-                    <div className={`flex items-center gap-1 rounded-[22px] bg-control py-[9px] pl-4 ${draft.trim() || attachments.length ? 'pr-[5px]' : 'pr-4'}`}>
+                    <div className={`flex items-center gap-1 rounded-[22px] bg-control py-[9px] ps-4 ${draft.trim() || attachments.length ? 'pe-[5px]' : 'pe-4'}`}>
                         <input
                             ref={inputRef}
                             type="text"

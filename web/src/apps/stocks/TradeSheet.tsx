@@ -66,7 +66,7 @@ export function TradeSheet({ mode, asset, available, onConfirm, onClose }: {
                         </span>
                     </div>
 
-                    <div className="mt-6 text-center text-[44px] font-bold tabular-nums leading-none">
+                    <div dir="ltr" className="mt-6 text-center text-[44px] font-bold tabular-nums leading-none">
                         ${(amount).toLocaleString('en-US')}
                     </div>
                     <div className="mt-2 text-center text-[14px] text-ios-gray">{subline}</div>

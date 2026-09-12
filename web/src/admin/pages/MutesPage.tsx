@@ -140,7 +140,7 @@ export function MutesPage({ onOpenPlayer, toast }: {
     return (
         <div className="space-y-4">
             <Card>
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full text-start text-[13px]">
                     <thead>
                         <tr className="text-[11px] uppercase tracking-wide text-zinc-500">
                             <th className="px-4 py-2.5 font-semibold">Player</th>

@@ -54,7 +54,7 @@ export function MailDetail({ msg, backLabel, prevId, nextId, onBack, onOpenSibli
                     <ChevronLeft className="h-[22px] w-[22px]" strokeWidth={2.5} />
                     <span className="text-[17px]">{backLabel}</span>
                 </button>
-                <div className="ml-auto flex items-center gap-4 pr-3">
+                <div className="ms-auto flex items-center gap-4 pe-3">
                     <button
                         type="button"
                         onClick={() => goSibling(prevId, 'up')}
@@ -83,7 +83,7 @@ export function MailDetail({ msg, backLabel, prevId, nextId, onBack, onOpenSibli
                     ? `${navDir === 'down' ? 'mail-nav-from-bottom' : 'mail-nav-from-top'} 0.22s ease-out`
                     : undefined }}
             >
-                <div className="px-5 pt-3 pb-3 text-[25px] font-bold leading-tight tracking-tight">
+                <div dir="auto" className="px-5 pt-3 pb-3 text-[25px] font-bold leading-tight tracking-tight">
                     {msg.subject || t('mail.noSubject', '(No Subject)')}
                 </div>
 
@@ -98,14 +98,14 @@ export function MailDetail({ msg, backLabel, prevId, nextId, onBack, onOpenSibli
                         <div className="min-w-0 flex-1">
                             <div className="flex items-baseline gap-2">
                                 <span className="truncate text-[18px] font-semibold">{msg.from.name}</span>
-                                <span className="ml-auto shrink-0 whitespace-nowrap text-[15px] text-ios-gray">
+                                <span className="ms-auto shrink-0 whitespace-nowrap text-[15px] text-ios-gray">
                                     {formatMailTime(msg.sentAt)}
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setDetailsOpen(o => !o)}
-                                className="mt-0.5 flex w-full items-center gap-1 text-left active:opacity-60"
+                                className="mt-0.5 flex w-full items-center gap-1 text-start active:opacity-60"
                             >
                                 <span className="truncate text-[16px] text-ios-gray">{t('mail.toRecipients', 'to {recipients}', { recipients })}</span>
                                 <ChevronDown
@@ -127,7 +127,7 @@ export function MailDetail({ msg, backLabel, prevId, nextId, onBack, onOpenSibli
 
                 <div className="bg-black/[0.10] dark:bg-white/[0.12]" style={{ height: '0.5px' }} />
 
-                <div className={`whitespace-pre-wrap px-5 pt-4 text-[16px] leading-[1.55] ${msg.attachments?.length ? 'pb-4' : 'pb-36'}`}>
+                <div dir="auto" className={`whitespace-pre-wrap px-5 pt-4 text-[16px] leading-[1.55] ${msg.attachments?.length ? 'pb-4' : 'pb-36'}`}>
                     {msg.body}
                 </div>
 
@@ -198,7 +198,7 @@ function DetailRow({ k, v, last = false }: { k: string; v: string; last?: boolea
     return (
         <div className={`flex gap-2 ${last ? '' : 'mb-1.5'}`}>
             <span className="shrink-0 text-ios-gray">{k}:</span>
-            <span className="min-w-0 flex-1 break-words">{v}</span>
+            <span className="min-w-0 flex-1 break-words"><span dir="auto">{v}</span></span>
         </div>
     );
 }

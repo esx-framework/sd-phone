@@ -59,14 +59,14 @@ export function SharePostSheet({ post, onClose }: { post: Post; onClose: () => v
                         ) : people.map(p => {
                             const on = selected.includes(p.handle);
                             return (
-                                <button key={p.handle} type="button" onClick={() => toggle(p.handle)} className="flex w-full items-center gap-4 px-4 py-3 text-left active:bg-black/5">
+                                <button key={p.handle} type="button" onClick={() => toggle(p.handle)} className="flex w-full items-center gap-4 px-4 py-3 text-start active:bg-black/5">
                                     <img src={p.avatar} alt="" draggable={false} className="h-[62px] w-[62px] shrink-0 rounded-full object-cover" />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="truncate text-[19px] font-semibold text-black">{p.handle}</span>
+                                            <span dir="auto" className="truncate text-[19px] font-semibold text-black">{p.handle}</span>
                                             {p.verified && <VerifiedCheck size={19} />}
                                         </div>
-                                        {p.name && <div className="truncate text-[16px]" style={{ color: IG.sub }}>{p.name}</div>}
+                                        {p.name && <div dir="auto" className="truncate text-[16px]" style={{ color: IG.sub }}>{p.name}</div>}
                                     </div>
                                     <span
                                         className={`flex h-[29px] w-[29px] shrink-0 items-center justify-center rounded-full border-[1.5px] ${on ? 'border-transparent' : 'border-black/25'}`}

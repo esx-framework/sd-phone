@@ -507,7 +507,7 @@ export function CourtCase({ caseRef, onSaved, onClose, onChanged }: {
     return (
         <>
             <Scroller className={`h-full ${mdtPanePad}`}>
-                <span className={mdtRef}>{file.ref}</span>
+                <span dir="ltr" className={mdtRef}>{file.ref}</span>
                 <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
                     {file.title}
                 </h1>
@@ -558,7 +558,7 @@ export function CourtCase({ caseRef, onSaved, onClose, onChanged }: {
                         <button
                             type="button"
                             onClick={() => setListing(true)}
-                            className="flex min-w-0 items-center gap-3 text-left transition-opacity duration-150 active:opacity-60"
+                            className="flex min-w-0 items-center gap-3 text-start transition-opacity duration-150 active:opacity-60"
                         >
                             <span className={`shrink-0 ${mdtSectionHeader}`}>{t('mdt.courtListed', 'Listed for')}</span>
                             <span className={`min-w-0 px-3 py-1.5 text-[14px] ${mdtFieldBase}`}>
@@ -584,7 +584,7 @@ export function CourtCase({ caseRef, onSaved, onClose, onChanged }: {
                             <div className="flex flex-col gap-2">
                                 {file.charges.map((c, i) => (
                                     <div key={`${c.code}:${i}`} className="flex items-center gap-3">
-                                        <span className={`shrink-0 ${mdtRef}`}>{c.code}</span>
+                                        <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{c.code}</span>
                                         <span className="min-w-0 flex-1 truncate text-[14.5px] text-black dark:text-white">{c.label}</span>
                                         {c.count > 1 && <span className={mdtRowMeta}>{`x${c.count}`}</span>}
                                         <Pill tone={STATUS_TONE[c.class] ?? 'blue'}>{c.class}</Pill>
@@ -629,13 +629,13 @@ export function CourtCase({ caseRef, onSaved, onClose, onChanged }: {
                     ) : (
                         <div className="mdt-stagger flex flex-col gap-3">
                             {file.notes.map((n, i) => (
-                                <div key={`${n.createdAt}:${i}`} className="border-l-2 border-black/[0.10] pl-3 dark:border-white/[0.14]">
+                                <div key={`${n.createdAt}:${i}`} className="border-s-2 border-black/[0.10] ps-3 dark:border-white/[0.14]">
                                     <div className="flex flex-wrap items-baseline gap-2">
                                         <Pill tone={noteKindTone(n.kind)}>{noteKindLabel(n.kind)}</Pill>
                                         <span className="text-[13.5px] font-semibold text-black dark:text-white">{n.author}</span>
                                         <span className={`tabular-nums ${mdtRowMeta}`}>{formatListDate(n.createdAt * 1000)}</span>
                                     </div>
-                                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[14.5px] leading-snug text-black/80 dark:text-white/80">
+                                    <p dir="auto" className="mt-0.5 whitespace-pre-wrap break-words text-[14.5px] leading-snug text-black/80 dark:text-white/80">
                                         {n.body}
                                     </p>
                                 </div>

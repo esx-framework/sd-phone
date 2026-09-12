@@ -138,7 +138,7 @@ export function Banking({ onClose: _onClose }: { onClose: () => void }) {
                     <div>
                         <div className="text-[17px] font-semibold text-black dark:text-white">{t('banking.balance', 'Balance')}</div>
                         <div className="mt-0.5 text-[26px] font-bold tabular-nums tracking-tight text-black dark:text-white">
-                            {hideBalance ? HIDDEN_TEXT : formatMoney(balance, { whole: true })}
+                            <span dir="ltr">{hideBalance ? HIDDEN_TEXT : formatMoney(balance, { whole: true })}</span>
                         </div>
                     </div>
                     <button

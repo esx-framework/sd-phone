@@ -283,7 +283,7 @@ export function Climber({ onClose: _onClose }: Props) {
                             <button
                                 type="button"
                                 onClick={toMenu}
-                                className="absolute left-3 flex items-center active:opacity-60"
+                                className="absolute start-3 flex items-center active:opacity-60"
                                 style={{ color: PAL.accentDeep }}
                                 aria-label={t('games.back', 'Back')}
                             >
@@ -312,6 +312,7 @@ export function Climber({ onClose: _onClose }: Props) {
 
                         <div className="flex flex-1 items-start justify-center">
                             <div
+                                dir="ltr"
                                 onPointerDown={(e) => { e.preventDefault(); if (phase !== 'playing') begin(); }}
                                 className="relative overflow-hidden rounded-[26px]"
                                 style={{
@@ -323,9 +324,9 @@ export function Climber({ onClose: _onClose }: Props) {
                                     cursor: 'pointer',
                                 }}
                             >
-                                <div className="pointer-events-none absolute left-8 top-16 h-7 w-16 rounded-full bg-white/55" />
-                                <div className="pointer-events-none absolute right-12 top-32 h-6 w-14 rounded-full bg-white/45" />
-                                <div className="pointer-events-none absolute left-24 top-56 h-5 w-12 rounded-full bg-white/40" />
+                                <div className="pointer-events-none absolute start-8 top-16 h-7 w-16 rounded-full bg-white/55" />
+                                <div className="pointer-events-none absolute end-12 top-32 h-6 w-14 rounded-full bg-white/45" />
+                                <div className="pointer-events-none absolute start-24 top-56 h-5 w-12 rounded-full bg-white/40" />
 
                                 {plats.map((p) => (
                                     <PlatformView key={p.id} p={p} />
@@ -378,7 +379,7 @@ export function Climber({ onClose: _onClose }: Props) {
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 items-center justify-center gap-5 pb-6 pt-3">
+                        <div dir="ltr" className="flex shrink-0 items-center justify-center gap-5 pb-6 pt-3">
                             <SteerButton
                                 label={t('climber.left', 'Left')}
                                 onPress={(v) => { inputRef.current.left = v; if (v) begin(); }}

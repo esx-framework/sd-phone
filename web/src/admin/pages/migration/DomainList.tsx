@@ -72,7 +72,7 @@ export function DomainList({ domains, state, selected, required, locked, onToggl
                         )}
                         title={settled ? 'Finished. Everything it could place is already placed.' : undefined}
                     >
-                        <span className={clsx('absolute inset-y-0 left-0 w-[2px]', RAIL[standing.tone])} />
+                        <span className={clsx('absolute inset-y-0 start-0 w-[2px]', RAIL[standing.tone])} />
 
                         {settled ? (
                             <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-ios-green/15">
@@ -103,7 +103,7 @@ export function DomainList({ domains, state, selected, required, locked, onToggl
                             ) : null}
                         </div>
 
-                        <div className="w-[112px] shrink-0 pl-2 text-right">
+                        <div className="w-[112px] shrink-0 ps-2 text-end">
                             <div className="font-mono text-[13px] font-semibold text-zinc-200 tabular-nums">
                                 {comma(d.rows)}
                             </div>
@@ -115,7 +115,7 @@ export function DomainList({ domains, state, selected, required, locked, onToggl
                         {fill > 0 && (
                             <span
                                 className={clsx(
-                                    'absolute bottom-0 left-0 h-[2px] transition-[width] duration-300 ease-out',
+                                    'absolute bottom-0 start-0 h-[2px] transition-[width] duration-300 ease-out',
                                     run?.status === 'done' ? 'bg-ios-green/50' : 'bg-ios-blue',
                                 )}
                                 style={{ width: `${fill}%` }}

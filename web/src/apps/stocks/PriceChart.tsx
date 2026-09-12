@@ -79,13 +79,13 @@ export function PriceChart({ asset, live }: { asset: Asset; live: Asset }) {
     return (
         <div>
             <div className="mb-8 flex items-baseline gap-2">
-                <span className="text-[19px] font-semibold tabular-nums" style={{ color }}>
+                <span dir="ltr" className="text-[19px] font-semibold tabular-nums" style={{ color }}>
                     {formatMoney(last - first, { showSign: true })} ({formatPct(change)})
                 </span>
                 <span className="text-[14px] text-ios-gray">{range === '1D' ? t('stocks.today', 'Today') : t('stocks.pastRange', 'Past {word}', { word })}</span>
             </div>
 
-            <div data-testid="pricechart" className="relative w-full" style={{ height: 168 }}>
+            <div dir="ltr" data-testid="pricechart" className="relative w-full" style={{ height: 168 }}>
                 <svg key={range} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full animate-fade-in">
                     <defs>
                         <linearGradient id="pc-fill" x1="0" y1="0" x2="0" y2="1">

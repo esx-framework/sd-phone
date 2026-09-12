@@ -28,10 +28,10 @@ export function RequestsPanel({ onClose }: { onClose: () => void }) {
     return (
         <div
             className="absolute inset-0 z-40 flex flex-col bg-base font-sf"
-            style={{ transform: shown ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)' }}
+            style={{ transform: shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))', transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)' }}
         >
             <div className="flex shrink-0 items-center px-3 pb-1" style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}>
-                <button onClick={close} className="flex items-center gap-0.5 py-1 pr-3 text-[17px] font-semibold text-ios-blue active:opacity-60">
+                <button onClick={close} className="flex items-center gap-0.5 py-1 pe-3 text-[17px] font-semibold text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[26px] w-[26px]" strokeWidth={2.4} /> {t('ryde.drive', 'Drive')}
                 </button>
             </div>
@@ -53,7 +53,7 @@ export function RequestsPanel({ onClose }: { onClose: () => void }) {
                             <button
                                 key={r.id}
                                 onClick={() => setSelected(r)}
-                                className="flex w-full items-center gap-3.5 rounded-[18px] bg-surface p-3.5 text-left shadow-sm active:opacity-80"
+                                className="flex w-full items-center gap-3.5 rounded-[18px] bg-surface p-3.5 text-start shadow-sm active:opacity-80"
                             >
                                 <InitialsAvatar name={r.riderName ?? t('ryde.rider', 'Rider')} size={48} />
                                 <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ export function RequestsPanel({ onClose }: { onClose: () => void }) {
                                     <div className="mt-1 flex items-center gap-1.5 text-[15px] text-ios-gray">
                                         <MapPin className="h-[15px] w-[15px] shrink-0" />
                                         <span className="truncate">{r.pickup.name}</span>
-                                        <span className="shrink-0 opacity-50">→</span>
+                                        <span className="inline-block shrink-0 opacity-50" style={{ transform: 'scaleX(var(--dir-x, 1))' }}>→</span>
                                         <span className="truncate">{r.dropoff.name}</span>
                                     </div>
                                 </div>

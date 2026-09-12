@@ -259,7 +259,7 @@ function ChipsRow({ chips, onCashier }: { chips: number; onCashier: () => void }
         <button type="button" onClick={onCashier} className="flex shrink-0 items-center justify-center gap-1.5 pb-0.5 active:opacity-70">
             <Coins className="h-[17px] w-[17px]" strokeWidth={2.5} style={{ color: TABLE.chip }} />
             <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(chips)}</span>
-            <span className="ml-0.5 text-[12px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
+            <span className="ms-0.5 text-[12px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
         </button>
     );
 }
@@ -281,7 +281,7 @@ function TableList({ tables, canCreate, onCreate, onPick }: {
                     <button
                         type="button"
                         onClick={onCreate}
-                        className="flex items-center gap-3 rounded-[20px] px-4 py-3 text-left active:opacity-80"
+                        className="flex items-center gap-3 rounded-[20px] px-4 py-3 text-start active:opacity-80"
                         style={{ background: SURFACE.soft, boxShadow: `inset 0 0 0 1px rgba(240,212,138,0.32)` }}
                     >
                         <div
@@ -307,7 +307,7 @@ function TableList({ tables, canCreate, onCreate, onPick }: {
                         key={table.id}
                         type="button"
                         onClick={() => onPick(table.id)}
-                        className="flex items-center gap-3 rounded-[20px] px-4 py-3.5 text-left active:opacity-80"
+                        className="flex items-center gap-3 rounded-[20px] px-4 py-3.5 text-start active:opacity-80"
                         style={{
                             background: SURFACE.panel,
                             boxShadow: table.custom
@@ -326,7 +326,7 @@ function TableList({ tables, canCreate, onCreate, onPick }: {
                         </div>
                         <div className="flex min-w-0 flex-1 flex-col">
                             <div className="flex min-w-0 items-center gap-1.5">
-                                <span className="truncate text-[17px] font-bold text-white">{table.name}</span>
+                                <span dir="auto" className="truncate text-[17px] font-bold text-white">{table.name}</span>
                                 {table.custom && (
                                     <span
                                         className="shrink-0 rounded-full px-1.5 py-[1px] text-[9px] font-extrabold uppercase tracking-wider"
@@ -349,7 +349,7 @@ function TableList({ tables, canCreate, onCreate, onPick }: {
                             )}
                         </div>
                         <div className="flex shrink-0 flex-col items-end">
-                            <span className="text-[14px] font-extrabold tabular-nums" style={{ color: table.seated > 0 ? GOLD.top : SEAT.dim }}>
+                            <span dir="ltr" className="text-[14px] font-extrabold tabular-nums" style={{ color: table.seated > 0 ? GOLD.top : SEAT.dim }}>
                                 {table.seated}/6
                             </span>
                             <span className="text-[11px] font-semibold" style={{ color: table.playing ? TABLE.win : 'rgba(255,255,255,0.4)' }}>

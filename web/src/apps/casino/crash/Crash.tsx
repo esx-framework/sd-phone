@@ -37,7 +37,7 @@ const EMBER_FRAME = `linear-gradient(160deg, ${EMBER.hot} 0%, ${EMBER.mid} 52%, 
 
 const KEYFRAMES = `
     @keyframes crash-shake { 0%, 100% { transform: translateX(0); } 18% { transform: translateX(-7px); } 38% { transform: translateX(6px); } 58% { transform: translateX(-4px); } 78% { transform: translateX(2px); } }
-    @keyframes crash-pill-in { from { opacity: 0; transform: translateX(-12px) scale(0.9); } to { opacity: 1; transform: none; } }
+    @keyframes crash-pill-in { from { opacity: 0; transform: translateX(calc(var(--dir-x, 1) * -12px)) scale(0.9); } to { opacity: 1; transform: none; } }
     @keyframes crash-row-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
     @keyframes crash-glow { 0%, 100% { box-shadow: 0 6px 16px rgba(224,99,43,0.28); } 50% { box-shadow: 0 6px 26px rgba(224,99,43,0.52); } }
 `;
@@ -425,7 +425,7 @@ export function Crash({ chips, onChips, onBack, onCashier }: CasinoGameProps) {
 
             <div className="shrink-0 px-4 pt-2" style={{ paddingBottom: PAD_B }}>
                 <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
-                    <span className="shrink-0 pr-0.5 text-[11px] font-bold uppercase tracking-wide text-white/35">
+                    <span className="shrink-0 pe-0.5 text-[11px] font-bold uppercase tracking-wide text-white/35">
                         {t('crash.history', 'History')}
                     </span>
                     {history.slice(0, HISTORY_SHOWN).map(round => (
@@ -567,7 +567,7 @@ function BetPanel({ stake, chips, auto, maxAuto, busy, deadline, onStake, onAuto
                 <button
                     type="button"
                     onClick={() => onAuto({ ...auto, on: !auto.on })}
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left active:opacity-70"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-start active:opacity-70"
                 >
                     <span
                         className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full"
@@ -591,7 +591,7 @@ function BetPanel({ stake, chips, auto, maxAuto, busy, deadline, onStake, onAuto
                         </StepChip>
                     </div>
                 ) : (
-                    <span className="shrink-0 pr-2 text-[13px] font-bold text-white/35">{t('crash.autoOff', 'Off')}</span>
+                    <span className="shrink-0 pe-2 text-[13px] font-bold text-white/35">{t('crash.autoOff', 'Off')}</span>
                 )}
             </div>
 
@@ -666,7 +666,7 @@ function CashOutPanel({ clock, mine, onCashOut }: { clock: MutableRefObject<Cras
                 }}
             >
                 {t('crash.cashOut', 'Cash Out')}
-                <span className="tabular-nums">+{fmtChips(payout)}</span>
+                <span dir="ltr" className="tabular-nums">+{fmtChips(payout)}</span>
             </button>
             <div className="flex items-center justify-center gap-3 text-[12px] font-semibold text-white/45">
                 <span className="tabular-nums">{t('crash.stake', 'Stake')} {fmtChips(mine.stake)}</span>
@@ -699,7 +699,7 @@ function SettledPanel({ mine }: { mine: CrashMine }) {
                     {mine.mx === null ? fmtChips(mine.stake) : `${fmtMult(mine.mx)}x`}
                 </span>
             </span>
-            <span className="text-[24px] font-extrabold tabular-nums" style={{ color: won ? '#0B3A24' : TABLE.lose }}>
+            <span dir="ltr" className="text-[24px] font-extrabold tabular-nums" style={{ color: won ? '#0B3A24' : TABLE.lose }}>
                 {won ? `+${fmtChips(mine.payout)}` : `-${fmtChips(mine.stake)}`}
             </span>
         </div>
@@ -717,7 +717,7 @@ function StatusPanel({ tint, label, note, gain = 0 }: { tint: string; label: str
                 {note !== undefined && <span className="pt-0.5 text-[12px] font-semibold text-white/45">{note}</span>}
             </span>
             {gain > 0 && (
-                <span className="text-[22px] font-extrabold tabular-nums" style={{ color: GOLD.top }}>+{fmtChips(gain)}</span>
+                <span dir="ltr" className="text-[22px] font-extrabold tabular-nums" style={{ color: GOLD.top }}>+{fmtChips(gain)}</span>
             )}
         </div>
     );
@@ -743,7 +743,7 @@ function RailRowView({ row, phase, first }: { row: RailRow; phase: CrashPhase; f
                 animation: 'crash-row-in 220ms cubic-bezier(0.2,0.8,0.3,1)',
             }}
         >
-            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-white/85">{row.n}</span>
+            <span dir="auto" className="min-w-0 flex-1 truncate text-[14px] font-semibold text-white/85">{row.n}</span>
             <span className="shrink-0 text-[13px] font-semibold tabular-nums text-white/45">{fmtChips(row.s)}</span>
             <span className="w-[68px] shrink-0">
                 {badge !== null && (
@@ -755,7 +755,7 @@ function RailRowView({ row, phase, first }: { row: RailRow; phase: CrashPhase; f
                     </span>
                 )}
             </span>
-            <span className="w-[62px] shrink-0 text-right text-[13px] font-extrabold tabular-nums" style={{ color: cashed ? GOLD.top : TABLE.lose }}>
+            <span dir="ltr" className="w-[62px] shrink-0 text-end text-[13px] font-extrabold tabular-nums" style={{ color: cashed ? GOLD.top : TABLE.lose }}>
                 {cashed ? `+${fmtChips(row.w)}` : lost ? `-${fmtChips(row.s)}` : ''}
             </span>
         </div>

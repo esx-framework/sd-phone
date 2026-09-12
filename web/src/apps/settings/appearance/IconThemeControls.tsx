@@ -69,7 +69,7 @@ export function ActionRow({ label, destructive = false, disabled = false, divide
             disabled={disabled}
             className={`relative flex w-full items-center px-4 py-3 text-[17px] font-normal active:bg-black/5 disabled:opacity-40 dark:active:bg-white/5 ${destructive ? 'text-ios-red' : 'text-ios-blue'}`}
         >
-            <span className="flex-1 text-left">{label}</span>
+            <span className="flex-1 text-start">{label}</span>
             {right}
             {divider && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[0.5px] bg-ios-gray4 dark:bg-control" />}
         </button>
@@ -88,13 +88,13 @@ export function SwitchRow({ label, sub, on, disabled = false, divider = false, o
         <button
             type="button"
             onClick={() => { if (!disabled) onToggle(); }}
-            className={`relative flex w-full items-center px-4 py-3 text-left ${disabled ? 'opacity-45' : 'active:bg-black/5 dark:active:bg-white/5'}`}
+            className={`relative flex w-full items-center px-4 py-3 text-start ${disabled ? 'opacity-45' : 'active:bg-black/5 dark:active:bg-white/5'}`}
         >
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-[17px] font-normal text-black dark:text-white">{label}</span>
                 {sub && <span className="block truncate text-[13px] text-ios-gray">{sub}</span>}
             </span>
-            <span className="pointer-events-none -my-1 ml-3 shrink-0">
+            <span className="pointer-events-none -my-1 ms-3 shrink-0">
                 <Toggle on={on} disabled={disabled} />
             </span>
             {divider && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[0.5px] bg-ios-gray4 dark:bg-control" />}

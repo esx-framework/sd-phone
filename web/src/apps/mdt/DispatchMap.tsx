@@ -6,6 +6,7 @@ import { t } from '@/i18n';
 import { relTimeCompact } from '@/lib/time';
 import { EmptyState } from '@/ui/EmptyState';
 import { Sheet } from '@/ui/Sheet';
+import { useDirection } from '@/stores/directionStore';
 import { MapView, usePinStyle, type MapViewHandle } from '@/apps/maps/MapView';
 
 import { MdtButton } from './ui/MdtButton';
@@ -37,20 +38,22 @@ const legendPill = 'flex items-center rounded-[10px] bg-black/75 px-3 py-[7px]';
 function MarkerTip({ title, meta }: { title: string; meta: string }) {
     return (
         <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 w-max max-w-[200px] -translate-x-1/2 rounded-[8px] bg-black/80 px-2 py-[5px] text-center shadow-[0_2px_10px_rgba(0,0,0,0.32)]">
-            <div className="truncate text-[11.5px] font-bold leading-tight text-white">{title}</div>
-            <div className="truncate text-[10.5px] font-medium leading-tight text-white/70">{meta}</div>
+            <div dir="auto" className="truncate text-[11.5px] font-bold leading-tight text-white">{title}</div>
+            <div dir="auto" className="truncate text-[10.5px] font-medium leading-tight text-white/70">{meta}</div>
         </div>
     );
 }
 
 function MarkerCard({ children }: { children: ReactNode }) {
+    const direction = useDirection();
     return (
         <div
+            dir={direction}
             style={{ pointerEvents: 'auto' }}
             onPointerDown={e => e.stopPropagation()}
             onPointerMove={e => e.stopPropagation()}
             onPointerUp={e => e.stopPropagation()}
-            className="absolute bottom-full left-1/2 mb-2 w-[236px] -translate-x-1/2 cursor-default rounded-[13px] bg-elevated p-3 text-left shadow-[0_10px_34px_rgba(0,0,0,0.26)] ring-1 ring-black/[0.08] dark:ring-white/[0.10]"
+            className="absolute bottom-full left-1/2 mb-2 w-[236px] -translate-x-1/2 cursor-default rounded-[13px] bg-elevated p-3 text-start shadow-[0_10px_34px_rgba(0,0,0,0.26)] ring-1 ring-black/[0.08] dark:ring-white/[0.10]"
         >
             {children}
         </div>
@@ -86,10 +89,10 @@ function CallCardBody({ call, phone, canAttach, attached, busy, onAttach, onWayp
                     {relTimeCompact(call.createdAt * 1000)}
                 </span>
             </div>
-            <div className={`mt-1 font-semibold leading-tight text-black dark:text-white ${phone ? 'text-[19px]' : 'text-[15px]'}`}>
+            <div dir="auto" className={`mt-1 font-semibold leading-tight text-black dark:text-white ${phone ? 'text-[19px]' : 'text-[15px]'}`}>
                 {call.type}
             </div>
-            <div className={`mt-0.5 leading-snug text-ios-gray ${phone ? 'text-[14px]' : 'text-[12px]'}`}>{call.location}</div>
+            <div dir="auto" className={`mt-0.5 leading-snug text-ios-gray ${phone ? 'text-[14px]' : 'text-[12px]'}`}>{call.location}</div>
             <div className={`mt-0.5 font-medium text-ios-gray ${phone ? 'text-[13px]' : 'text-[12px]'}`}>
                 {t('mdt.unitsAttached', '{n} units', { n: call.unitCount })}
             </div>
@@ -136,10 +139,10 @@ function UnitCardBody({ unit, phone, onWaypoint }: {
                     {unitCodeLabel(unit.code)}
                 </span>
             </div>
-            <div className={`mt-1 truncate font-semibold leading-tight text-black dark:text-white ${phone ? 'text-[19px]' : 'text-[15px]'}`}>
+            <div dir="auto" className={`mt-1 truncate font-semibold leading-tight text-black dark:text-white ${phone ? 'text-[19px]' : 'text-[15px]'}`}>
                 {unit.name}
             </div>
-            <div className={`mt-0.5 truncate text-ios-gray ${phone ? 'text-[14px]' : 'text-[12px]'}`}>{unit.rank}</div>
+            <div dir="auto" className={`mt-0.5 truncate text-ios-gray ${phone ? 'text-[14px]' : 'text-[12px]'}`}>{unit.rank}</div>
             <div className={`flex flex-wrap items-center gap-y-1 ${phone ? 'mt-4 gap-x-3' : 'mt-2.5 gap-x-2'}`}>
                 <MdtButton size={phone ? 'md' : 'sm'} variant="filled" onClick={onWaypoint}>
                     {t('mdt.setWaypoint', 'Set waypoint')}
@@ -385,12 +388,12 @@ export function DispatchMap({
                 type="button"
                 onClick={() => mapRef.current?.fitWorld(points, 0.22)}
                 aria-label={t('mdt.mapFit', 'Frame everything')}
-                className="absolute left-3 top-3 z-40 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06] transition-colors duration-150 hover:bg-[#f6f6f6] hover:text-black active:bg-elevated dark:ring-white/[0.08] dark:hover:text-white"
+                className="absolute start-3 top-3 z-40 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#efefef] text-ios-gray shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06] transition-colors duration-150 hover:bg-[#f6f6f6] hover:text-black active:bg-elevated dark:ring-white/[0.08] dark:hover:text-white"
             >
                 <Crosshair className="h-[17px] w-[17px]" strokeWidth={2.2} />
             </button>
 
-            <div className={`pointer-events-none absolute bottom-3 left-3 right-3 z-40 flex items-center justify-between ${
+            <div className={`pointer-events-none absolute bottom-3 start-3 end-3 z-40 flex items-center justify-between ${
                 isPhone ? 'flex-wrap gap-x-2 gap-y-1.5' : 'gap-3'
             }`}
             >

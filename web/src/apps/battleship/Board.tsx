@@ -25,6 +25,7 @@ export function Grid({ cells, cell, accent, onTap, locked, ships }: GridProps) {
     const W = GRID * cell + (GRID - 1) * gap + pad * 2;
     return (
         <div
+            dir="ltr"
             className="relative rounded-[14px]"
             style={{ width: W, padding: pad, background: `linear-gradient(160deg, ${accent}2e 0%, ${NAVY_DK} 100%)`, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08), 0 8px 22px rgba(0,0,0,0.40)' }}
         >

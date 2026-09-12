@@ -21,13 +21,13 @@ export function CallDetail({ entry, onBack, onAddToContacts }: {
 
     const title = entry.contact ? entry.contact.name
         : entry.noCallerId ? t('phone.noCallerId','No Caller ID')
-        : phone(entry.number);
+        : <span dir="ltr">{phone(entry.number)}</span>;
 
     return (
         <div
             className="absolute inset-0 flex flex-col bg-base"
             style={{
-                transform:  shown ? 'translateX(0)' : 'translateX(100%)',
+                transform:  shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))',
                 transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
             }}
             onTransitionEnd={() => { if (!shown) onBack(); }}
@@ -35,7 +35,7 @@ export function CallDetail({ entry, onBack, onAddToContacts }: {
             <div className="flex items-center px-3 py-2">
                 <button type="button" onClick={() => setShown(false)} className="flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('phone.recents','Recents')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('phone.recents','Recents')}</span>
                 </button>
             </div>
 
@@ -65,13 +65,13 @@ export function CallDetail({ entry, onBack, onAddToContacts }: {
                     <>
                         <div className="mb-4 rounded-[10px] bg-surface px-4 py-3">
                             <div className="text-[13px] text-black/50 dark:text-white/50">{t('phone.phoneLabel','phone')}</div>
-                            <div className="text-[19px] text-ios-blue">{phone(entry.number)}</div>
+                            <div className="text-[19px] text-ios-blue"><span dir="ltr">{phone(entry.number)}</span></div>
                         </div>
                         {!entry.contact && (
                             <button
                                 type="button"
                                 onClick={onAddToContacts}
-                                className="w-full rounded-[10px] bg-surface px-4 py-3.5 text-left text-[19px] text-ios-blue active:bg-black/5 dark:active:bg-white/5"
+                                className="w-full rounded-[10px] bg-surface px-4 py-3.5 text-start text-[19px] text-ios-blue active:bg-black/5 dark:active:bg-white/5"
                             >
                                 {t('phone.addToContacts','Add to Contacts')}
                             </button>

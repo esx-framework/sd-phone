@@ -16,7 +16,7 @@ function PortfolioRow({ asset, divider, onOpen }: { asset: Asset; divider: boole
 
     return (
         <>
-            <button type="button" onClick={onOpen} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left active:bg-black/5 dark:active:bg-white/5">
+            <button type="button" onClick={onOpen} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start active:bg-black/5 dark:active:bg-white/5">
                 <span className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white" style={{ background: asset.color }}>
                     {asset.symbol.slice(0, 3)}
                 </span>
@@ -25,7 +25,7 @@ function PortfolioRow({ asset, divider, onOpen }: { asset: Asset; divider: boole
                     <div className="truncate text-[15px] text-black/60 dark:text-white/60">{formatUnits(asset.units)} {t('stocks.units', 'units')}</div>
                 </div>
                 <Sparkline data={asset.history} width={64} height={32} strokeWidth={2.4} />
-                <div className="w-[104px] shrink-0 text-right">
+                <div className="w-[104px] shrink-0 text-end">
                     <div className="text-[18px] font-semibold tabular-nums text-black dark:text-white">{formatMoney(value)}</div>
                     <div className="text-[15px] font-semibold tabular-nums" style={{ color: trendColor(pl) }}>{formatPct(plPct)}</div>
                 </div>
@@ -76,7 +76,7 @@ export function Portfolio({ assets, cash, onBack, onOpenAsset }: {
             style={{
                 background: pageBg,
                 color:      isDark ? '#fff' : '#000',
-                transform:  shown ? 'translateX(0)' : 'translateX(100%)',
+                transform:  shown ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * 100%))',
                 transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
             }}
             onTransitionEnd={() => { if (!shown) exit.current(); }}
@@ -86,7 +86,7 @@ export function Portfolio({ assets, cash, onBack, onOpenAsset }: {
             <div className="relative flex h-11 shrink-0 items-center px-2">
                 <button type="button" onClick={back} className="flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-[26px] w-[26px]" strokeWidth={2.5} />
-                    <span className="-ml-1 text-[17px]">{t('stocks.stocks', 'Stocks')}</span>
+                    <span className="-ms-1 text-[17px]">{t('stocks.stocks', 'Stocks')}</span>
                 </button>
                 <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[17px] font-semibold">{t('stocks.portfolio', 'Portfolio')}</span>
             </div>
@@ -95,7 +95,7 @@ export function Portfolio({ assets, cash, onBack, onOpenAsset }: {
                 <div className="mt-1 text-[15px] font-medium text-black/60 dark:text-white/60">{t('stocks.totalValue', 'Total Value')}</div>
                 <div className="text-[42px] font-bold tabular-nums leading-tight">{formatMoney(total)}</div>
                 <div className="mt-0.5 text-[17px] font-semibold tabular-nums" style={{ color: trendColor(pl) }}>
-                    {formatMoney(pl, { showSign: true })} ({formatPct(plPct)})
+                    <span dir="ltr">{formatMoney(pl, { showSign: true })} ({formatPct(plPct)})</span>
                 </div>
 
                 {held.length === 0 ? (

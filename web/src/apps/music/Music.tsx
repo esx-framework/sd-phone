@@ -392,8 +392,8 @@ export function Music({ onClose: _onClose }: { onClose: () => void }) {
                     <div className="no-scrollbar flex-1 overflow-y-auto" style={{ paddingBottom: bottomPad }}>
                         <div className="flex flex-col items-center px-6 pb-4 pt-1">
                             <div className="w-[190px]"><Cover track={a.tracks[0]} size="100%" rounded={10} /></div>
-                            <p className="mt-3 text-center text-[20px] font-bold leading-tight">{a.album}</p>
-                            <p className="text-center text-[15px] text-ios-blue">{a.artist}</p>
+                            <p dir="auto" className="mt-3 text-center text-[20px] font-bold leading-tight">{a.album}</p>
+                            <p dir="auto" className="text-center text-[15px] text-ios-blue">{a.artist}</p>
                             <button onClick={() => { const first = a.tracks.find(x => isSourceAllowed(x.url)); if (first) m.play(first, a.tracks); }}
                                 disabled={!a.tracks.some(x => isSourceAllowed(x.url))}
                                 className="mt-3 flex items-center justify-center gap-2 rounded-[10px] bg-black/5 px-8 py-2.5 text-[16px] font-semibold text-ios-blue disabled:opacity-40 dark:bg-white/10">
@@ -414,12 +414,12 @@ export function Music({ onClose: _onClose }: { onClose: () => void }) {
             <>
                 <div className="shrink-0" style={{ paddingTop: 'calc(var(--safe-top) + 8px)' }}>
                     <div className="flex items-center px-2 pb-1">
-                        <button onClick={pop} className="-ml-1 flex items-center text-ios-blue active:opacity-60"><ChevronLeft className="h-7 w-7" /><span className="text-[17px]">{t('music.library', 'Library')}</span></button>
+                        <button onClick={pop} className="-ms-1 flex items-center text-ios-blue active:opacity-60"><ChevronLeft className="h-7 w-7" /><span className="text-[17px]">{t('music.library', 'Library')}</span></button>
                     </div>
                     <div className="flex items-end gap-4 px-5 pb-3 pt-1">
                         <button onClick={() => setCoverFor(folder.id)} className="relative shrink-0 active:opacity-80" aria-label={t('music.editCover', 'Edit cover')}>
                             <FolderArt folder={folder} size={112} rounded={12} />
-                            <span className="absolute bottom-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55">
+                            <span className="absolute bottom-1.5 end-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55">
                                 <ImagePlus className="h-[16px] w-[16px] text-white" />
                             </span>
                         </button>
@@ -435,7 +435,7 @@ export function Music({ onClose: _onClose }: { onClose: () => void }) {
                                     className="w-full truncate border-b border-ios-blue/50 bg-transparent text-[30px] font-bold leading-tight tracking-ios-display outline-none placeholder-ios-gray/60 focus:border-ios-blue"
                                 />
                             ) : (
-                                <h1 className="truncate text-[30px] font-bold leading-tight tracking-ios-display">{folder.name}</h1>
+                                <h1 dir="auto" className="truncate text-[30px] font-bold leading-tight tracking-ios-display">{folder.name}</h1>
                             )}
                             <p className="text-[16px] text-ios-gray">{t('music.songCount', '{count} song{plural}', { count: folderTracks.length, plural: folderTracks.length === 1 ? '' : 's' })}</p>
                         </div>
@@ -502,17 +502,17 @@ export function Music({ onClose: _onClose }: { onClose: () => void }) {
                 <div className={`shrink-0 overflow-hidden transition-all duration-300 ${stoppingMini ? 'max-h-0 opacity-0' : 'max-h-[88px] opacity-100'}`}>
                     <button onClick={() => setExpanded(true)}
                         style={animateNav && !stoppingMini ? { animation: 'mini-rise 0.34s cubic-bezier(0.32,0.72,0,1)' } : undefined}
-                        className={`flex w-full items-center gap-3.5 bg-gradient-to-b from-base to-elevated px-4 py-3 text-left transition-transform duration-300 dark:to-surface ${stoppingMini ? 'translate-y-2' : ''}`}>
+                        className={`flex w-full items-center gap-3.5 bg-gradient-to-b from-base to-elevated px-4 py-3 text-start transition-transform duration-300 dark:to-surface ${stoppingMini ? 'translate-y-2' : ''}`}>
                         <Cover track={m.current} size={56} rounded={9} playing={m.playing} />
                         <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                            <span className="truncate text-[17px] font-semibold">{m.current.title}</span>
-                            <span className="truncate text-[16px] font-medium text-black/75 dark:text-white/70">{m.current.artist}</span>
+                            <span dir="auto" className="truncate text-[17px] font-semibold">{m.current.title}</span>
+                            <span dir="auto" className="truncate text-[16px] font-medium text-black/75 dark:text-white/70">{m.current.artist}</span>
                         </span>
                         <span onClick={e => { e.stopPropagation(); m.toggle(); }} className="flex h-12 w-11 items-center justify-center">
                             {m.playing ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current" />}
                         </span>
                         <span onClick={e => { e.stopPropagation(); stopMini(); }} aria-label={t('music.stop', 'Stop')}
-                            className="-ml-1.5 flex h-12 w-11 items-center justify-center">
+                            className="-ms-1.5 flex h-12 w-11 items-center justify-center">
                             <X className="h-8 w-8" strokeWidth={2.5} />
                         </span>
                     </button>
@@ -577,7 +577,7 @@ function DetailHeader({ title, back, onBack }: { title: string; back: string; on
     return (
         <div className="shrink-0" style={{ paddingTop: 'calc(var(--safe-top) + 8px)' }}>
             <div className="flex items-center px-2 pb-1">
-                <button onClick={onBack} className="-ml-1 flex items-center text-ios-blue active:opacity-60">
+                <button onClick={onBack} className="-ms-1 flex items-center text-ios-blue active:opacity-60">
                     <ChevronLeft className="h-7 w-7" /><span className="text-[17px]">{back}</span>
                 </button>
             </div>
@@ -591,12 +591,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function Divider() {
-    return <div className="pointer-events-none absolute bottom-0 left-[6%] right-[6%] h-[0.5px] bg-hairline/15" />;
+    return <div className="pointer-events-none absolute bottom-0 start-[6%] end-[6%] h-[0.5px] bg-hairline/15" />;
 }
 
 function CategoryRow({ icon: Icon, label, onPress, divider }: { icon: LucideIcon; label: string; onPress: () => void; divider?: boolean }) {
     return (
-        <button onClick={onPress} className="relative flex w-full items-center gap-3.5 px-5 py-[18px] text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
+        <button onClick={onPress} className="relative flex w-full items-center gap-3.5 px-5 py-[18px] text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
             <Icon className="h-[29px] w-[29px] shrink-0 text-ios-blue" strokeWidth={2.1} />
             <span className="flex-1 text-[20px] font-medium">{label}</span>
             <ChevronRight className="h-[26px] w-[26px] shrink-0 text-ios-gray" strokeWidth={2.5} />
@@ -608,7 +608,7 @@ function CategoryRow({ icon: Icon, label, onPress, divider }: { icon: LucideIcon
 function ListRow({ art, title, subtitle, onPress, divider, action }: { art: React.ReactNode; title: string; subtitle: string; onPress: () => void; divider?: boolean; action?: React.ReactNode }) {
     return (
         <div className="relative flex w-full items-center transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
-            <button onClick={onPress} className="flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3 text-left">
+            <button onClick={onPress} className="flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3 text-start">
                 <span className="shrink-0">{art}</span>
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-[20px] font-semibold">{title}</p>
@@ -616,7 +616,7 @@ function ListRow({ art, title, subtitle, onPress, divider, action }: { art: Reac
                 </div>
                 {!action && <ChevronRight className="h-[21px] w-[21px] shrink-0 text-ios-gray3" strokeWidth={2.5} />}
             </button>
-            {action && <div className="flex shrink-0 items-center pr-3">{action}</div>}
+            {action && <div className="flex shrink-0 items-center pe-3">{action}</div>}
             {divider && <Divider />}
         </div>
     );
@@ -652,7 +652,7 @@ function ArtGrid({ children }: { children: React.ReactNode }) {
 
 function ArtCard({ track, title, subtitle, onPress, playing = false, unplayable = false }: { track: Track; title: string; subtitle: string; onPress: () => void; playing?: boolean; unplayable?: boolean }) {
     return (
-        <button onClick={() => { if (!unplayable) onPress(); }} className={`flex w-full min-w-0 flex-col text-left active:opacity-80 ${unplayable ? 'opacity-60' : ''}`}>
+        <button onClick={() => { if (!unplayable) onPress(); }} className={`flex w-full min-w-0 flex-col text-start active:opacity-80 ${unplayable ? 'opacity-60' : ''}`}>
             <Cover track={track} size="100%" rounded={8} playing={playing && !unplayable} />
             <span className="mt-1.5 block w-full truncate text-[17px] font-semibold leading-tight">{title}</span>
             {unplayable
@@ -678,29 +678,29 @@ function TrackList({ tracks, current, playing, onPlay, onRemove, removeIcon = 't
                 return (
                     <div key={track.id} className="relative flex items-center rounded-lg px-2 py-2.5 transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
                         {onEditRemove && (
-                            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'mr-2.5 w-[30px] opacity-100' : 'w-0 opacity-0'}`}>
+                            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'me-2.5 w-[30px] opacity-100' : 'w-0 opacity-0'}`}>
                                 <button type="button" aria-label={t('music.removeTitle', 'Remove {title}', { title: track.title })} onClick={() => onEditRemove(track)}
                                     className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-ios-red active:opacity-70">
                                     <Minus className="h-[19px] w-[19px] text-white" strokeWidth={3} />
                                 </button>
                             </div>
                         )}
-                        <button onClick={() => { if (!editing && !unplayable) onPlay(track); }} className={`flex min-w-0 flex-1 items-center gap-3 text-left ${unplayable ? 'opacity-60' : ''}`}>
+                        <button onClick={() => { if (!editing && !unplayable) onPlay(track); }} className={`flex min-w-0 flex-1 items-center gap-3 text-start ${unplayable ? 'opacity-60' : ''}`}>
                             <Cover track={track} size={56} rounded={7} playing={active && playing} />
                             <span className="flex min-w-0 flex-col leading-tight">
-                                <span className="truncate text-[20px] font-semibold" style={active && !unplayable ? { color: 'rgb(var(--ios-blue))' } : undefined}>{track.title}</span>
+                                <span dir="auto" className="truncate text-[20px] font-semibold" style={active && !unplayable ? { color: 'rgb(var(--ios-blue))' } : undefined}>{track.title}</span>
                                 {unplayable
                                     ? <span className="truncate text-[16px] text-ios-red">{unavailableLabel(track.url)}</span>
-                                    : <span className="truncate text-[16px] text-ios-gray">{track.artist}</span>}
+                                    : <span dir="auto" className="truncate text-[16px] text-ios-gray">{track.artist}</span>}
                             </span>
                         </button>
                         {onShare && !editing && (
-                            <div className="ml-2 shrink-0">
+                            <div className="ms-2 shrink-0">
                                 <ShareBtn onShare={() => onShare(track)} label={t('music.shareTitle', 'Share {title}', { title: track.title })} />
                             </div>
                         )}
                         {onRemove && (
-                            <button onClick={() => onRemove(track.id)} aria-label={t('music.remove', 'Remove')} className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center text-ios-gray3">
+                            <button onClick={() => onRemove(track.id)} aria-label={t('music.remove', 'Remove')} className="ms-2 flex h-8 w-8 shrink-0 items-center justify-center text-ios-gray3">
                                 {removeIcon === 'trash' ? <Trash2 className="h-[16px] w-[16px]" /> : <X className="h-[18px] w-[18px]" />}
                             </button>
                         )}
@@ -866,18 +866,18 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="mt-6 min-w-0 shrink-0">
-                <p className="truncate text-[25px] font-bold leading-tight">{track.title}</p>
-                <p className="truncate text-[17px] text-white/65">{track.artist}</p>
+                <p dir="auto" className="truncate text-[25px] font-bold leading-tight">{track.title}</p>
+                <p dir="auto" className="truncate text-[17px] text-white/65">{track.artist}</p>
             </div>
 
-            <div className="mt-8 shrink-0">
+            <div dir="ltr" className="mt-8 shrink-0">
                 <Scrubber thick value={time} max={duration} onSeek={m.seek} />
                 <div className="flex justify-between text-[12px] text-white/55"><span>{fmt(time)}</span><span>{fmt(duration)}</span></div>
             </div>
 
             <div className="flex-1" />
 
-            <div className="flex shrink-0 items-center justify-between px-1">
+            <div dir="ltr" className="flex shrink-0 items-center justify-between px-1">
                 <button onClick={() => m.setShuffle(!m.shuffle)} aria-label={t('music.shuffle', 'Shuffle')} className="active:opacity-60">
                     <Shuffle className="h-[22px] w-[22px]" style={{ color: m.shuffle ? '#fff' : 'rgba(255,255,255,0.5)' }} strokeWidth={2.4} />
                 </button>
@@ -965,11 +965,11 @@ function AddForm({ onAdd, onClose, backLabel }: { onAdd: (url: string, title: st
         <>
             <div className="shrink-0" style={{ paddingTop: 'calc(var(--safe-top) + 8px)' }}>
                 <div className="relative flex items-center px-2 pb-2">
-                    <button onClick={() => { clearDraft(); onClose(); }} className="-ml-1 flex items-center text-ios-blue active:opacity-60">
+                    <button onClick={() => { clearDraft(); onClose(); }} className="-ms-1 flex items-center text-ios-blue active:opacity-60">
                         <ChevronLeft className="h-7 w-7" /><span className="text-[17px]">{backLabel}</span>
                     </button>
                     <span className="absolute left-1/2 -translate-x-1/2 text-[17px] font-semibold">{t('music.newSong', 'New Song')}</span>
-                    <button onClick={submit} disabled={!hasUrl || blocked} className="ml-auto pr-2 text-[17px] font-semibold text-ios-blue disabled:opacity-40">
+                    <button onClick={submit} disabled={!hasUrl || blocked} className="ms-auto pe-2 text-[17px] font-semibold text-ios-blue disabled:opacity-40">
                         {t('music.add', 'Add')}
                     </button>
                 </div>
@@ -986,8 +986,8 @@ function AddForm({ onAdd, onClose, backLabel }: { onAdd: (url: string, title: st
                     <div className={`absolute inset-0 flex items-center gap-4 rounded-[18px] bg-elevated px-5 shadow-sm transition-all duration-300 dark:bg-surface ${hasUrl ? 'opacity-100 translate-y-0 scale-100' : 'pointer-events-none opacity-0 translate-y-2 scale-[0.97]'}`}>
                         <Cover track={shown.track} size={80} rounded={14} />
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-[21px] font-semibold leading-tight">{shown.title}</p>
-                            <p className="mt-0.5 truncate text-[16px] leading-tight text-ios-gray">{shown.artist}</p>
+                            <p dir="auto" className="truncate text-[21px] font-semibold leading-tight">{shown.title}</p>
+                            <p dir="auto" className="mt-0.5 truncate text-[16px] leading-tight text-ios-gray">{shown.artist}</p>
                         </div>
                         {shown.vid && <YouTubeGlyph size={26} />}
                     </div>
@@ -1085,11 +1085,11 @@ function AllowlistSheet({ onPick, onClose }: { onPick: (url: string) => void; on
                             };
                             return (
                                 <button key={entry.url} type="button" onClick={() => { onPick(entry.url); close(); }}
-                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left active:bg-black/10 dark:active:bg-white/10">
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start active:bg-black/10 dark:active:bg-white/10">
                                     <Cover track={preview} size={52} rounded={7} />
                                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                                        <span className="truncate text-[18px] font-semibold">{preview.title}</span>
-                                        <span className="truncate text-[15px] text-ios-gray">{preview.artist}</span>
+                                        <span dir="auto" className="truncate text-[18px] font-semibold">{preview.title}</span>
+                                        <span dir="auto" className="truncate text-[15px] text-ios-gray">{preview.artist}</span>
                                     </span>
                                     <Plus className="h-5 w-5 shrink-0 text-ios-blue" />
                                 </button>
@@ -1098,7 +1098,7 @@ function AllowlistSheet({ onPick, onClose }: { onPick: (url: string) => void; on
                         {ids.length > 0 && <SectionLabel>{t('music.allowlistYouTube', 'From YouTube')}</SectionLabel>}
                         {ids.map(id => (
                             <button key={id} type="button" onClick={() => { onPick(youtubeWatchUrl(id)); close(); }}
-                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left active:bg-black/10 dark:active:bg-white/10">
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start active:bg-black/10 dark:active:bg-white/10">
                                 <img src={youtubeThumb(id)} alt="" loading="lazy"
                                     className="h-[52px] w-[92px] shrink-0 rounded-[7px] bg-black/10 object-cover dark:bg-white/10" />
                                 <span className="min-w-0 flex-1 truncate text-[18px] font-semibold">
@@ -1128,11 +1128,11 @@ function PickerSheet({ tracks, selected, onToggle, onClose }: { tracks: Track[];
                         {tracks.map((t, idx) => {
                             const on = selected.includes(t.id);
                             return (
-                                <button key={t.id} onClick={() => onToggle(t.id)} className="relative flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left active:bg-black/5 dark:active:bg-white/5">
+                                <button key={t.id} onClick={() => onToggle(t.id)} className="relative flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-start active:bg-black/5 dark:active:bg-white/5">
                                     <Cover track={t} size={56} rounded={7} />
                                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                                        <span className="truncate text-[20px] font-semibold">{t.title}</span>
-                                        <span className="truncate text-[16px] text-ios-gray">{t.artist}</span>
+                                        <span dir="auto" className="truncate text-[20px] font-semibold">{t.title}</span>
+                                        <span dir="auto" className="truncate text-[16px] text-ios-gray">{t.artist}</span>
                                     </span>
                                     <span className={'flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full ' + (on ? 'bg-ios-blue' : 'border-2 border-black/35 dark:border-white/40')}>
                                         {on && <Check className="h-[15px] w-[15px] text-white" strokeWidth={3} />}

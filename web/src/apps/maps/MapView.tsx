@@ -406,6 +406,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
         >
             <div
                 ref={stageRef}
+                dir="ltr"
                 className="absolute"
                 style={{
                     width: stageSide, height: stageSide,
@@ -437,7 +438,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
                 )}
             </div>
 
-            <div className="pointer-events-none absolute inset-0 z-10">
+            <div dir="ltr" className="pointer-events-none absolute inset-0 z-10">
                 <MapTransformContext.Provider value={transform}>
                     {children}
                 </MapTransformContext.Provider>
@@ -445,7 +446,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
 
             {chrome && (
             <div
-                className="absolute right-3 z-30 flex flex-col items-end gap-2"
+                className="absolute end-3 z-30 flex flex-col items-end gap-2"
                 style={{ top: chromeTop ?? '12px' }}
                 onPointerDown={e => e.stopPropagation()}
                 onPointerMove={e => e.stopPropagation()}
@@ -515,7 +516,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
             )}
 
             {chrome && (
-            <div className="absolute left-3 z-20 rounded-full bg-black/60 px-2.5 py-1 text-[12px] font-bold tracking-[0.06em] text-white/95" style={{ bottom: chromeBottom ?? '12px', transition: 'bottom 300ms cubic-bezier(0.22,0.61,0.36,1)' }}>
+            <div className="absolute start-3 z-20 rounded-full bg-black/60 px-2.5 py-1 text-[12px] font-bold tracking-[0.06em] text-white/95" style={{ bottom: chromeBottom ?? '12px', transition: 'bottom 300ms cubic-bezier(0.22,0.61,0.36,1)' }}>
                 {Math.round(scale * 100)}%
             </div>
             )}

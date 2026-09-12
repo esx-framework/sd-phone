@@ -62,13 +62,13 @@ export function OnlineHub({ lobbies, incoming, error, accent, sideOptions, wager
                         <div className="h-2.5" />
                         <Label>{currency === 'chips' ? t('games.wagerChipsOptional', 'Wager (chips), optional') : t('games.wagerBankOptional', 'Wager (bank), optional')}</Label>
                         <div className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[17px] font-semibold text-white/40">{currency === 'chips' ? '◆' : '$'}</span>
+                            <span className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-[17px] font-semibold text-white/40">{currency === 'chips' ? '◆' : '$'}</span>
                             <input
                                 value={wager}
                                 onChange={e => setWager(e.target.value)}
                                 inputMode="numeric"
                                 placeholder={t('games.wagerPlaceholder', '0 for a friendly game')}
-                                className="w-full rounded-[12px] bg-black/30 py-2.5 pl-8 pr-4 text-[17px] text-white outline-none placeholder-white/30"
+                                className="w-full rounded-[12px] bg-black/30 py-2.5 ps-8 pe-4 text-[17px] text-white outline-none placeholder-white/30"
                             />
                         </div>
                         <div className="mt-1.5 h-4 text-[12px] font-semibold text-[#9CCC65]">{bet > 0 ? t('games.winnerTakes', 'Winner takes {amount}', { amount: fmtAmt(bet * 2) }) : ''}</div>

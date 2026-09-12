@@ -55,16 +55,16 @@ export function NotesList({ notes, onOpen, onCompose }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => onOpen(n.id)}
-                                    className="flex w-full flex-col items-start gap-0.5 px-4 py-[13px] text-left active:bg-black/5 dark:active:bg-white/5"
+                                    className="flex w-full flex-col items-start gap-0.5 px-4 py-[13px] text-start active:bg-black/5 dark:active:bg-white/5"
                                 >
-                                    <div className="w-full truncate pr-2 text-[21px] font-semibold">
+                                    <div dir="auto" className="w-full truncate pe-2 text-[21px] font-semibold">
                                         {noteTitle(n)}
                                     </div>
                                     <div className="flex w-full items-baseline gap-2">
                                         <span className="shrink-0 text-[16.5px] text-ios-gray">
                                             {formatRelativeDate(n.updatedAt)}
                                         </span>
-                                        <span className="truncate text-[16.5px] text-ios-gray">
+                                        <span dir="auto" className="truncate text-[16.5px] text-ios-gray">
                                             {notePreview(n)}
                                         </span>
                                     </div>

@@ -48,7 +48,7 @@ function Row({ tx, p, up }: { tx: BankTx; p: Palette; up: string }) {
             <span className="min-w-0 flex-1 truncate text-[12px] leading-tight" style={{ color: p.fg }}>{tx.merchant}</span>
             <span className="shrink-0 text-[10px] tabular-nums" style={{ color: p.faint }}>{ago(tx.date)}</span>
             <span
-                className="w-[62px] shrink-0 text-right text-[12px] font-semibold tabular-nums"
+                className="w-[62px] shrink-0 text-end text-[12px] font-semibold tabular-nums"
                 style={{ color: income ? up : p.fg }}
             >
                 {income ? '+' : ''}{formatMoney(tx.amount, { whole: true })}

@@ -29,6 +29,12 @@ export function fieldValue(key: string, value: string): string {
     return value;
 }
 
+const LTR_FIELDS = new Set(['dob', 'citizen', 'phone', 'callsign']);
+
+export function fieldDir(key: string): 'ltr' | undefined {
+    return LTR_FIELDS.has(key) ? 'ltr' : undefined;
+}
+
 export function kindLabel(kind: IdCardKind): string {
     if (kind === 'state')   return t('id.kindState', 'Identification');
     if (kind === 'licence') return t('id.kindLicence', 'Licence');

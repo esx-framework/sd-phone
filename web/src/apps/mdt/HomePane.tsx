@@ -103,10 +103,10 @@ export function HomePane() {
                     key={r.ref}
                     type="button"
                     onClick={() => open('reports', r.ref)}
-                    className={`relative w-full px-4 py-3 text-left ${mdtRowHover}`}
+                    className={`relative w-full px-4 py-3 text-start ${mdtRowHover}`}
                 >
                     <div className="flex items-center gap-2">
-                        <span className={mdtRef}>{r.ref}</span>
+                        <span dir="ltr" className={mdtRef}>{r.ref}</span>
                         <Pill tone={REPORT_TONE[r.type.toLowerCase()] ?? 'blue'}>{r.type}</Pill>
                         <span className="flex-1" />
                         <span className={`shrink-0 ${mdtRowMeta}`}>{relTimeCompact(r.createdAt * 1000)}</span>

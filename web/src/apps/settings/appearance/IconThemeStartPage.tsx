@@ -104,7 +104,7 @@ export function IconThemeStartPage({ onStart, onBack }: {
                         <button
                             type="button"
                             onClick={() => setImporting(true)}
-                            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                         >
                             <span className="flex-1 text-[17px] font-normal text-ios-blue">
                                 {t('settings.iconThemePasteCode', 'Paste a Theme Code')}
@@ -148,9 +148,9 @@ function SeedRow({ label, hint, draft, theme, divider, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
         >
-            <span className="mr-3 flex shrink-0 gap-[3px]">
+            <span className="me-3 flex shrink-0 gap-[3px]">
                 {SWATCH_PREVIEW_APPS.map(app => {
                     const look = draft
                         ? resolveDraftAppearance(draft, app.id, app.accent)
@@ -161,7 +161,7 @@ function SeedRow({ label, hint, draft, theme, divider, onPress }: {
                 })}
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-[17px] font-normal text-black dark:text-white">{label}</span>
+                <span dir="auto" className="block truncate text-[17px] font-normal text-black dark:text-white">{label}</span>
                 <span className="block truncate text-[13px] text-ios-gray">{hint}</span>
             </span>
             <ChevronRight className="h-[17px] w-[17px] shrink-0 text-ios-gray3" strokeWidth={2.5} />

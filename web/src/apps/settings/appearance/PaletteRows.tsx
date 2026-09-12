@@ -66,7 +66,7 @@ function CustomPaletteRow({ palette, selected, onSelect, onEdit }: {
     const ramp = rampFor(palette.mode, palette);
 
     return (
-        <div className="relative flex items-center pr-4">
+        <div className="relative flex items-center pe-4">
             <div className="min-w-0 flex-1">
                 <ListRow
                     label={palette.name}
@@ -81,7 +81,7 @@ function CustomPaletteRow({ palette, selected, onSelect, onEdit }: {
             <button
                 type="button"
                 onClick={onEdit}
-                className="shrink-0 pl-3 text-[15px] font-normal text-ios-blue active:opacity-60"
+                className="shrink-0 ps-3 text-[15px] font-normal text-ios-blue active:opacity-60"
             >
                 {t('common.edit', 'Edit')}
             </button>

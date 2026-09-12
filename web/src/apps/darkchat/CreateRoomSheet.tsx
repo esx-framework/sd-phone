@@ -35,6 +35,7 @@ export function CreateRoomSheet({ onClose, onCreate }: {
                         <SheetField
                             label={t('darkchat.roomName', 'Room name')}
                             hint={t('darkchat.privateRoomHint', 'A private room only people with the code can join.')}
+                            dir="auto"
                             value={name}
                             onChange={e => setName(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') make(); }}
@@ -45,7 +46,7 @@ export function CreateRoomSheet({ onClose, onCreate }: {
                         <div className="px-4 pt-2">
                             <p className="text-center text-[14px] text-white/50">{t('darkchat.shareCodeHint', 'Share this code so others can join')}</p>
                             <button type="button" onClick={() => copy(code)} className="mx-auto mt-3 flex items-center gap-3 rounded-[14px] bg-[#2c2c2e] px-6 py-4 active:opacity-80">
-                                <span className="text-[30px] font-bold tracking-[0.3em] text-white">{code}</span>
+                                <span dir="ltr" className="text-[30px] font-bold tracking-[0.3em] text-white">{code}</span>
                                 {copied
                                     ? <Check className="h-5 w-5 text-[#34c759]" strokeWidth={2.6} />
                                     : <Copy  className="h-5 w-5 text-ios-blue"   strokeWidth={2.2} />}

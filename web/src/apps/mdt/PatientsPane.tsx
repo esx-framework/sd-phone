@@ -27,7 +27,7 @@ function PatientListRow({ patient, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left ${
+            className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-start ${
                 selected ? 'bg-ios-blue/10' : mdtRowHover
             }`}
         >

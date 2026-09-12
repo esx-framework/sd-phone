@@ -449,7 +449,7 @@ export function Birdy({ onClose }: { onClose: () => void }) {
                 <div key={tab} className="absolute inset-0 pt-[54px] animate-swipe-in-left">
                     {content}
                     {showComposeFab && (
-                        <FabButton onClick={() => setComposing(true)} label={t('squawk.newPost', 'New post')} className="bottom-[9px] right-5 z-10">
+                        <FabButton onClick={() => setComposing(true)} label={t('squawk.newPost', 'New post')} className="bottom-[9px] end-5 z-10">
                             <Pen className="h-6 w-6 text-white" strokeWidth={2} />
                         </FabButton>
                     )}
@@ -587,7 +587,7 @@ function FabButton({ onClick, label, children, className }: { onClick: () => voi
             type="button"
             onClick={onClick}
             aria-label={label}
-            className={`absolute flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 ${className ?? 'bottom-[124px] right-5 z-30'}`}
+            className={`absolute flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 ${className ?? 'bottom-[124px] end-5 z-30'}`}
             style={{ background: BLUE }}
         >
             {children}
@@ -607,7 +607,7 @@ function NavButton({ active, onClick, children, badge = 0 }: { active: boolean; 
                 {children}
                 {badge > 0 && (
                     <span
-                        className="absolute -right-2 -top-2 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1.5 text-[13px] font-bold leading-none text-white"
+                        className="absolute -end-2 -top-2 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1.5 text-[13px] font-bold leading-none text-white"
                         style={{ background: BLUE, boxShadow: `0 0 0 2px ${BG}` }}
                     >
                         {badge > 99 ? '99+' : badge}

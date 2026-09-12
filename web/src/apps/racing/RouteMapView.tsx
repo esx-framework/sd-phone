@@ -84,7 +84,7 @@ export const RouteMapView = forwardRef<MapViewHandle, {
     const finish = points[points.length - 1];
 
     return (
-        <div className={`absolute inset-0 ${interactive ? '' : 'pointer-events-none'}`}>
+        <div dir="ltr" className={`absolute inset-0 ${interactive ? '' : 'pointer-events-none'}`}>
             <MapView
                 ref={ref}
                 fitTo={framePoints}

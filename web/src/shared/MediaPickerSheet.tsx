@@ -193,7 +193,7 @@ function AlbumList({ albums, onOpen }: { albums: Album[]; onOpen: (a: Album) => 
     return (
         <div className="grid gap-3 px-4 pt-2" style={cols(ALBUM_COLS)}>
             {albums.map(a => (
-                <button key={a.id} type="button" onClick={() => onOpen(a)} className="text-left active:opacity-70">
+                <button key={a.id} type="button" onClick={() => onOpen(a)} className="text-start active:opacity-70">
                     <div className="aspect-square overflow-hidden rounded-[12px] bg-hairline/10">
                         {a.cover && <img src={a.cover} alt="" draggable={false} className="h-full w-full object-cover" />}
                     </div>

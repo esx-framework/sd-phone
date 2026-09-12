@@ -102,7 +102,7 @@ export function MapPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => void 
                                 onClick={() => onOpenPlayer(p.cid)}
                                 onPointerEnter={() => setHover(p)}
                                 onPointerLeave={() => setHover(null)}
-                                className="absolute -ml-[6px] -mt-[6px] h-3 w-3 rounded-full ring-2 ring-black/60 transition-transform hover:scale-150"
+                                className="absolute -ms-[6px] -mt-[6px] h-3 w-3 rounded-full ring-2 ring-black/60 transition-transform hover:scale-150"
                                 style={{ left: `${at.left}%`, top: `${at.top}%`, background: '#6db4ff' }}
                                 aria-label={p.name}
                             />
@@ -115,11 +115,11 @@ export function MapPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => void 
                             style={{ left: `${hoverAt.left}%`, top: `${hoverAt.top}%` }}
                         >
                             <span className="font-semibold">{hover.name}</span>
-                            <span className="ml-1.5 tabular-nums text-zinc-500">{hover.x}, {hover.y}</span>
+                            <span className="ms-1.5 tabular-nums text-zinc-500">{hover.x}, {hover.y}</span>
                         </div>
                     )}
 
-                    <div className="absolute right-2.5 top-2.5 z-10 flex flex-col overflow-hidden rounded-lg bg-black/70 ring-1 ring-white/10">
+                    <div className="absolute end-2.5 top-2.5 z-10 flex flex-col overflow-hidden rounded-lg bg-black/70 ring-1 ring-white/10">
                         <ZoomBtn label="Zoom in" disabled={vp.view.zoom >= MAX_ZOOM} onClick={() => vp.zoomBy(1.6)}>
                             <Plus size={14} />
                         </ZoomBtn>
@@ -131,7 +131,7 @@ export function MapPage({ onOpenPlayer }: { onOpenPlayer: (cid: string) => void 
                         </ZoomBtn>
                     </div>
 
-                    <div className="pointer-events-none absolute bottom-2.5 left-2.5 z-10 rounded-md bg-black/70 px-2 py-1 text-[11px] tabular-nums text-zinc-400 ring-1 ring-white/10">
+                    <div className="pointer-events-none absolute bottom-2.5 start-2.5 z-10 rounded-md bg-black/70 px-2 py-1 text-[11px] tabular-nums text-zinc-400 ring-1 ring-white/10">
                         {vp.view.zoom.toFixed(1)}x
                     </div>
                 </div>

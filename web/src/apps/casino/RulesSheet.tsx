@@ -129,7 +129,7 @@ function OddsRow({ label, value, highlight }: { label: string; value: string; hi
     return (
         <div className="flex items-center justify-between border-t py-2 first:border-t-0" style={{ borderColor: SURFACE.hair }}>
             <span className="text-[15px] font-semibold text-white/85">{label}</span>
-            <span className="text-[15px] font-extrabold tabular-nums" style={{ color: highlight ? GOLD.top : '#fff' }}>{value}</span>
+            <span dir="ltr" className="text-[15px] font-extrabold tabular-nums" style={{ color: highlight ? GOLD.top : '#fff' }}>{value}</span>
         </div>
     );
 }
@@ -143,7 +143,7 @@ function PayoutRow({ label, sub, result, example, highlight }: { label: string; 
             </span>
             <span className="flex flex-col items-end">
                 <span className="text-[15px] font-extrabold tabular-nums" style={{ color: highlight ? TABLE.chip : '#fff' }}>{result}</span>
-                <span className="text-[13px] font-semibold tabular-nums text-white/55">{example}</span>
+                <span dir="ltr" className="text-[13px] font-semibold tabular-nums text-white/55">{example}</span>
             </span>
         </div>
     );

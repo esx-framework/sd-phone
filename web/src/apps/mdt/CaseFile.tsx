@@ -225,7 +225,7 @@ export function CaseFile({ caseRef, onSaved, onDeleted, onClose, onChanged }: {
             <Scroller className={`h-full ${mdtPanePad}`}>
                 <div className="flex flex-wrap items-start gap-3">
                     <div className="min-w-0 flex-1">
-                        <span className={mdtRef}>{file.ref}</span>
+                        <span dir="ltr" className={mdtRef}>{file.ref}</span>
                         <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
                             {file.title}
                         </h1>
@@ -388,7 +388,7 @@ export function CaseFile({ caseRef, onSaved, onDeleted, onClose, onChanged }: {
                                     return (
                                         <div key={officer.citizenid} className="px-4 py-2.5">
                                             <div className="flex items-center gap-3">{identity}</div>
-                                            <div className="mt-2 flex items-center gap-3 pl-11">{controls}</div>
+                                            <div className="mt-2 flex items-center gap-3 ps-11">{controls}</div>
                                         </div>
                                     );
                                 }
@@ -429,9 +429,9 @@ export function CaseFile({ caseRef, onSaved, onDeleted, onClose, onChanged }: {
                                     <button
                                         type="button"
                                         onClick={() => open('reports', report.ref)}
-                                        className="flex min-w-0 flex-1 items-center gap-2 text-left active:opacity-60"
+                                        className="flex min-w-0 flex-1 items-center gap-2 text-start active:opacity-60"
                                     >
-                                        <span className={`shrink-0 ${mdtRef}`}>{report.ref}</span>
+                                        <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{report.ref}</span>
                                         <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{report.title}</span>
                                         <Pill tone={reportTypeTone(report.type)}>{reportTypeLabel(report.type)}</Pill>
                                     </button>
@@ -463,11 +463,11 @@ export function CaseFile({ caseRef, onSaved, onDeleted, onClose, onChanged }: {
                                 <span className={mdtRowTitle}>
                                     {entry.callsign ? `${entry.callsign} · ${entry.author}` : entry.author}
                                 </span>
-                                <span className={`ml-auto shrink-0 tabular-nums ${mdtRowMeta}`}>
+                                <span className={`ms-auto shrink-0 tabular-nums ${mdtRowMeta}`}>
                                     {formatListDate(entry.createdAt * 1000)}
                                 </span>
                             </div>
-                            <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+                            <p dir="auto" className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                                 {entry.body}
                             </p>
                         </div>

@@ -72,7 +72,7 @@ export function NotificationCenter({ open, items, onClose, onOpen, onDismiss, on
                         type="button"
                         onClick={onClose}
                         aria-label={t('shell.closeNotifications', 'Close')}
-                        className="absolute right-5 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-md active:opacity-60"
+                        className="absolute end-5 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-md active:opacity-60"
                     >
                         <X className="h-5 w-5 text-white" strokeWidth={2.6} />
                     </button>
@@ -123,7 +123,7 @@ export function NotificationCenterHotzone({ onOpen }: { onOpen: () => void }) {
     const start = useRef<{ x: number; y: number } | null>(null);
     return (
         <div
-            className="absolute left-0 top-0 z-[400]"
+            className="absolute start-0 top-0 z-[400]"
             style={{ width: '54%', height: 'calc(var(--safe-top) + 6px)' }}
             onPointerDown={e => { start.current = { x: e.clientX, y: e.clientY }; (e.target as Element).setPointerCapture?.(e.pointerId); }}
             onPointerMove={e => {

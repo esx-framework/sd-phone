@@ -150,6 +150,7 @@ export function HudPreview({ settings, youName }: { settings: HudSettings; youNa
     return (
         <div
             ref={hostRef}
+            dir="ltr"
             className={`relative w-full select-none overflow-hidden bg-[#14171c] ${boxed ? '' : 'aspect-video'}`}
             style={boxed ? { height: boxHeight } : undefined}
         >
@@ -178,7 +179,7 @@ export function HudPreview({ settings, youName }: { settings: HudSettings; youNa
                     </div>
                 </div>
             )}
-            <div className="pointer-events-none absolute bottom-1.5 right-2 text-[10px] font-medium uppercase tracking-wider text-white/35">
+            <div className="pointer-events-none absolute bottom-1.5 end-2 text-[10px] font-medium uppercase tracking-wider text-white/35">
                 {t('racing.hudPreviewTag', 'Preview')}
             </div>
         </div>

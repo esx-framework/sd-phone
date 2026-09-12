@@ -278,7 +278,7 @@ export function AffairsFile({ fileRef, onSaved, onClose, onChanged }: {
 
     return (
         <Scroller className={`h-full ${mdtPanePad}`}>
-            <span className={mdtRef}>{file.ref}</span>
+            <span dir="ltr" className={mdtRef}>{file.ref}</span>
             <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
                 {file.title}
             </h1>
@@ -355,12 +355,12 @@ export function AffairsFile({ fileRef, onSaved, onClose, onChanged }: {
                 ) : (
                     <div className="mdt-stagger flex flex-col gap-3">
                         {file.notes.map((n, i) => (
-                            <div key={`${n.createdAt}:${i}`} className="border-l-2 border-black/[0.10] pl-3 dark:border-white/[0.14]">
+                            <div key={`${n.createdAt}:${i}`} className="border-s-2 border-black/[0.10] ps-3 dark:border-white/[0.14]">
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-[13.5px] font-semibold text-black dark:text-white">{n.author}</span>
                                     <span className={`tabular-nums ${mdtRowMeta}`}>{formatListDate(n.createdAt * 1000)}</span>
                                 </div>
-                                <p className="mt-0.5 whitespace-pre-wrap break-words text-[14.5px] leading-snug text-black/80 dark:text-white/80">
+                                <p dir="auto" className="mt-0.5 whitespace-pre-wrap break-words text-[14.5px] leading-snug text-black/80 dark:text-white/80">
                                     {n.body}
                                 </p>
                             </div>

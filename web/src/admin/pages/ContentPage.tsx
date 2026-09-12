@@ -139,7 +139,7 @@ export function ContentPage({ app, searchPlaceholder, emptyLabel, deleteBody, th
                                             type="button"
                                             onClick={() => item.authorCid && onOpenPlayer(item.authorCid)}
                                             disabled={!item.authorCid}
-                                            className="min-w-0 text-left disabled:cursor-default"
+                                            className="min-w-0 text-start disabled:cursor-default"
                                             title={item.authorCid ? 'Open player' : undefined}
                                         >
                                             <div className="flex items-center gap-1.5">

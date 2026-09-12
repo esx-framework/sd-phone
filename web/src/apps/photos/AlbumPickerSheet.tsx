@@ -45,7 +45,7 @@ export function AlbumPickerSheet({ albums, count, onPick, onNewAlbum, onClose }:
 
                         <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-4 pb-[calc(var(--safe-bottom)+24px)]">
                             <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-                                <button type="button" onClick={() => runThenClose(onNewAlbum)} className="text-left active:opacity-70">
+                                <button type="button" onClick={() => runThenClose(onNewAlbum)} className="text-start active:opacity-70">
                                     <span className="flex aspect-square w-full items-center justify-center rounded-[12px] border-2 border-dashed border-ios-blue/40 bg-ios-blue/[0.06]">
                                         <Plus className="h-11 w-11 text-ios-blue" strokeWidth={1.5} />
                                     </span>
@@ -54,7 +54,7 @@ export function AlbumPickerSheet({ albums, count, onPick, onNewAlbum, onClose }:
                                 </button>
 
                                 {albums.map(a => (
-                                    <button key={a.id} type="button" onClick={() => runThenClose(() => onPick(a.id))} className="text-left active:opacity-70">
+                                    <button key={a.id} type="button" onClick={() => runThenClose(() => onPick(a.id))} className="text-start active:opacity-70">
                                         <span className="block aspect-square w-full overflow-hidden rounded-[12px] bg-hairline/10">
                                             {a.cover
                                                 ? <img src={a.cover} alt="" className="h-full w-full object-cover" draggable={false} />
@@ -62,7 +62,7 @@ export function AlbumPickerSheet({ albums, count, onPick, onNewAlbum, onClose }:
                                                       <ImageIcon className="h-9 w-9 text-black/25 dark:text-white/25" strokeWidth={1.8} />
                                                   </span>}
                                         </span>
-                                        <span className="mt-2 block truncate px-0.5 text-[16px] font-semibold text-black dark:text-white">{a.name}</span>
+                                        <span dir="auto" className="mt-2 block truncate px-0.5 text-[16px] font-semibold text-black dark:text-white">{a.name}</span>
                                         <span className="block px-0.5 text-[14px] text-black/45 dark:text-white/45">{a.count}</span>
                                     </button>
                                 ))}

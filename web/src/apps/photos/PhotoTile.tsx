@@ -51,18 +51,18 @@ export function PhotoTile({ photo, selectable, selected, showFavorite, defer, on
                 />
             )}
             {photo.favorite && selectable && showFavorite && (
-                <span className="pointer-events-none absolute bottom-1 left-1">
+                <span className="pointer-events-none absolute bottom-1 start-1">
                     <Heart className="h-[18px] w-[18px] fill-ios-red text-ios-red drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]" />
                 </span>
             )}
             {photo.video && (
-                <span className={`pointer-events-none absolute flex h-5 w-5 items-center justify-center rounded-full bg-black/45 ${selectable ? 'left-1 top-1' : 'bottom-1 right-1'}`}>
+                <span className={`pointer-events-none absolute flex h-5 w-5 items-center justify-center rounded-full bg-black/45 ${selectable ? 'start-1 top-1' : 'bottom-1 end-1'}`}>
                     <Play className="h-3 w-3 fill-white text-white" />
                 </span>
             )}
             {selectable && (
                 <span
-                    className={`absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                    className={`absolute bottom-1 end-1 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
                         selected
                             ? 'border-white bg-ios-blue text-white'
                             : 'border-white/90 bg-black/25'

@@ -108,7 +108,7 @@ export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn =
                 <button
                     type="button"
                     onClick={() => setBreaking(true)}
-                    className={`flex w-full items-center gap-4 rounded-2xl p-5 text-left active:opacity-90 ${surface} shadow-sm`}
+                    className={`flex w-full items-center gap-4 rounded-2xl p-5 text-start active:opacity-90 ${surface} shadow-sm`}
                 >
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white" style={{ background: WEAZEL_RED }}>
                         <Radio className="h-[26px] w-[26px]" strokeWidth={2.2} />
@@ -147,7 +147,7 @@ export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn =
                             <button
                                 type="button"
                                 onClick={() => setEditing(a)}
-                                className="flex min-w-0 flex-1 items-center gap-3.5 text-left active:opacity-80"
+                                className="flex min-w-0 flex-1 items-center gap-3.5 text-start active:opacity-80"
                             >
                                 <div className="relative h-[112px] w-[112px] shrink-0 overflow-hidden rounded-xl">
                                     {a.image ? (
@@ -167,8 +167,8 @@ export function ManageDashboard({ articles, scheduled, ticker, dark, animateIn =
                                             </span>
                                         )}
                                     </span>
-                                    <span className="mt-1 line-clamp-2 text-[16.5px] font-bold leading-[1.2] tracking-tight">{a.headline}</span>
-                                    <span className="mt-1.5 block text-[13.5px] font-medium text-ios-gray">{a.author} · {a.time}</span>
+                                    <span dir="auto" className="mt-1 line-clamp-2 text-[16.5px] font-bold leading-[1.2] tracking-tight">{a.headline}</span>
+                                    <span className="mt-1.5 block text-[13.5px] font-medium text-ios-gray"><span dir="auto">{a.author}</span> · {a.time}</span>
                                 </span>
                             </button>
                             <button

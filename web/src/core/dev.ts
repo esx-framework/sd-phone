@@ -82,6 +82,7 @@ export function devInjectMockData(): () => void {
             { id: 'racing',     label: 'Racing',      icon: 'racing',     route: '/racing',     accent: '#0A8C72', base: true },
         ],
         locale: new URLSearchParams(window.location.search).get('loc') ?? 'en',
+        forceLtr: new URLSearchParams(window.location.search).get('ltr') === '1',
         wifiConfigured: true,
         bluetoothConfigured: true,
         wallpaper: { lock: 'lockscreen.jpg', home: 'lockscreen.jpg' },

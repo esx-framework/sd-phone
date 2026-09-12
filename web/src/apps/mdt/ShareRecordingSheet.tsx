@@ -28,7 +28,7 @@ function Destination({ icon: Icon, label, hint, on, onToggle }: {
         <button
             type="button"
             onClick={onToggle}
-            className={`flex flex-1 items-start gap-3 rounded-[12px] px-3.5 py-3 text-left ring-1 transition-colors ${
+            className={`flex flex-1 items-start gap-3 rounded-[12px] px-3.5 py-3 text-start ring-1 transition-colors ${
                 on
                     ? 'bg-ios-blue/12 ring-ios-blue/45'
                     : 'bg-black/[0.04] ring-black/[0.06] dark:bg-white/[0.06] dark:ring-white/[0.08]'
@@ -138,7 +138,7 @@ export function ShareRecordingSheet({ recording, onClose, onSent }: Props) {
                                     type="button"
                                     disabled={sending !== null}
                                     onClick={() => { void send(officer); }}
-                                    className="flex items-center gap-3 rounded-[12px] bg-black/[0.04] px-3.5 py-3 text-left active:opacity-70 disabled:opacity-50 dark:bg-white/[0.06]"
+                                    className="flex items-center gap-3 rounded-[12px] bg-black/[0.04] px-3.5 py-3 text-start active:opacity-70 disabled:opacity-50 dark:bg-white/[0.06]"
                                 >
                                     <span className="flex min-w-0 flex-1 flex-col">
                                         <span className="flex min-w-0 items-center gap-2">

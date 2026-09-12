@@ -36,7 +36,7 @@ export function MdtRichText({ text, className = '' }: { text: string; className?
     function flush(at: number) {
         if (bullets.length === 0) return;
         blocks.push(
-            <ul key={`u${at}`} className="my-1 list-disc pl-5">
+            <ul key={`u${at}`} className="my-1 list-disc ps-5">
                 {bullets.map(b => <li key={b.at}>{render(b.spans, `u${b.at}`)}</li>)}
             </ul>,
         );
@@ -56,5 +56,5 @@ export function MdtRichText({ text, className = '' }: { text: string; className?
     });
     flush(lines.length);
 
-    return <div className={`whitespace-pre-wrap break-words ${className}`}>{blocks}</div>;
+    return <div dir="auto" className={`whitespace-pre-wrap break-words ${className}`}>{blocks}</div>;
 }

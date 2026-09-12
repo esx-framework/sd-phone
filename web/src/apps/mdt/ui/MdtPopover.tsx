@@ -32,7 +32,7 @@ export function MdtPopover({ anchor, actions, onClose }: {
                     type="button"
                     disabled={a.disabled}
                     onClick={() => { if (!a.disabled) { onClose(); a.onClick(); } }}
-                    className={`block w-full px-4 py-[11px] text-left text-[17px] ${
+                    className={`block w-full px-4 py-[11px] text-start text-[17px] ${
                         i > 0 ? 'border-t border-black/[0.08] dark:border-white/[0.10]' : ''
                     } ${
                         a.disabled

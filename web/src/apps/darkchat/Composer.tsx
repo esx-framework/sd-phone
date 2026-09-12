@@ -86,7 +86,7 @@ export function Composer({ onSend, reply, onCancelReply }: {
                     <div className="w-[3px] self-stretch rounded-full bg-ios-blue" />
                     <div className="min-w-0 flex-1">
                         <div className="text-[12px] font-semibold text-ios-blue">{t('darkchat.replyTo', 'In reply to {name}', { name: reply.name })}</div>
-                        <div className="truncate text-[13px] text-white/55">{reply.body}</div>
+                        <div dir="auto" className="truncate text-[13px] text-white/55">{reply.body}</div>
                     </div>
                     <button
                         type="button"
@@ -108,7 +108,7 @@ export function Composer({ onSend, reply, onCancelReply }: {
                                 type="button"
                                 onClick={() => removeAttachment(i)}
                                 aria-label={t('darkchat.removeImage', 'Remove image')}
-                                className="absolute right-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
+                                className="absolute end-1 top-1 flex h-[20px] w-[20px] items-center justify-center rounded-full bg-black/55 active:opacity-70"
                             >
                                 <X className="h-[12px] w-[12px] text-white" strokeWidth={2.75} />
                             </button>
@@ -119,7 +119,7 @@ export function Composer({ onSend, reply, onCancelReply }: {
 
             <div className="px-3 pb-2 pt-1.5">
                 <div
-                    className={`flex items-center gap-1 rounded-[22px] py-[9px] pl-4 ${hasContent ? 'pr-[5px]' : 'pr-4'}`}
+                    className={`flex items-center gap-1 rounded-[22px] py-[9px] ps-4 ${hasContent ? 'pe-[5px]' : 'pe-4'}`}
                     style={{ background: '#1C1C1E', border: '0.5px solid rgba(255,255,255,0.12)' }}
                 >
                     <input

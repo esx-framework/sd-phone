@@ -128,7 +128,7 @@ export function AddMemberSheet({ groupName, contacts, existing, myNumber, onCanc
                                         <button
                                             type="button"
                                             onClick={() => addRecipient(contactFromNumber(rawNumber))}
-                                            className="flex w-full items-center gap-3.5 rounded-[12px] px-2.5 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                            className="flex w-full items-center gap-3.5 rounded-[12px] px-2.5 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                         >
                                             <ContactAvatar contact={contactFromNumber(rawNumber)} size={56} />
                                             <div className="min-w-0 flex-1">
@@ -142,7 +142,7 @@ export function AddMemberSheet({ groupName, contacts, existing, myNumber, onCanc
                                             key={keyOf(c)}
                                             type="button"
                                             onClick={() => addRecipient(c)}
-                                            className="flex w-full items-center gap-3.5 rounded-[12px] px-2.5 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                            className="flex w-full items-center gap-3.5 rounded-[12px] px-2.5 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                         >
                                             <ContactAvatar contact={c} size={56} />
                                             <div className="min-w-0 flex-1">

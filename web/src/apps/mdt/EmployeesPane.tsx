@@ -112,7 +112,7 @@ export function EmployeesPane() {
                     key={o.citizenid}
                     type="button"
                     onClick={() => select(o.citizenid)}
-                    className={`relative w-full px-4 py-3 text-left transition-colors ${
+                    className={`relative w-full px-4 py-3 text-start transition-colors ${
                         o.citizenid === selected
                             ? 'bg-ios-blue/10'
                             : mdtRowHover

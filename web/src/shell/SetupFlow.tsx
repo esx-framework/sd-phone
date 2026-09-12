@@ -101,7 +101,7 @@ export function SetupFlow({ onDone, onHelloChange }: Props) {
                         type="button"
                         onClick={back}
                         aria-label={t('setup.back', 'Back')}
-                        className="-ml-1 flex h-9 w-9 items-center justify-center active:opacity-50"
+                        className="-ms-1 flex h-9 w-9 items-center justify-center active:opacity-50"
                     >
                         <ChevronLeft className="h-[26px] w-[26px]" strokeWidth={2.2} />
                     </button>
@@ -430,7 +430,7 @@ function LanguageStage({
                                 type="button"
                                 onClick={() => onSelect(opt)}
                                 className={[
-                                    'flex w-full items-center justify-between rounded-[14px] px-5 py-[18px] text-left transition-colors active:opacity-60',
+                                    'flex w-full items-center justify-between rounded-[14px] px-5 py-[18px] text-start transition-colors active:opacity-60',
                                     isSelected
                                         ? 'bg-black/[0.12] dark:bg-white/[0.14] text-black dark:text-white'
                                         : 'bg-black/[0.05] hover:bg-black/[0.10] dark:bg-white/[0.06] dark:hover:bg-white/[0.11] text-black dark:text-white',
@@ -792,7 +792,7 @@ function WallpaperStage({
                                     }`}
                                 />
                                 {isSelected && (
-                                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ios-blue shadow">
+                                    <div className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ios-blue shadow">
                                         <Check className="h-[13px] w-[13px] text-white" strokeWidth={3} />
                                     </div>
                                 )}

@@ -144,7 +144,7 @@ export function NoteEditor({
           className="min-w-0 flex-1 truncate bg-transparent text-center text-[19px] font-bold outline-none placeholder:font-semibold placeholder:text-ios-gray"
         />
 
-        <div className="flex shrink-0 items-center gap-3 pr-1.5 text-ios-blue">
+        <div className="flex shrink-0 items-center gap-3 pe-1.5 text-ios-blue">
           <button
             type="button"
             onClick={() => setPicking(true)}
@@ -205,7 +205,7 @@ export function NoteEditor({
                       setPendingRemove({ kind: "photo", index: i })
                     }
                     aria-label={t("notes.removePhoto", "Remove photo")}
-                    className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow-md active:opacity-70"
+                    className="absolute -end-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow-md active:opacity-70"
                   >
                     <X className="h-[14px] w-[14px]" strokeWidth={3} />
                   </button>
@@ -247,7 +247,7 @@ export function NoteEditor({
                       setPendingRemove({ kind: "drawing", index: i })
                     }
                     aria-label={t("notes.removeDrawing", "Remove drawing")}
-                    className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow-md active:opacity-70"
+                    className="absolute -end-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ios-red text-white shadow-md active:opacity-70"
                   >
                     <X className="h-[14px] w-[14px]" strokeWidth={3} />
                   </button>

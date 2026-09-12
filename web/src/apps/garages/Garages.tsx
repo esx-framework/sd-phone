@@ -99,7 +99,7 @@ export function Garages({ onClose: _onClose }: { onClose: () => void }) {
                             type="button"
                             onClick={toggleImages}
                             aria-label={showImages ? t('garages.showPlaceholders', 'Show placeholder icons') : t('garages.showPhotos', 'Show vehicle photos')}
-                            className="-mr-1 flex h-[34px] w-[34px] items-center justify-center rounded-full text-ios-blue active:opacity-50"
+                            className="-me-1 flex h-[34px] w-[34px] items-center justify-center rounded-full text-ios-blue active:opacity-50"
                         >
                             {showImages
                                 ? <Image className="h-[23px] w-[23px]" strokeWidth={2} />
@@ -192,14 +192,14 @@ function VehicleCard({ v, showImages, onOpen }: { v: Vehicle; showImages: boolea
         <button
             type="button"
             onClick={onOpen}
-            className="block w-full rounded-[18px] bg-surface px-[18px] py-[17px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] active:bg-black/[0.03] dark:shadow-none dark:ring-white/[0.06] dark:active:bg-white/[0.04]"
+            className="block w-full rounded-[18px] bg-surface px-[18px] py-[17px] text-start shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] active:bg-black/[0.03] dark:shadow-none dark:ring-white/[0.06] dark:active:bg-white/[0.04]"
         >
             <div className="flex items-center gap-3.5">
                 <VehicleThumb v={v} show={showImages} size={50} radius={14} iconSize={28} />
 
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <h3 className="truncate text-[18px] font-semibold leading-tight text-black dark:text-white">{v.model}</h3>
+                        <h3 dir="auto" className="truncate text-[18px] font-semibold leading-tight text-black dark:text-white">{v.model}</h3>
                         <StatusPill status={v.status} className="shrink-0" />
                     </div>
                     <p className="mt-0.5 truncate text-[16px] font-medium text-black/85 dark:text-white/80">{v.class}</p>
@@ -209,12 +209,12 @@ function VehicleCard({ v, showImages, onOpen }: { v: Vehicle; showImages: boolea
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="shrink-0 rounded-[7px] border border-black/15 bg-black/[0.03] px-2.5 py-1 font-mono text-[14px] font-semibold tracking-[0.12em] text-black/80 dark:border-white/20 dark:bg-white/[0.06] dark:text-white/80">
+                <div dir="ltr" className="shrink-0 rounded-[7px] border border-black/15 bg-black/[0.03] px-2.5 py-1 font-mono text-[14px] font-semibold tracking-[0.12em] text-black/80 dark:border-white/20 dark:bg-white/[0.06] dark:text-white/80">
                     {v.plate}
                 </div>
                 <div className="flex min-w-0 items-center gap-1.5 text-black/70 dark:text-white/70">
                     <MapPin className="h-[16px] w-[16px] shrink-0" strokeWidth={2.2} />
-                    <span className="truncate text-[16px] font-medium">{v.location}</span>
+                    <span dir="auto" className="truncate text-[16px] font-medium">{v.location}</span>
                 </div>
             </div>
         </button>
@@ -327,14 +327,14 @@ function VehicleDetail({ v, showImages, customImages, valet, onBack, onDelivered
                             className="relative transition-opacity active:opacity-70 disabled:opacity-50"
                         >
                             <VehicleThumb v={v} show={showImages} size={132} radius={26} iconSize={62} iconStroke={1.6} />
-                            <span className="absolute -bottom-1 -right-1 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-ios-blue text-white ring-[3px] ring-base">
+                            <span className="absolute -bottom-1 -end-1 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-ios-blue text-white ring-[3px] ring-base">
                                 <Camera className="h-[17px] w-[17px]" strokeWidth={2.3} />
                             </span>
                         </button>
                     ) : (
                         <VehicleThumb v={v} show={showImages} size={132} radius={26} iconSize={62} iconStroke={1.6} />
                     )}
-                    <h2 className="mt-3 text-[24px] font-bold tracking-tight text-black dark:text-white">{v.model}</h2>
+                    <h2 dir="auto" className="mt-3 text-[24px] font-bold tracking-tight text-black dark:text-white">{v.model}</h2>
                     <p className="text-[15px] text-ios-gray">{v.class}</p>
 
                     <div className="mt-3 flex items-center gap-2">
@@ -347,7 +347,7 @@ function VehicleDetail({ v, showImages, customImages, valet, onBack, onDelivered
                                 className={`${lockPillCls} ring-1 ring-inset ring-black/10 transition-opacity active:opacity-60 disabled:opacity-50 dark:ring-white/15`}
                             >
                                 {lockPillInner}
-                                <ChevronRight className="-mr-0.5 h-[12px] w-[12px] opacity-60" strokeWidth={2.8} />
+                                <ChevronRight className="-me-0.5 h-[12px] w-[12px] opacity-60" strokeWidth={2.8} />
                             </button>
                         ) : (
                             <span className={lockPillCls}>{lockPillInner}</span>
@@ -402,20 +402,20 @@ function VehicleDetail({ v, showImages, customImages, valet, onBack, onDelivered
                                 type="button"
                                 onClick={() => setPicking(true)}
                                 disabled={imageBusy}
-                                className="flex w-full items-center gap-2.5 px-4 py-3.5 text-left active:bg-black/[0.04] disabled:opacity-50 dark:active:bg-white/[0.06]"
+                                className="flex w-full items-center gap-2.5 px-4 py-3.5 text-start active:bg-black/[0.04] disabled:opacity-50 dark:active:bg-white/[0.06]"
                             >
                                 <Camera className="h-[18px] w-[18px] text-ios-blue" strokeWidth={2.2} />
                                 <span className="text-[17px] text-ios-blue">
                                     {v.customImage ? t('garages.changePhoto', 'Change photo') : t('garages.chooseFromPhotos', 'Choose from Photos')}
                                 </span>
-                                <ChevronRight className="ml-auto h-[16px] w-[16px] text-black/25 dark:text-white/25" strokeWidth={2.5} />
+                                <ChevronRight className="ms-auto h-[16px] w-[16px] text-black/25 dark:text-white/25" strokeWidth={2.5} />
                             </button>
                             {v.customImage && (
                                 <button
                                     type="button"
                                     onClick={() => setRemoving(true)}
                                     disabled={imageBusy}
-                                    className="flex w-full items-center gap-2.5 border-t border-black/[0.06] px-4 py-3.5 text-left active:bg-black/[0.04] disabled:opacity-50 dark:border-white/[0.08] dark:active:bg-white/[0.06]"
+                                    className="flex w-full items-center gap-2.5 border-t border-black/[0.06] px-4 py-3.5 text-start active:bg-black/[0.04] disabled:opacity-50 dark:border-white/[0.08] dark:active:bg-white/[0.06]"
                                 >
                                     <Trash2 className="h-[18px] w-[18px] text-ios-red" strokeWidth={2.2} />
                                     <span className="text-[17px] text-ios-red">{t('garages.removePhoto', 'Remove photo')}</span>
@@ -499,13 +499,13 @@ function Row({ label, value, icon, mono, divider, onAction }: { label: string; v
         <div className={`flex items-center gap-2.5 px-4 py-3.5 ${divider ? 'border-t border-black/[0.06] dark:border-white/[0.08]' : ''}`}>
             {icon && <span className="text-black/40 dark:text-white/40">{icon}</span>}
             <span className="text-[17px] text-black dark:text-white">{label}</span>
-            <span className={`ml-auto min-w-0 truncate pl-3 text-right text-[17px] text-ios-gray ${mono ? 'font-mono tracking-[0.08em]' : ''}`}>{value}</span>
+            <span dir={mono ? 'ltr' : undefined} className={`ms-auto min-w-0 truncate ps-3 text-end text-[17px] text-ios-gray ${mono ? 'font-mono tracking-[0.08em]' : ''}`}>{value}</span>
             {onAction && (
                 <button
                     type="button"
                     onClick={onAction}
                     aria-label={t('garages.setWaypointTo', 'Set waypoint to {value}', { value })}
-                    className="ml-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue active:opacity-60"
+                    className="ms-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full bg-ios-blue/15 text-ios-blue active:opacity-60"
                 >
                     <Navigation className="h-[16px] w-[16px]" strokeWidth={2.2} fill="currentColor" />
                 </button>

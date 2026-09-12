@@ -58,11 +58,11 @@ export const MessageBubble = memo(function MessageBubble({
     msg, sent, isLast, isDark, receivedBg, sentBg, pickerOpen, onOpenPicker, onReact, onReply, onPay, onLocationTap, locationCaption, onLocationRespond, onImageTap, customBubble, hideActions = false,
 }: MessageBubbleProps) {
     const radius      = 16;
-    const cutCorner   = isLast ? (sent ? 'rounded-br-md' : 'rounded-bl-md') : '';
+    const cutCorner   = isLast ? (sent ? 'rounded-ee-md' : 'rounded-es-md') : '';
     const bubbleShape = `rounded-2xl ${cutCorner}`;
     const fg          = sent ? '#fff' : (isDark ? '#fff' : '#000');
     const chip        = isDark ? 'rgb(var(--elevated))' : '#fff';
-    const side        = sent ? 'right-0' : 'left-0';
+    const side        = sent ? 'end-0' : 'start-0';
 
     return (
         <>
@@ -72,7 +72,7 @@ export const MessageBubble = memo(function MessageBubble({
                     style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
                 >
                     <div className="text-[11px] font-semibold opacity-60">{msg.replyTo.name}</div>
-                    <div className="truncate text-[13px] opacity-75">{msg.replyTo.body}</div>
+                    <div dir="auto" className="truncate text-[13px] opacity-75">{msg.replyTo.body}</div>
                 </div>
             )}
 
@@ -130,7 +130,7 @@ export const MessageBubble = memo(function MessageBubble({
                 ) : msg.kind === 'money' ? (
                     msg.requested ? (
                         <div
-                            className={`flex flex-col items-center justify-center gap-2 rounded-[22px] ${sent ? 'rounded-br-md' : 'rounded-bl-md'} px-4 py-5`}
+                            className={`flex flex-col items-center justify-center gap-2 rounded-[22px] ${sent ? 'rounded-ee-md' : 'rounded-es-md'} px-4 py-5`}
                             style={{ background: '#1c1c1e', width: 190 }}
                         >
                             <span className="text-[42px] font-bold leading-none tracking-tight text-white">${msg.amount}</span>
@@ -156,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
                         </div>
                     ) : (
                         <div
-                            className={`flex flex-col items-center justify-center gap-1.5 rounded-[22px] ${sent ? 'rounded-br-md' : 'rounded-bl-md'}`}
+                            className={`flex flex-col items-center justify-center gap-1.5 rounded-[22px] ${sent ? 'rounded-ee-md' : 'rounded-es-md'}`}
                             style={{ background: '#1c1c1e', width: 190, height: 150 }}
                         >
                             <span className="text-[46px] font-bold leading-none tracking-tight text-white">${msg.amount}</span>
@@ -164,7 +164,7 @@ export const MessageBubble = memo(function MessageBubble({
                         </div>
                     )
                 ) : msg.kind === 'locrequest' ? (
-                    <div className="overflow-hidden text-left" style={{ borderRadius: radius, width: 230 }}>
+                    <div className="overflow-hidden text-start" style={{ borderRadius: radius, width: 230 }}>
                         <div className="relative overflow-hidden" style={{ height: 110, background: 'linear-gradient(145deg,#3a4a52,#2c3a42)' }}>
                             <LocationMapPreview x={150} y={-950} />
                             <div className="absolute inset-0" style={{ background: 'rgba(12,18,24,0.45)' }} />
@@ -226,7 +226,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <button
                         type="button"
                         onClick={() => onLocationTap?.(msg.id)}
-                        className="block overflow-hidden text-left transition-opacity active:opacity-80"
+                        className="block overflow-hidden text-start transition-opacity active:opacity-80"
                         style={{ borderRadius: radius, width: 230 }}
                     >
                         <div className="relative overflow-hidden" style={{ height: PREVIEW_H, background: 'linear-gradient(145deg,#3a4a52,#2c3a42)' }}>
@@ -257,6 +257,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <VoiceBubble msg={msg} sent={sent} bubbleShape={bubbleShape} sentBg={sentBg} receivedBg={receivedBg} fg={fg} />
                 ) : (
                     <div
+                        dir="auto"
                         className={`relative cursor-text select-text px-[14px] py-[8px] leading-[1.3] ${bubbleShape}`}
                         style={{ background: sent ? sentBg : receivedBg, color: fg, wordBreak: 'break-word', fontSize: 'calc(19px * var(--chat-text-scale, 1))' }}
                     >
@@ -267,7 +268,7 @@ export const MessageBubble = memo(function MessageBubble({
             </div>
 
             {msg.reactions && msg.reactions.length > 0 && (
-                <div className={`relative z-10 -mt-1 flex gap-1 ${sent ? '-translate-x-[3px]' : 'translate-x-[3px]'}`}>
+                <div className="relative z-10 -mt-1 flex gap-1" style={{ transform: `translateX(calc(var(--dir-x, 1) * ${sent ? -3 : 3}px))` }}>
                     {msg.reactions.map(r => (
                         <span
                             key={r.emoji}

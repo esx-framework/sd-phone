@@ -172,7 +172,7 @@ export function ActionsTab({ myCompany, multijob = false, invoicesEnabled = fals
                     <button
                         type="button"
                         onClick={() => setQuitting(true)}
-                        className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
+                        className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
                     >
                         <Tile color="#FF3B30"><DoorOpen className="h-[18px] w-[18px] text-white" strokeWidth={2.25} /></Tile>
                         <div className="min-w-0 flex-1">
@@ -311,7 +311,7 @@ function EmployeeRow({ employee, grades, myGrade, onFire, onPromote, onDemote }:
                 }}
             />
             {employee.self ? (
-                <span className="shrink-0 pr-1 text-[14px] font-medium text-ios-gray">{t('services.you', 'You')}</span>
+                <span className="shrink-0 pe-1 text-[14px] font-medium text-ios-gray">{t('services.you', 'You')}</span>
             ) : manage ? (
                 <div className="flex shrink-0 items-center gap-0.5">
                     {canDemote && (
@@ -376,7 +376,7 @@ function Row({ icon, title, subtitle, right, onClick, dimmed = false }: { icon: 
     );
     if (onClick) {
         return (
-            <button type="button" onClick={onClick} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
+            <button type="button" onClick={onClick} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10">
                 {content}
             </button>
         );

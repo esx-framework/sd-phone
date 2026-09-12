@@ -149,7 +149,7 @@ export function Feed({ posts, tab, onTab, lives, onOpenLive, myHandle, loading, 
                         <button
                             type="button"
                             onClick={() => onOpenLive(lives[0])}
-                            className="pointer-events-auto absolute left-3 top-0 flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-[5px] backdrop-blur-sm active:opacity-70"
+                            className="pointer-events-auto absolute start-3 top-0 flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-[5px] backdrop-blur-sm active:opacity-70"
                         >
                             <Radio className="h-[15px] w-[15px]" style={{ color: GRAD_TO }} strokeWidth={2.4} />
                             <span className="text-[12px] font-bold text-white">{t('vibez.live', 'LIVE')}</span>
@@ -298,13 +298,13 @@ function PostFrame({ post, isActive, paused, isMine, handlers }: {
             </div>
 
             <div
-                className="pointer-events-none absolute bottom-0 right-0 top-[18%] w-[104px]"
-                style={{ background: 'radial-gradient(70% 50% at 78% 62%, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.18) 55%, transparent 100%)' }}
+                className="pointer-events-none absolute bottom-0 end-0 top-[18%] w-[104px]"
+                style={{ background: 'radial-gradient(70% 50% at calc(50% + var(--dir-x, 1) * 28%) 62%, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.18) 55%, transparent 100%)' }}
                 aria-hidden
             />
 
             <div
-                className="absolute bottom-[40px] right-2.5 flex flex-col items-center gap-[22px]"
+                className="absolute bottom-[40px] end-2.5 flex flex-col items-center gap-[22px]"
                 style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 9px rgba(0,0,0,0.4))' }}
             >
                 <div className="relative mb-1">
@@ -368,24 +368,24 @@ function PostFrame({ post, isActive, paused, isMine, handlers }: {
                 </div>
             </div>
 
-            <div className="absolute bottom-[14px] left-3.5 right-20">
+            <div className="absolute bottom-[14px] start-3.5 end-20">
                 <button
                     type="button"
                     onClick={() => handlers.onOpenProfile(post.user.handle)}
                     className="flex items-center gap-1.5 active:opacity-80"
                 >
-                    <span className="text-[18px] font-bold text-white drop-shadow">@{post.user.handle}</span>
+                    <span dir="ltr" className="text-[18px] font-bold text-white drop-shadow">@{post.user.handle}</span>
                     {post.user.verified && (
                         <VerifiedBadge size={17} />
                     )}
                     <span className="text-[14.5px] text-white/70">· {post.time}</span>
                 </button>
                 {post.caption !== '' && (
-                    <div className="mt-2 text-[15.5px] leading-snug text-white drop-shadow">{post.caption}</div>
+                    <div dir="auto" className="mt-2 text-[15.5px] leading-snug text-white drop-shadow">{post.caption}</div>
                 )}
                 <div className="mt-2.5 flex items-center gap-2 text-[14.5px] text-white/90">
                     <Music2 className="h-[17px] w-[17px] shrink-0" strokeWidth={2.2} />
-                    <span className="truncate">
+                    <span dir="auto" className="truncate">
                         {post.sound !== ''
                             ? post.sound
                             : t('vibez.originalSound', 'original sound — {handle}', { handle: post.user.handle })}

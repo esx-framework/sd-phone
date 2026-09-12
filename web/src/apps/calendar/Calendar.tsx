@@ -135,7 +135,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                     type="button"
                     aria-label={t('calendar.newEvent', 'New event')}
                     onClick={() => setEditing('new')}
-                    className="ml-auto flex h-[32px] w-[32px] items-center justify-center rounded-full text-ios-red active:opacity-60"
+                    className="ms-auto flex h-[32px] w-[32px] items-center justify-center rounded-full text-ios-red active:opacity-60"
                 >
                     <Plus className="h-[22px] w-[22px]" strokeWidth={2.5} />
                 </button>
@@ -192,7 +192,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                                 key={ev.id}
                                 type="button"
                                 onClick={() => setEditing(ev)}
-                                className="relative flex w-full items-stretch text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="relative flex w-full items-stretch text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <span className="w-1.5 shrink-0" style={{ background: ev.color }} />
                                 <div className="flex-1 px-3.5 py-3">
@@ -201,7 +201,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                                             {isShared(ev) && (
                                                 <Users className="h-[13px] w-[13px] shrink-0 text-ios-gray" strokeWidth={2.4} />
                                             )}
-                                            <span className="truncate text-[17px] font-medium">{ev.title}</span>
+                                            <span dir="auto" className="truncate text-[17px] font-medium">{ev.title}</span>
                                         </span>
                                         <span className="shrink-0 text-[14px] text-ios-gray">
                                             {ev.allDay ? t('calendar.allDayShort', 'all-day') : ev.start ? formatTime(ev.start) : ''}
@@ -215,14 +215,14 @@ export function Calendar({ onClose }: { onClose: () => void }) {
                                         </div>
                                     )}
                                     {ev.location && (
-                                        <div className="text-[14px] text-ios-gray">{ev.location}</div>
+                                        <div dir="auto" className="text-[14px] text-ios-gray">{ev.location}</div>
                                     )}
                                     {ev.notes && (
-                                        <div className="line-clamp-2 text-[14px] text-ios-gray">{ev.notes}</div>
+                                        <div dir="auto" className="line-clamp-2 text-[14px] text-ios-gray">{ev.notes}</div>
                                     )}
                                 </div>
                                 {i < selectedEvts.length - 1 && (
-                                    <div className="pointer-events-none absolute bottom-0 right-0" style={{ left: 16, height: 0.5, background: dividerC }} />
+                                    <div className="pointer-events-none absolute bottom-0 end-0" style={{ insetInlineStart: 16, height: 0.5, background: dividerC }} />
                                 )}
                             </button>
                         ))}

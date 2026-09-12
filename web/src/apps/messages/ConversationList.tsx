@@ -237,7 +237,7 @@ function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }
         <button
             type="button"
             onClick={() => (editing ? onToggleSelect(conv.id) : onOpen(conv.id))}
-            className="flex w-full items-center px-4 py-[16px] text-left active:bg-black/5 dark:active:bg-white/5"
+            className="flex w-full items-center px-4 py-[16px] text-start active:bg-black/5 dark:active:bg-white/5"
         >
             <div
                 className="flex shrink-0 items-center overflow-hidden"
@@ -250,7 +250,7 @@ function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }
             >
                 <div
                     style={{
-                        transform:  editing ? 'translateX(0)' : 'translateX(-16px)',
+                        transform:  editing ? 'translateX(0)' : 'translateX(calc(var(--dir-x, 1) * -16px))',
                         transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
                     }}
                 >
@@ -277,7 +277,7 @@ function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }
                 </div>
             </div>
 
-            <div className="w-[14px] shrink-0 flex items-center justify-center mr-1">
+            <div className="w-[14px] shrink-0 flex items-center justify-center me-1">
                 {unread && <span className="h-[11px] w-[11px] rounded-full bg-ios-blue" />}
             </div>
 
@@ -286,7 +286,7 @@ function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }
                 : <ContactAvatar contact={conv.participants[0]} size={56} />
             }
 
-            <div className="ml-3 min-w-0 flex-1">
+            <div className="ms-3 min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                     <span className={`truncate text-[19px] text-black dark:text-white ${unread ? 'font-semibold' : 'font-normal'}`}>
                         {name}
@@ -296,7 +296,7 @@ function ConvRow({ conv, typingFrom, editing, selected, onOpen, onToggleSelect }
                         <ChevronRight className="h-[18px] w-[18px] text-black/28 dark:text-white/28" strokeWidth={2.5} />
                     </div>
                 </div>
-                <span className={`line-clamp-2 text-[17px] leading-snug mt-[1px] ${unread ? 'text-black/75 dark:text-white/80' : 'text-black/60 dark:text-white/65'}`}>
+                <span dir="auto" className={`line-clamp-2 text-[17px] leading-snug mt-[1px] ${unread ? 'text-black/75 dark:text-white/80' : 'text-black/60 dark:text-white/65'}`}>
                     {preview}
                 </span>
             </div>

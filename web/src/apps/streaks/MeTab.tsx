@@ -52,7 +52,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
                     : 'linear-gradient(155deg, #ffe7d2 0%, #e7e7e7 66%)' }}
             >
                 <div
-                    className="pointer-events-none absolute -right-12 -top-14 h-40 w-40 rounded-full blur-3xl"
+                    className="pointer-events-none absolute -end-12 -top-14 h-40 w-40 rounded-full blur-3xl"
                     style={{ background: STREAK_ORANGE, opacity: 0.32 }}
                 />
 
@@ -101,7 +101,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
                             <div key={node.day} className="relative flex flex-1 flex-col items-center">
                                 {!isLast && (
                                     <span
-                                        className="absolute left-1/2 top-[12px] h-[3px] w-full"
+                                        className="absolute start-1/2 top-[12px] h-[3px] w-full"
                                         style={{ background: passed ? STREAK_ORANGE : lineMuted }}
                                     />
                                 )}
@@ -131,7 +131,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
             <button
                 type="button"
                 onClick={onOpenRewards}
-                className={`mt-3 flex w-full shrink-0 items-center gap-4 rounded-2xl px-4 py-[21px] text-left shadow-sm active:opacity-90 ${surface}`}
+                className={`mt-3 flex w-full shrink-0 items-center gap-4 rounded-2xl px-4 py-[21px] text-start shadow-sm active:opacity-90 ${surface}`}
             >
                 <span
                     className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full text-white shadow-sm"
@@ -155,7 +155,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
                             <img src={state.todayPost.imageUrl} alt="" className="h-full w-full object-cover" />
                         )}
                         <span
-                            className="absolute left-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[13.5px] font-bold text-white shadow-sm ring-1 ring-black/10"
+                            className="absolute start-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[13.5px] font-bold text-white shadow-sm ring-1 ring-black/10"
                             style={{ background: STREAK_ORANGE }}
                         >
                             <Flame className="h-[14px] w-[14px]" strokeWidth={2.6} />
@@ -163,7 +163,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
                         </span>
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-4 pt-12">
                             {state.todayPost?.caption && (
-                                <p className="mb-1.5 line-clamp-2 text-[14.5px] font-medium leading-snug text-white/90">
+                                <p dir="auto" className="mb-1.5 line-clamp-2 text-[14.5px] font-medium leading-snug text-white/90">
                                     {state.todayPost.caption}
                                 </p>
                             )}
@@ -232,7 +232,7 @@ export function MeTab({ state, config, dark, posting, onPost, onOpenRewards }: {
                                 placeholder={t('streaks.captionPlaceholder', 'Say something about today (optional)')}
                                 className="ios-scrollbar w-full resize-none rounded-[14px] bg-surface px-4 py-3.5 text-[18px] leading-snug text-black placeholder-black/80 outline-none dark:text-white dark:placeholder-white/65"
                             />
-                            <div className="mt-1.5 text-right text-[12px] font-semibold opacity-50">
+                            <div className="mt-1.5 text-end text-[12px] font-semibold opacity-50">
                                 {caption.length}/{config.maxCaptionLength}
                             </div>
                             <button

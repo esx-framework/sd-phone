@@ -7,6 +7,7 @@ import { AlertDialog } from '@/ui/AlertDialog';
 import { Scroller } from '@/ui/Scroller';
 import { MailGlyph, MessageGlyph, PhoneGlyph } from '@/shell/AppGlyphs';
 import { fmtPrice, type ClassifiedItem } from './types';
+import { dirSign } from '@/stores/directionStore';
 import { t } from '@/i18n';
 import { StatusBarSpacer } from '@/ui/StatusBarSpacer';
 
@@ -47,7 +48,7 @@ export function ListingDetail({ item, backLabel, itemNoun = t('classifieds.post'
     }
     function onPointerMove(e: ReactPointerEvent) {
         if (!down.current) return;
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         const dy = e.clientY - start.current.y;
         if (!horiz.current && Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) horiz.current = true;
         if (horiz.current) {
@@ -60,7 +61,7 @@ export function ListingDetail({ item, backLabel, itemNoun = t('classifieds.post'
         if (!down.current) return;
         down.current = false;
         setDragging(false);
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         if (horiz.current) {
             const threshold = wRef.current * 0.18;
             if (dx <= -threshold && idx < n - 1) setIdx(idx + 1);
@@ -106,7 +107,7 @@ export function ListingDetail({ item, backLabel, itemNoun = t('classifieds.post'
                         <div
                             className="flex h-full w-full"
                             style={{
-                                transform: `translateX(calc(${-idx * 100}% + ${drag}px))`,
+                                transform: `translateX(calc(var(--dir-x, 1) * ${-idx * 100}%)) translateX(calc(var(--dir-x, 1) * ${drag}px))`,
                                 transition: dragging ? 'none' : 'transform 0.32s cubic-bezier(0.22,0.61,0.36,1)',
                             }}
                         >
@@ -144,11 +145,11 @@ export function ListingDetail({ item, backLabel, itemNoun = t('classifieds.post'
                 </div>
 
                 <div className="px-5 pt-4">
-                    <h1 className="text-[26px] font-bold leading-tight text-black dark:text-white">{item.title}</h1>
+                    <h1 dir="auto" className="text-[26px] font-bold leading-tight text-black dark:text-white">{item.title}</h1>
                     {item.price !== undefined && (
                         <div className="mt-0.5 text-[20px] font-semibold text-black dark:text-white">{fmtPrice(item.price)}</div>
                     )}
-                    <p className="mt-3 whitespace-pre-wrap text-[19px] leading-[1.5] text-black/90 dark:text-white/90">{item.body}</p>
+                    <p dir="auto" className="mt-3 whitespace-pre-wrap text-[19px] leading-[1.5] text-black/90 dark:text-white/90">{item.body}</p>
                     {item.date && <div className="mt-2.5 text-[15px] font-medium text-ios-gray">{item.date}</div>}
 
                     <div className="mt-5 flex flex-col gap-2.5">
@@ -212,7 +213,7 @@ function Arrow({ side, disabled, onClick }: { side: 'left' | 'right'; disabled: 
             onPointerDown={e => e.stopPropagation()}
             disabled={disabled}
             aria-label={side === 'left' ? t('classifieds.previousImage', 'Previous image') : t('classifieds.nextImage', 'Next image')}
-            className={`absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white active:opacity-70 disabled:opacity-25 ${side === 'left' ? 'left-2' : 'right-2'}`}
+            className={`absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white active:opacity-70 disabled:opacity-25 ${side === 'left' ? 'start-2' : 'end-2'}`}
         >
             <Icon className="h-6 w-6" strokeWidth={2.4} />
         </button>

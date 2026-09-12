@@ -34,7 +34,7 @@ function WinLossBoard({ data, loading, accent, cpuLabel }: { data: GameLeaderboa
             options={[{ v: 'cpu', label: cpuLabel ?? t('games.computer', 'Computer'), Icon: Cpu }, { v: 'online', label: t('games.players', 'Players'), Icon: Users }]}
             loading={loading}
             empty={entries.length === 0}
-            head={<><span className="w-9 text-right">W</span><span className="w-9 text-right">L</span></>}
+            head={<><span className="w-9 text-end">W</span><span className="w-9 text-end">L</span></>}
         >
             {entries.map((e, i) => <WlRow key={i} rank={i} entry={e} />)}
         </Frame>
@@ -53,7 +53,7 @@ function ChipBoard({ data, loading, accent }: { data: GameLeaderboard | null; lo
             options={[{ v: 'winners', label: t('games.winners', 'Winners'), Icon: TrendingUp }, { v: 'losers', label: t('games.losers', 'Losers'), Icon: TrendingDown }]}
             loading={loading}
             empty={entries.length === 0}
-            head={<span className="w-24 text-right">{t('games.netChips', 'Net chips')}</span>}
+            head={<span className="w-24 text-end">{t('games.netChips', 'Net chips')}</span>}
         >
             {entries.map((e, i) => <ChipRow key={i} rank={i} entry={e} />)}
         </Frame>
@@ -81,7 +81,7 @@ function ScoreBoard({ data, loading, accent }: { data: ScoreEntry[] | null; load
                             <div className="flex items-center gap-2 px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">
                                 <span className="w-6 shrink-0 text-center">#</span>
                                 <span className="flex-1">{t('games.player', 'Player')}</span>
-                                <span className="w-24 text-right">{t('games.score', 'Score')}</span>
+                                <span className="w-24 text-end">{t('games.score', 'Score')}</span>
                             </div>
                             {entries.map((e, i) => <ScoreRow key={i} rank={i} entry={e} />)}
                         </>
@@ -141,9 +141,9 @@ function WlRow({ rank, entry }: { rank: number; entry: LeaderEntry }) {
     return (
         <div className="flex items-center gap-2 rounded-[9px] px-2 py-2.5 text-[15px]" style={{ background: rank % 2 ? 'rgba(255,255,255,0.035)' : 'transparent' }}>
             <Rank rank={rank} />
-            <span className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
-            <span className="w-9 text-right font-bold text-[#9CCC65]">{entry.wins}</span>
-            <span className="w-9 text-right font-bold text-[#FF8A80]">{entry.losses}</span>
+            <span dir="auto" className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
+            <span className="w-9 text-end font-bold text-[#9CCC65]">{entry.wins}</span>
+            <span className="w-9 text-end font-bold text-[#FF8A80]">{entry.losses}</span>
         </div>
     );
 }
@@ -153,8 +153,8 @@ function ChipRow({ rank, entry }: { rank: number; entry: ChipLeaderEntry }) {
     return (
         <div className="flex items-center gap-2 rounded-[9px] px-2 py-2.5 text-[15px]" style={{ background: rank % 2 ? 'rgba(255,255,255,0.035)' : 'transparent' }}>
             <Rank rank={rank} />
-            <span className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
-            <span className="w-24 text-right font-extrabold tabular-nums" style={{ color: up ? '#9CCC65' : '#FF8A80' }}>
+            <span dir="auto" className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
+            <span dir="ltr" className="w-24 text-end font-extrabold tabular-nums" style={{ color: up ? '#9CCC65' : '#FF8A80' }}>
                 {up ? '+' : '-'}{fmt(entry.net)}
             </span>
         </div>
@@ -165,8 +165,8 @@ function ScoreRow({ rank, entry }: { rank: number; entry: ScoreEntry }) {
     return (
         <div className="flex items-center gap-2 rounded-[9px] px-2 py-2.5 text-[15px]" style={{ background: rank % 2 ? 'rgba(255,255,255,0.035)' : 'transparent' }}>
             <Rank rank={rank} />
-            <span className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
-            <span className="w-24 text-right font-extrabold tabular-nums text-white">{entry.score.toLocaleString('en-US')}</span>
+            <span dir="auto" className="flex-1 truncate font-semibold text-white/90">{entry.name || t('games.unknown', 'Unknown')}</span>
+            <span className="w-24 text-end font-extrabold tabular-nums text-white">{entry.score.toLocaleString('en-US')}</span>
         </div>
     );
 }

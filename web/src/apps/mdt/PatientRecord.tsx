@@ -24,7 +24,7 @@ function Field({ label, value }: { label: string; value: string }) {
     return (
         <div>
             <div className={mdtSectionHeader}>{label}</div>
-            <div className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+            <div dir="auto" className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                 {value || t('mdt.nothingOnFile', 'Nothing on file')}
             </div>
         </div>
@@ -124,7 +124,7 @@ function FileEditor({ patient, enter, onCancel, onSaved }: {
                 <button
                     type="button"
                     onClick={() => set('dnr', !draft.dnr)}
-                    className={`mt-4 flex w-full items-center justify-between rounded-[10px] px-3 py-2.5 text-left transition-colors duration-150 ${
+                    className={`mt-4 flex w-full items-center justify-between rounded-[10px] px-3 py-2.5 text-start transition-colors duration-150 ${
                         draft.dnr ? 'bg-ios-red/10' : 'bg-black/[0.05] hover:bg-black/[0.08] dark:bg-white/[0.07] dark:hover:bg-white/[0.11]'
                     }`}
                 >
@@ -295,10 +295,10 @@ export function PatientRecord({ citizenid }: { citizenid: string }) {
                             key={r.ref}
                             type="button"
                             onClick={() => open('reports', r.ref)}
-                            className="relative w-full px-4 py-3 text-left transition-colors duration-150 hover:bg-black/[0.035] active:bg-black/[0.06] dark:hover:bg-white/[0.05] dark:active:bg-white/[0.08]"
+                            className="relative w-full px-4 py-3 text-start transition-colors duration-150 hover:bg-black/[0.035] active:bg-black/[0.06] dark:hover:bg-white/[0.05] dark:active:bg-white/[0.08]"
                         >
                             <div className="flex items-center gap-2">
-                                <span className={mdtRef}>{r.ref}</span>
+                                <span dir="ltr" className={mdtRef}>{r.ref}</span>
                                 <Pill tone="blue">{r.type}</Pill>
                                 <span className="flex-1" />
                                 <span className={`shrink-0 ${mdtRowMeta}`}>{formatMediumDate(r.createdAt)}</span>

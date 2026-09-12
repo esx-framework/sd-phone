@@ -3,7 +3,7 @@ const DOTS = [0, 1, 2];
 export function TypingBubble({ receivedBg, isDark }: { receivedBg: string; isDark: boolean }) {
     return (
         <div
-            className="imsg-typing flex items-center gap-[5px] rounded-2xl rounded-bl-md px-[15px] py-[11px]"
+            className="imsg-typing flex items-center gap-[5px] rounded-2xl rounded-es-md px-[15px] py-[11px]"
             style={{ background: receivedBg }}
         >
             {DOTS.map(i => (

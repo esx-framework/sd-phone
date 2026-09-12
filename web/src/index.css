@@ -534,23 +534,23 @@ html, body, #root {
 .dark .ios-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(235, 235, 245, 0.55); }
 .ios-scrollbar::-webkit-scrollbar-corner { background: transparent; }
 @keyframes ios-push {
-    from { transform: translateX(100%); }
+    from { transform: translateX(calc(var(--dir-x, 1) * 100%)); }
     to   { transform: translateX(0);    }
 }
 @keyframes ios-pop {
     from { transform: translateX(0);    }
-    to   { transform: translateX(100%); }
+    to   { transform: translateX(calc(var(--dir-x, 1) * 100%)); }
 }
 @keyframes ios-push-reverse {
-    from { transform: translateX(-100%); }
+    from { transform: translateX(calc(var(--dir-x, 1) * -100%)); }
     to   { transform: translateX(0);     }
 }
 @keyframes mini-rise {
     from { transform: translateY(100%); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
 }
-@keyframes pin-phase      { from { opacity: 0; transform: translateX(30px);  } to { opacity: 1; transform: translateX(0); } }
-@keyframes pin-phase-back { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pin-phase      { from { opacity: 0; transform: translateX(calc(var(--dir-x, 1) * 30px));  } to { opacity: 1; transform: translateX(0); } }
+@keyframes pin-phase-back { from { opacity: 0; transform: translateX(calc(var(--dir-x, 1) * -30px)); } to { opacity: 1; transform: translateX(0); } }
 .animate-pin-phase      { animation: pin-phase      0.34s cubic-bezier(0.32,0.72,0,1); }
 .animate-pin-phase-back { animation: pin-phase-back 0.34s cubic-bezier(0.32,0.72,0,1); }
 input[type='number']::-webkit-outer-spin-button,
@@ -576,7 +576,7 @@ input[type='number'] {
     height: 4px;
     border-radius: 2px;
     background: linear-gradient(
-        to right,
+        to var(--dir-end, right),
         #0A84FF var(--sp, 75%),
         var(--se, #E5E5EA) var(--sp, 75%)
     );
@@ -597,7 +597,7 @@ input[type='number'] {
     height: 4px;
     border-radius: 2px;
     background: linear-gradient(
-        to right,
+        to var(--dir-end, right),
         #0A84FF var(--sp, 75%),
         var(--se, #E5E5EA) var(--sp, 75%)
     );
@@ -697,13 +697,13 @@ input[type='number'] {
 }
 
 @keyframes swipe-in-soft {
-    from { opacity: 0; transform: translateX(-48px); }
+    from { opacity: 0; transform: translateX(calc(var(--dir-x, 1) * -48px)); }
     to   { opacity: 1; transform: translateX(0);     }
 }
 
 @keyframes swipe-out-soft {
     from { opacity: 1; transform: translateX(0);     }
-    to   { opacity: 0; transform: translateX(-48px); }
+    to   { opacity: 0; transform: translateX(calc(var(--dir-x, 1) * -48px)); }
 }
 
 @keyframes ios-sheet-backdrop-in {
@@ -1017,3 +1017,64 @@ input[type='number'] {
     animation: none !important;
     transition: none !important;
 }
+
+
+[dir="rtl"] :is(
+    .lucide-chevron-left, .lucide-chevron-right,
+    .lucide-chevrons-left, .lucide-chevrons-right,
+    .lucide-arrow-left, .lucide-arrow-right,
+    .lucide-arrow-big-left, .lucide-arrow-big-right,
+    .lucide-arrow-left-to-line, .lucide-arrow-right-to-line,
+    .lucide-arrow-up-left, .lucide-arrow-up-right,
+    .lucide-arrow-down-left, .lucide-arrow-down-right,
+    .lucide-circle-arrow-left, .lucide-circle-arrow-right,
+    .lucide-square-arrow-left, .lucide-square-arrow-right,
+    .lucide-corner-up-left, .lucide-corner-up-right,
+    .lucide-corner-down-left, .lucide-corner-down-right,
+    .lucide-move-left, .lucide-move-right,
+    .lucide-reply, .lucide-reply-all, .lucide-forward,
+    .lucide-undo, .lucide-undo-2, .lucide-redo, .lucide-redo-2,
+    .lucide-log-in, .lucide-log-out,
+    .lucide-send, .lucide-send-horizontal, .lucide-send-horizonal,
+    .lucide-indent-increase, .lucide-indent-decrease,
+    .lucide-panel-left, .lucide-panel-right,
+    .lucide-panel-left-close, .lucide-panel-left-open,
+    .lucide-panel-right-close, .lucide-panel-right-open,
+    .lucide-phone-incoming, .lucide-phone-outgoing,
+    .lucide-phone-forwarded, .lucide-phone-missed
+):not([data-flip-x="off"]) {
+    transform: scaleX(-1);
+}
+
+[dir="ltr"] :is(
+    .lucide-chevron-left, .lucide-chevron-right,
+    .lucide-chevrons-left, .lucide-chevrons-right,
+    .lucide-arrow-left, .lucide-arrow-right,
+    .lucide-arrow-big-left, .lucide-arrow-big-right,
+    .lucide-arrow-left-to-line, .lucide-arrow-right-to-line,
+    .lucide-arrow-up-left, .lucide-arrow-up-right,
+    .lucide-arrow-down-left, .lucide-arrow-down-right,
+    .lucide-circle-arrow-left, .lucide-circle-arrow-right,
+    .lucide-square-arrow-left, .lucide-square-arrow-right,
+    .lucide-corner-up-left, .lucide-corner-up-right,
+    .lucide-corner-down-left, .lucide-corner-down-right,
+    .lucide-move-left, .lucide-move-right,
+    .lucide-reply, .lucide-reply-all, .lucide-forward,
+    .lucide-undo, .lucide-undo-2, .lucide-redo, .lucide-redo-2,
+    .lucide-log-in, .lucide-log-out,
+    .lucide-send, .lucide-send-horizontal, .lucide-send-horizonal,
+    .lucide-indent-increase, .lucide-indent-decrease,
+    .lucide-panel-left, .lucide-panel-right,
+    .lucide-panel-left-close, .lucide-panel-left-open,
+    .lucide-panel-right-close, .lucide-panel-right-open,
+    .lucide-phone-incoming, .lucide-phone-outgoing,
+    .lucide-phone-forwarded, .lucide-phone-missed
+):not([data-flip-x="off"]) {
+    transform: none;
+}
+
+
+:root,
+[dir="ltr"] { --dir-x: 1; --dir-start: left; --dir-end: right; }
+
+[dir="rtl"] { --dir-x: -1; --dir-start: right; --dir-end: left; }

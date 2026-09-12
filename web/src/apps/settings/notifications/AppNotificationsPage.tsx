@@ -99,12 +99,12 @@ export function AppNotificationsPage({
                                 type="button"
                                 onClick={() => setShowTonePicker(true)}
                                 disabled={!pref.sounds}
-                                className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 disabled:opacity-40 dark:active:bg-white/5"
+                                className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 disabled:opacity-40 dark:active:bg-white/5"
                             >
                                 <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                                     {t('settings.textTone', 'Text Tone')}
                                 </span>
-                                <span className="mr-1.5 min-w-0 truncate text-[15px] text-ios-gray">
+                                <span className="me-1.5 min-w-0 truncate text-[15px] text-ios-gray">
                                     {toneName}
                                 </span>
                                 <ChevronRight className="h-[17px] w-[17px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
@@ -155,7 +155,7 @@ function ToggleRow({
         <button
             type="button"
             onClick={() => onChange(!on)}
-            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
         >
             <span className="flex-1 text-[17px] font-normal text-black dark:text-white">{label}</span>
             <div className="pointer-events-none">
@@ -163,8 +163,8 @@ function ToggleRow({
             </div>
             {divider && (
                 <div
-                    className="pointer-events-none absolute bottom-0 right-0 bg-ios-gray4 dark:bg-control"
-                    style={{ left: 0, height: '0.5px' }}
+                    className="pointer-events-none absolute bottom-0 end-0 bg-ios-gray4 dark:bg-control"
+                    style={{ insetInlineStart: 0, height: '0.5px' }}
                 />
             )}
         </button>

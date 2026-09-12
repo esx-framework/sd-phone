@@ -233,7 +233,7 @@ export function DispatchPane() {
                         key={c.id}
                         type="button"
                         onClick={() => select(c.id)}
-                        className={`relative w-full px-4 py-3 text-left transition-colors ${
+                        className={`relative w-full px-4 py-3 text-start transition-colors ${
                             c.id === selected
                                 ? 'bg-ios-blue/10'
                                 : c.id === flashId
@@ -243,7 +243,7 @@ export function DispatchPane() {
                     >
                         <div className="flex min-w-0 items-center gap-2">
                             <PriorityChip priority={c.priority} />
-                            <span className={mdtRef}>{c.code}</span>
+                            <span dir="ltr" className={mdtRef}>{c.code}</span>
                             <span className="flex-1" />
                             <span className={`shrink-0 ${mdtRowMeta}`}>{relTimeCompact(c.createdAt * 1000)}</span>
                         </div>
@@ -327,7 +327,7 @@ export function DispatchPane() {
                             type="button"
                             onClick={() => select(null)}
                             aria-label={t('mdt.closeCall', 'Back to dispatch board')}
-                            className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors hover:text-black active:opacity-50 dark:hover:text-white"
+                            className="-me-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors hover:text-black active:opacity-50 dark:hover:text-white"
                         >
                             <X className="h-[17px] w-[17px]" strokeWidth={2.5} />
                         </button>

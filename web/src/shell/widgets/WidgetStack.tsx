@@ -78,7 +78,7 @@ export function WidgetStack({ cards, active, onActive, height, editing, render }
                 </div>
             </div>
 
-            <div className="pointer-events-none absolute right-[5px] top-1/2 flex -translate-y-1/2 flex-col gap-[4px]">
+            <div className="pointer-events-none absolute end-[5px] top-1/2 flex -translate-y-1/2 flex-col gap-[4px]">
                 {cards.map((_, i) => (
                     <span
                         key={i}

@@ -75,7 +75,7 @@ export function UserProfile({ handle, me: _me, onBack, onOpenProfile: _onOpenPro
                     <ChevronLeft className="h-[36px] w-[36px]" strokeWidth={2.2} />
                 </button>
                 <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-                    <span className="text-[22px] font-bold text-black">{profile?.username ?? handle}</span>
+                    <span dir="auto" className="text-[22px] font-bold text-black">{profile?.username ?? handle}</span>
                     {profile?.verified && <VerifiedCheck size={22} />}
                 </div>
             </div>
@@ -94,8 +94,8 @@ export function UserProfile({ handle, me: _me, onBack, onOpenProfile: _onOpenPro
                     </div>
 
                     <div className="px-4 pb-3">
-                        <div className="text-[21px] font-semibold text-black">{profile.name}</div>
-                        {profile.bio !== '' && <div className="mt-1 whitespace-pre-line text-[20px] leading-snug text-black">{profile.bio}</div>}
+                        <div dir="auto" className="text-[21px] font-semibold text-black">{profile.name}</div>
+                        {profile.bio !== '' && <div dir="auto" className="mt-1 whitespace-pre-line text-[20px] leading-snug text-black">{profile.bio}</div>}
                         {profile.followsMe && <div className="mt-1 text-[15px]" style={{ color: IG.sub }}>{t('photogram.followsYou', 'Follows you')}</div>}
                     </div>
 

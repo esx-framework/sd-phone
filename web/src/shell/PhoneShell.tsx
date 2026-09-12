@@ -28,6 +28,7 @@ import type { OpenAnim } from './shellLook';
 import type { ChassisMetrics, FacePart, RailButton } from './chassis';
 import { shellFor } from './shells';
 import { t } from '@/i18n';
+import { useDirection } from '@/stores/directionStore';
 
 
 const MI_MORPH =
@@ -209,7 +210,7 @@ function MusicIsland({ m, track, playing, expanded, closing, onToggle, onPlayPau
                     pointerEvents: expanded ? 'auto' : 'none',
                 }}
             >
-                <button type="button" onClick={stop(onOpenApp)} className="flex items-center gap-3 text-left">
+                <button type="button" onClick={stop(onOpenApp)} className="flex items-center gap-3 text-start">
                     <span
                         className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[12px]"
                         style={{ background: artBg }}
@@ -417,6 +418,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
     const foldable = useFoldable();
     const foldOpen = useFoldOpen();
     const foldSwing = useFoldSwing();
+    const direction = useDirection();
     const foldOpenW = useFoldStore(s => s.openW);
     const m = useMemo(() => chassisMetrics(shellFor(shell, device.id), foldW), [shell, foldW]);
     const {
@@ -588,6 +590,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                 >
                     <div
                         data-phone-screen
+                        dir={direction}
                         className="absolute overflow-hidden"
                         style={{
                             left: SX, top: SY, width: SW, height: SH,
@@ -1025,7 +1028,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                             onClick={() => { useCallStore.getState().setMinimised(false); void fetchNui('sd-phone:requestOpen'); }}
                             compactX={DI_X} compactW={DI_W} expandedX={CALL_X} expandedW={CALL_W}
                         >
-                            <span className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                            <span className="absolute start-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
                                 <Phone className="h-[14px] w-[14px]" style={{ color: '#30D158' }} fill="currentColor" strokeWidth={0} />
                                 <span className="text-[13px] font-semibold tabular-nums" style={{ color: '#30D158' }}>
                                     {callStartedAt ? <RingDuration since={callStartedAt} /> : t('shell.mobile','Mobile')}
@@ -1040,7 +1043,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                             onClick={() => { if (radioOn) void fetchNui('sd-phone:radio:leave'); else void fetchNui('sd-phone:radio:set', { on: true }); }}
                             compactX={DI_X} compactW={DI_W} expandedX={CALL_X} expandedW={CALL_W}
                         >
-                            <span className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                            <span className="absolute start-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
                                 <Radio className={`h-[16px] w-[16px] ${radioOnAir ? 'animate-pulse' : ''}`} style={{ color: radioOn ? '#30D158' : '#FF453A', transition: 'color 0.2s ease' }} strokeWidth={2.4} />
                                 <span className="text-[13px] font-semibold tabular-nums" style={{ color: radioOn ? '#30D158' : '#FF453A', transition: 'color 0.2s ease' }}>{radioFreq.toFixed(1)}</span>
                             </span>
@@ -1052,7 +1055,7 @@ export function PhoneShell({ children, hidden = false, cameraActive = false, ent
                             active={alarmRinging && !callActive}
                             compactX={DI_X} compactW={DI_W} expandedX={CALL_X} expandedW={CALL_W}
                         >
-                            <span className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                            <span className="absolute start-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
                                 <AlarmClock className="h-[15px] w-[15px]" style={{ color: '#FF9F0A' }} strokeWidth={2.5} />
                                 <span className="text-[13px] font-semibold tabular-nums" style={{ color: '#FF9F0A' }}><RingDuration since={alarmSince} /></span>
                             </span>

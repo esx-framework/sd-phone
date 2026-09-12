@@ -74,6 +74,7 @@ export function AddToneDialog({ title, message, onCancel, onConfirm }: Props) {
                 className={`mt-4 ${inputCls}`}
             />
             <input
+                dir="ltr"
                 ref={urlRef}
                 value={url}
                 placeholder={t('settings.youtubeLink', 'YouTube link')}
@@ -83,7 +84,7 @@ export function AddToneDialog({ title, message, onCancel, onConfirm }: Props) {
                 className={`mt-2 ${inputCls}`}
             />
             {trimmedUrl.length > 0 && !urlValid && (
-                <div className="mt-1.5 text-left text-[13px] text-ios-red">
+                <div className="mt-1.5 text-start text-[13px] text-ios-red">
                     {t('settings.enterValidYoutube', 'Enter a valid YouTube link.')}
                 </div>
             )}

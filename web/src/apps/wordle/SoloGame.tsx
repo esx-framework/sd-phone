@@ -126,7 +126,7 @@ export function SoloGame({ pal, onFinish, onNew }: {
                 </div>
             </div>
 
-            <div className="flex flex-1 items-center justify-center px-5">
+            <div dir="ltr" className="flex flex-1 items-center justify-center px-5">
                 <div className="flex flex-col gap-[6px]">
                     {Array.from({ length: ROWS }).map((_, r) => {
                         const submitted = r < guesses.length;
@@ -162,13 +162,13 @@ export function SoloGame({ pal, onFinish, onNew }: {
                         {status === 'won' ? t('wordle.solvedIt', 'Nice! You solved it.') : timeLeft === 0 ? t('wordle.timesUp', "Time's up!") : t('wordle.outOfGuesses', 'Out of guesses.')}
                     </div>
                     <div className="mt-1 flex items-center gap-3">
-                        <span className="text-[20px] font-extrabold tracking-[0.18em]" style={{ color: status === 'won' ? pal.correct : pal.text }}>{answer}</span>
+                        <span dir="ltr" className="text-[20px] font-extrabold tracking-[0.18em]" style={{ color: status === 'won' ? pal.correct : pal.text }}>{answer}</span>
                         <button type="button" onClick={onNew} className="rounded-full px-4 py-1.5 text-[14px] font-bold text-white active:opacity-80" style={{ backgroundColor: pal.correct }}>{t('wordle.newWord', 'New Word')}</button>
                     </div>
                 </div>
             )}
 
-            <div className="flex shrink-0 flex-col gap-[7px] px-1.5" style={{ paddingBottom: 44 }}>
+            <div dir="ltr" className="flex shrink-0 flex-col gap-[7px] px-1.5" style={{ paddingBottom: 44 }}>
                 {KEY_ROWS.map((row, ri) => (
                     <div key={ri} className="flex justify-center gap-[5px]">
                         {row.map(k => {

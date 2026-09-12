@@ -50,7 +50,7 @@ export function EditProfileSheet({ profile, onClose, onSaved }: {
                         <button type="button" onClick={() => setPicker(true)} className="mx-auto block active:opacity-80">
                             <div className="relative mx-auto w-fit rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})` }}>
                                 <img src={avatar} alt="" draggable={false} className="h-24 w-24 rounded-full border-[3px] border-[#141416] object-cover" />
-                                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+                                <span className="absolute -bottom-1 -end-1 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
                                     <Camera className="h-4 w-4 text-white" strokeWidth={2.2} />
                                 </span>
                             </div>

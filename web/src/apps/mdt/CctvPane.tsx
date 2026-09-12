@@ -37,13 +37,13 @@ function Thumb({ camera, live, shot }: { camera: CctvCamera; live: boolean; shot
                 className="absolute inset-0 opacity-[0.22]"
                 style={{ backgroundImage: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 3px)' }}
             />
-            <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
+            <div className="absolute start-1.5 top-1.5 flex items-center gap-1">
                 <span className={`h-[5px] w-[5px] rounded-full ${live ? 'animate-pulse bg-[#ff5a5a]' : 'bg-white/35'}`} />
                 <span className="font-mono text-[8px] font-bold uppercase tracking-[0.14em] text-white/70">
                     {live ? t('mdt.cctvRec', 'REC') : t('mdt.cctvStandby', 'STBY')}
                 </span>
             </div>
-            <Cctv className="absolute bottom-1.5 right-1.5 h-[13px] w-[13px] text-white/45" strokeWidth={2} />
+            <Cctv className="absolute bottom-1.5 end-1.5 h-[13px] w-[13px] text-white/45" strokeWidth={2} />
             <div className="absolute inset-x-0 bottom-0 h-[1px] bg-white/10" />
         </div>
     );
@@ -66,7 +66,7 @@ function Group({ label, cameras, activeId, onPick }: {
                             key={camera.id}
                             type="button"
                             onClick={() => onPick(camera)}
-                            className="flex flex-col gap-1.5 rounded-[14px] p-2 text-left transition-colors"
+                            className="flex flex-col gap-1.5 rounded-[14px] p-2 text-start transition-colors"
                             style={{
                                 background: on ? 'rgba(59,130,246,0.16)' : 'rgba(127,127,127,0.08)',
                                 boxShadow: on ? 'inset 0 0 0 1.5px rgba(59,130,246,0.55)' : undefined,

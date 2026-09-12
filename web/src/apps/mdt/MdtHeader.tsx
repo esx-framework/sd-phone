@@ -64,7 +64,7 @@ export function MdtHeader({ compact = false }: { compact?: boolean }) {
                             />
                             <span
                                 aria-label={me.duty ? t('mdt.onDuty', 'On Duty') : t('mdt.offDuty', 'Off Duty')}
-                                className={`absolute -bottom-px -right-px h-3 w-3 rounded-full ring-2 ring-base ${me.duty ? 'bg-ios-green' : 'bg-ios-gray3'}`}
+                                className={`absolute -bottom-px -end-px h-3 w-3 rounded-full ring-2 ring-base ${me.duty ? 'bg-ios-green' : 'bg-ios-gray3'}`}
                             />
                         </span>
                     </button>

@@ -57,7 +57,7 @@ export function Inbox({ onOpenPostId, onOpenProfile, onSeen, refreshKey }: {
                 ) : notifs.map(n => (
                     <div
                         key={n.id}
-                        className="flex w-full gap-3.5 border-b border-white/10 px-4 py-4 text-left transition-colors active:bg-white/[0.04]"
+                        className="flex w-full gap-3.5 border-b border-white/10 px-4 py-4 text-start transition-colors active:bg-white/[0.04]"
                         role="button"
                         tabIndex={0}
                         onClick={() => { if (n.postId) onOpenPostId(n.postId); else onOpenProfile(n.user.handle); }}
@@ -77,7 +77,7 @@ export function Inbox({ onOpenPostId, onOpenProfile, onSeen, refreshKey }: {
                                     <Avatar size={44} src={n.user.avatar} />
                                 </button>
                                 <p className="min-w-0 flex-1 text-[17px] leading-snug">
-                                    <span className="inline-flex items-center gap-1 font-bold">
+                                    <span dir="auto" className="inline-flex items-center gap-1 font-bold">
                                         {n.user.handle}
                                         {n.user.verified && (
                                             <VerifiedBadge size={15} />

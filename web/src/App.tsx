@@ -8,6 +8,7 @@ import { isCustomPaletteId, rampFor, rampVars } from '@/apps/settings/appearance
 import { accentVars } from '@/apps/settings/appearance/accentRamp';
 import { demoAdminOnly } from '@/core/demo';
 import { registerRuntimeLocales, setAppLabelSource, t } from '@/i18n';
+import { useDirectionStore } from '@/stores/directionStore';
 import { CallLayer } from '@/apps/phone/CallLayer';
 import { CallPeekBanner } from '@/apps/phone/CallPeekBanner';
 import { useCallRing } from '@/apps/phone/calls/useCallRing';
@@ -464,6 +465,7 @@ function AppContent() {
     useNuiEvent('sd-phone:open', useCallback((data) => {
         if (!data) return;
         registerRuntimeLocales(data.locales);
+        useDirectionStore.getState().setForceLtr(data.forceLtr === true);
         if (data.locale) useLocaleStore.getState().applyServerDefault(data.locale);   // server default, unless the player already picked their own
         if (data.mailDomain) setMailDomain(data.mailDomain);
         if (data.number) setNumberFormat(data.number.formats, data.number.length, data.number.custom);
@@ -1595,7 +1597,7 @@ function AppContent() {
                 <button
                     type="button"
                     onClick={() => setSetup(prev => { const next = { ...prev, completed: !prev.completed }; saveSetup(next); return next; })}
-                    className="fixed left-3 top-3 z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
+                    className="fixed start-3 top-3 z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
                 >
                     {showSetup ? 'Exit Setup' : 'Show Setup'}
                 </button>
@@ -1604,7 +1606,7 @@ function AppContent() {
                 <button
                     type="button"
                     onClick={() => { ryDevToggleData(); window.location.reload(); }}
-                    className="fixed left-3 top-12 z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
+                    className="fixed start-3 top-12 z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
                 >
                     {ryDevDataHidden() ? 'Ryde data: off' : 'Ryde data: on'}
                 </button>
@@ -1625,7 +1627,7 @@ function AppContent() {
                             ],
                         },
                     }, '*')}
-                    className="fixed left-3 top-[84px] z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
+                    className="fixed start-3 top-[84px] z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
                 >
                     Payphone
                 </button>
@@ -1634,7 +1636,7 @@ function AppContent() {
                 <button
                     type="button"
                     onClick={() => setHour24(!hour24)}
-                    className="fixed left-3 top-[84px] z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
+                    className="fixed start-3 top-[84px] z-[99999] rounded-md bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20 hover:bg-black/90"
                 >
                     {hour24 ? '24h: on' : '24h: off'}
                 </button>

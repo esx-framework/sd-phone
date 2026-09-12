@@ -73,7 +73,7 @@ export function EditGroupSheet({ groupName, groupAvatar, participants, onCancel,
                                         className="relative active:opacity-80"
                                     >
                                         <GroupAvatar contacts={participants} size={112} avatar={avatar} />
-                                        <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-elevated bg-ios-blue dark:border-surface">
+                                        <span className="absolute bottom-0 end-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-elevated bg-ios-blue dark:border-surface">
                                             <Camera className="h-[19px] w-[19px] text-white" strokeWidth={2} />
                                         </span>
                                     </button>
@@ -103,7 +103,7 @@ export function EditGroupSheet({ groupName, groupAvatar, participants, onCancel,
                                         <MemberRow contact={ME} displayName={t('messages.you', 'You')} />
                                         {participants.map(c => (
                                             <div key={c.id}>
-                                                <div className="ml-[68px] h-[0.5px] bg-hairline/10" />
+                                                <div className="ms-[68px] h-[0.5px] bg-hairline/10" />
                                                 <MemberRow contact={c} displayName={c.name} onRemove={() => setPendingRemove(c)} />
                                             </div>
                                         ))}
@@ -146,7 +146,7 @@ function MemberRow({ contact, displayName, onRemove }: { contact: Contact; displ
                     type="button"
                     onClick={onRemove}
                     aria-label={t('messages.removeMemberAria', 'Remove {name}', { name: displayName })}
-                    className="shrink-0 pl-2 active:opacity-60"
+                    className="shrink-0 ps-2 active:opacity-60"
                 >
                     <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ios-red">
                         <span className="h-[2.5px] w-[13px] rounded-full bg-white" />

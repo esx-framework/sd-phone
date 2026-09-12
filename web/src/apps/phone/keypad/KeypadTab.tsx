@@ -45,11 +45,11 @@ export function KeypadTab({ onAddContact, onCall }: {
                 </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 items-end justify-center px-6 pb-6">
+            <div dir="ltr" className="flex min-h-0 flex-1 items-end justify-center px-6 pb-6">
                 <span className={`${size} tracking-[0.02em] text-black dark:text-white`}>{shown}</span>
             </div>
 
-            <div className="shrink-0 px-6 pb-[44px]">
+            <div dir="ltr" className="shrink-0 px-6 pb-[44px]">
                 <Dialpad onPress={press} />
 
                 <div className="mt-4 grid grid-cols-3 items-center justify-items-center">

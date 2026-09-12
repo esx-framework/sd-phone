@@ -344,7 +344,7 @@ export interface ToastMsg { id: number; text: string; error?: boolean }
 
 export function ToastHost({ toasts }: { toasts: ToastMsg[] }) {
     return (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-50 flex flex-col gap-2">
+        <div className="pointer-events-none absolute bottom-4 end-4 z-50 flex flex-col gap-2">
             {toasts.map(t => (
                 <div
                     key={t.id}

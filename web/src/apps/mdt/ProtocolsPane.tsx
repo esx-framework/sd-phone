@@ -180,7 +180,7 @@ function ProtocolSheet({ protocol, canManage, enter, onEdit }: {
     return (
         <Scroller key="read" className={`h-full ${mdtPanePad} ${enter}`}>
             <div className="flex flex-wrap items-center gap-3">
-                <span className={mdtRef}>{protocol.code}</span>
+                <span dir="ltr" className={mdtRef}>{protocol.code}</span>
                 <Pill tone={PRIORITY_TONE[protocol.priority]}>{priorityLabel(protocol.priority)}</Pill>
                 <Pill tone="green">{categoryLabel(protocol.category)}</Pill>
             </div>
@@ -198,7 +198,7 @@ function ProtocolSheet({ protocol, canManage, enter, onEdit }: {
 
             <div className={`mt-6 ${mdtSectionHeader}`}>{t('mdt.standingOrder', 'Standing order')}</div>
             <MdtCard className="mt-2 p-5">
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
+                <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed text-black dark:text-white">
                     {protocol.body || t('mdt.noProtocolBody', 'No detail recorded for this protocol.')}
                 </p>
             </MdtCard>
@@ -291,12 +291,12 @@ export function ProtocolsPane() {
                         key={p.code}
                         type="button"
                         onClick={() => select(p.code)}
-                        className={`w-full rounded-[10px] px-3 py-2.5 text-left ${
+                        className={`w-full rounded-[10px] px-3 py-2.5 text-start ${
                             p.code === selected ? 'bg-ios-blue/10' : mdtRowHover
                         }`}
                     >
                         <div className="flex items-center gap-2">
-                            <span className={mdtRef}>{p.code}</span>
+                            <span dir="ltr" className={mdtRef}>{p.code}</span>
                             <Pill tone={PRIORITY_TONE[p.priority]}>{priorityLabel(p.priority)}</Pill>
                         </div>
                         <div className={`mt-1 truncate ${mdtRowTitle}`}>{p.label}</div>

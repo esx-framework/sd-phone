@@ -24,7 +24,7 @@ export function AlarmRinging({ name, onStop, onKeep, canSnooze = false, onSnooze
                     {t('clock.alarm', 'Alarm')}
                 </span>
                 {name && (
-                    <span className="text-[23px] font-semibold text-white/95" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.45)' }}>
+                    <span dir="auto" className="text-[23px] font-semibold text-white/95" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.45)' }}>
                         {name}
                     </span>
                 )}

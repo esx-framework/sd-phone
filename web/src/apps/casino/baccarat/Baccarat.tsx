@@ -222,11 +222,12 @@ export function Baccarat({ chips, onChips, onBack, onCashier }: CasinoGameProps)
             >
                 <Coins className="h-[17px] w-[17px]" strokeWidth={2.5} style={{ color: TABLE.chip }} />
                 <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(chips)}</span>
-                <span className="ml-0.5 text-[12px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
+                <span className="ms-0.5 text-[12px] font-semibold text-white/55">{t('casino.chips', 'chips')}</span>
             </button>
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pb-1">
                 <div
+                    dir="ltr"
                     className="flex min-h-[230px] flex-1 flex-col rounded-[26px] px-3 pb-2 pt-3"
                     style={{
                         background: `radial-gradient(120% 70% at 50% 0%, ${FELT.top} 0%, ${FELT.mid} 55%, ${FELT.bot} 100%)`,
@@ -270,7 +271,7 @@ export function Baccarat({ chips, onChips, onBack, onCashier }: CasinoGameProps)
                 </div>
             </div>
 
-            <div className="shrink-0 px-4">
+            <div dir="ltr" className="shrink-0 px-4">
                 <div className="flex gap-2">
                     {MAIN_ROW.map(meta => (
                         <BetSpot
@@ -337,7 +338,7 @@ export function Baccarat({ chips, onChips, onBack, onCashier }: CasinoGameProps)
                     <ToolButton label={t('baccarat.rebet', 'Rebet')} disabled={locked || stakeOf(lastBets) <= 0} onClick={rebet}>
                         <Repeat className="h-[17px] w-[17px]" strokeWidth={2.3} />
                     </ToolButton>
-                    <div className="ml-auto flex flex-col items-end">
+                    <div className="ms-auto flex flex-col items-end">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-white/45">{t('baccarat.total', 'Total')}</span>
                         <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(stake)}</span>
                     </div>

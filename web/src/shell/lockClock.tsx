@@ -159,13 +159,13 @@ export function Clockface({ time, date, config, size, showDate = true, shadow = 
         <div style={timeStyle}>{time}</div>
     );
 
-    const alignClass = config.layout === 'left'  ? 'items-start text-left'
-                     : config.layout === 'right' ? 'items-end text-right'
+    const alignClass = config.layout === 'left'  ? 'items-start text-start'
+                     : config.layout === 'right' ? 'items-end text-end'
                      : 'items-center text-center';
     const filter = shadow ? 'drop-shadow(0 1px 4px rgba(0,0,0,0.4))' : undefined;
 
     return (
-        <div className={`flex select-none flex-col ${alignClass}`} style={{ filter }}>
+        <div dir="ltr" className={`flex select-none flex-col ${alignClass}`} style={{ filter }}>
             {config.layout === 'dateTop' ? <>{dateEl}{timeEl}</> : <>{timeEl}{dateEl}</>}
         </div>
     );

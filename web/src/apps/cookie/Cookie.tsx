@@ -243,7 +243,7 @@ export function Cookie({ onClose: _onClose }: Props) {
             style={{ background: 'linear-gradient(180deg, #FFF6E9 0%, #F6E0B5 52%, #E9C786 100%)' }}
         >
             <div ref={topRef} className="relative flex shrink-0 flex-col">
-                <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+                <div dir="ltr" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                     {rain.map(d => (
                         <span
                             key={d.id}
@@ -268,7 +268,7 @@ export function Cookie({ onClose: _onClose }: Props) {
                 <button
                     type="button"
                     onClick={toggleRain}
-                    className="absolute left-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-semibold active:opacity-60"
+                    className="absolute start-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-semibold active:opacity-60"
                     style={{
                         color:           save.rainOn ? '#9C6B33' : '#AFA79B',
                         backgroundColor: 'rgba(155,107,51,0.12)',
@@ -283,7 +283,7 @@ export function Cookie({ onClose: _onClose }: Props) {
                 <button
                     type="button"
                     onClick={tapReset}
-                    className="absolute right-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-semibold active:opacity-60"
+                    className="absolute end-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-semibold active:opacity-60"
                     style={{
                         color:           confirmReset ? '#fff' : '#9C6B33',
                         backgroundColor: confirmReset ? '#E5163E' : 'rgba(155,107,51,0.12)',
@@ -314,7 +314,7 @@ export function Cookie({ onClose: _onClose }: Props) {
                 </div>
             </div>
 
-            <div ref={zoneRef} className="relative z-10 flex shrink-0 items-center justify-center" style={{ height: 228 }}>
+            <div ref={zoneRef} dir="ltr" className="relative z-10 flex shrink-0 items-center justify-center" style={{ height: 228 }}>
                 <button
                     type="button"
                     onPointerDown={e => { setPressed(true); tapCookie(e); }}
@@ -491,7 +491,7 @@ function StoreTab({ save, onBuy }: { save: SaveState; onBuy: (id: string) => voi
                         type="button"
                         disabled={!can}
                         onClick={() => onBuy(u.id)}
-                        className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-3.5 py-3 text-left transition active:scale-[0.98]"
+                        className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-3.5 py-3 text-start transition active:scale-[0.98]"
                         style={{
                             opacity:   can ? 1 : 0.45,
                             boxShadow: '0 1px 3px rgba(120,72,20,0.10), 0 4px 12px rgba(120,72,20,0.06)',
@@ -507,12 +507,12 @@ function StoreTab({ save, onBuy }: { save: SaveState; onBuy: (id: string) => voi
                         <div className="min-w-0 flex-1">
                             <div className="flex items-baseline gap-1.5">
                                 <span className="truncate text-[16px] font-bold text-[#4A2C12]">{u.name}</span>
-                                {owned > 0 && <span className="text-[12.5px] font-semibold text-[#B07E3E]">×{owned}</span>}
+                                {owned > 0 && <span dir="ltr" className="text-[12.5px] font-semibold text-[#B07E3E]">×{owned}</span>}
                             </div>
                             <div className="truncate text-[13.5px] font-medium text-[#8A5A28]">{u.blurb}</div>
                         </div>
 
-                        <div className="shrink-0 text-right">
+                        <div className="shrink-0 text-end">
                             <div className="text-[15px] font-extrabold text-[#C77D2E]">{fmt(cost)}</div>
                             <div className="text-[10.5px] font-medium uppercase tracking-wide text-[#B79268]">
                                 {u.kind === 'click'
@@ -624,6 +624,7 @@ function LeaderboardTab({ earned, refreshKey, onEditNickname }: {
                             {rank === 1 ? <Crown className="h-[16px] w-[16px]" strokeWidth={2.5} /> : rank}
                         </span>
                         <span
+                            dir="auto"
                             className="min-w-0 flex-1 truncate text-[16px] font-bold"
                             style={{ color: '#4A2C12' }}
                         >

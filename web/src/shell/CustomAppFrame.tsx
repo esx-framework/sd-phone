@@ -592,7 +592,7 @@ export function CustomAppFrame({ appId, onClose }: { appId: string; onClose: () 
                         style={{ opacity: ready ? 0 : 1 }}
                     >
                         <div className="overflow-hidden" style={{ width: 72, height: 72, borderRadius: '22.5%' }}>
-                            <div style={{ width: 60, height: 60, transform: 'scale(1.2)', transformOrigin: '0 0' }}>
+                            <div style={{ width: 60, height: 60, transform: 'scale(1.2)', transformOrigin: 'top var(--dir-start, left)' }}>
                                 <AppIconSVG icon={`custom:${def.id}`} />
                             </div>
                         </div>
@@ -602,7 +602,7 @@ export function CustomAppFrame({ appId, onClose }: { appId: string; onClose: () 
             ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-base">
                     <div className="overflow-hidden" style={{ width: 96, height: 96, borderRadius: '22.5%' }}>
-                        <div style={{ width: 60, height: 60, transform: 'scale(1.6)', transformOrigin: '0 0' }}>
+                        <div style={{ width: 60, height: 60, transform: 'scale(1.6)', transformOrigin: 'top var(--dir-start, left)' }}>
                             <AppIconSVG icon={`custom:${def.id}`} />
                         </div>
                     </div>
@@ -633,7 +633,7 @@ export function CustomAppFrame({ appId, onClose }: { appId: string; onClose: () 
                                         key={i}
                                         type="button"
                                         onClick={() => { const r = ctxResolve.current; ctxResolve.current = null; if (r) r(b.callbackId ?? i); close(); }}
-                                        className={`flex w-full items-center px-4 py-3.5 text-left text-[18px] font-medium active:bg-black/[0.06] dark:active:bg-white/[0.06] ${i < arr.length - 1 ? 'border-b border-hairline/10' : ''}`}
+                                        className={`flex w-full items-center px-4 py-3.5 text-start text-[18px] font-medium active:bg-black/[0.06] dark:active:bg-white/[0.06] ${i < arr.length - 1 ? 'border-b border-hairline/10' : ''}`}
                                         style={{ color: b.color ?? undefined }}
                                     >
                                         {b.title ?? b.text ?? b.label ?? ''}
@@ -788,7 +788,7 @@ function PopupCard({ data, onButton, onDismiss, onInput }: {
                             key={i}
                             type="button"
                             onClick={() => onButton(b.callbackId ?? i)}
-                            className={`flex-1 px-4 py-[13px] text-[18px] active:bg-black/10 dark:active:bg-white/10 ${horizontal && i > 0 ? 'border-l border-black/[0.13] dark:border-white/[0.13]' : ''} ${!horizontal && i > 0 ? 'border-t border-black/[0.13] dark:border-white/[0.13]' : ''}`}
+                            className={`flex-1 px-4 py-[13px] text-[18px] active:bg-black/10 dark:active:bg-white/10 ${horizontal && i > 0 ? 'border-s border-black/[0.13] dark:border-white/[0.13]' : ''} ${!horizontal && i > 0 ? 'border-t border-black/[0.13] dark:border-white/[0.13]' : ''}`}
                             style={{ color: b.color ?? undefined }}
                         >
                             {b.title ?? b.text ?? b.label ?? ''}

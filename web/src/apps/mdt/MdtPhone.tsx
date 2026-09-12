@@ -41,7 +41,7 @@ function MdtPhoneHeader({ me, department, onOpenRecord }: {
             />
             <span
                 aria-label={me.duty ? t('mdt.onDuty', 'On Duty') : t('mdt.offDuty', 'Off Duty')}
-                className={`absolute -bottom-px -right-px h-[10px] w-[10px] rounded-full ring-2 ring-base ${me.duty ? 'bg-ios-green' : 'bg-ios-gray3'}`}
+                className={`absolute -bottom-px -end-px h-[10px] w-[10px] rounded-full ring-2 ring-base ${me.duty ? 'bg-ios-green' : 'bg-ios-gray3'}`}
             />
         </span>
     );

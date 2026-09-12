@@ -109,6 +109,7 @@ export function SendMoney({ balance, allowAnonymous = false, onClose, onSent }: 
                     }`}
                 >
                     <input
+                        dir="ltr"
                         type="tel"
                         inputMode={byId ? 'numeric' : 'tel'}
                         aria-label={byId ? t('banking.recipientPlayerId', 'Recipient player ID') : t('banking.recipientNumber', 'Recipient number')}
@@ -224,9 +225,9 @@ function AmountStage({ balance, target, toLabel, amount, setAmount, anon, setAno
 
             <div className="flex flex-1 flex-col items-center justify-center px-6">
                 <div className="text-[22px] font-medium text-ios-gray">
-                    {t('banking.to', 'To')} <span className="font-semibold text-black dark:text-white">{toLabel}</span>
+                    {t('banking.to', 'To')} <span dir="auto" className="font-semibold text-black dark:text-white">{toLabel}</span>
                 </div>
-                <div className="mt-2 flex items-start justify-center text-black dark:text-white">
+                <div dir="ltr" className="mt-2 flex items-start justify-center text-black dark:text-white">
                     <span className="mt-2 text-[34px] font-light">$</span>
                     <input
                         type="text"

@@ -228,7 +228,7 @@ function HandsetAssembly({ lifted, onHangup }: { lifted: boolean; onHangup: () =
                 onClick={onHangup}
                 title={t('payphone.hangUp', 'Hang up')}
                 aria-label={t('payphone.hangUp', 'Hang up')}
-                className="absolute left-0 top-[52px] h-[390px] w-[104px] rounded-full"
+                className="absolute start-0 top-[52px] h-[390px] w-[104px] rounded-full"
                 style={{ pointerEvents: lifted ? 'auto' : 'none', cursor: 'pointer' }}
             />
         </div>
@@ -265,12 +265,12 @@ function TapedNote({ tilt, children }: { tilt: number; children: ReactNode }) {
         >
             <span
                 aria-hidden
-                className="absolute -top-[7px] left-[10%] h-[14px] w-[52px] -rotate-3"
+                className="absolute -top-[7px] start-[10%] h-[14px] w-[52px] -rotate-3"
                 style={{ background: 'rgba(226,220,200,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }}
             />
             <span
                 aria-hidden
-                className="absolute -top-[6px] right-[8%] h-[13px] w-[44px] rotate-2"
+                className="absolute -top-[6px] end-[8%] h-[13px] w-[44px] rotate-2"
                 style={{ background: 'rgba(226,220,200,0.55)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }}
             />
             {children}
@@ -632,18 +632,18 @@ export function PayphoneUI() {
                         }}
                     />
                     {/* drip staining under the coin slot */}
-                    <div aria-hidden className="pointer-events-none absolute right-[38px] top-[452px] h-[58px] w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg, rgba(74,60,34,0.42), rgba(74,60,34,0))' }} />
-                    <div aria-hidden className="pointer-events-none absolute right-[56px] top-[446px] h-[34px] w-[2px] rounded-full" style={{ background: 'linear-gradient(180deg, rgba(74,60,34,0.3), rgba(74,60,34,0))' }} />
+                    <div aria-hidden className="pointer-events-none absolute end-[38px] top-[452px] h-[58px] w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg, rgba(74,60,34,0.42), rgba(74,60,34,0))' }} />
+                    <div aria-hidden className="pointer-events-none absolute end-[56px] top-[446px] h-[34px] w-[2px] rounded-full" style={{ background: 'linear-gradient(180deg, rgba(74,60,34,0.3), rgba(74,60,34,0))' }} />
                     {/* scratches: a bright fresh one, an old dark one, a short gouge by the cradle */}
-                    <div aria-hidden className="pointer-events-none absolute left-[34%] top-[55%] h-[1.5px] w-[130px] -rotate-[13deg]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.24) 30%, rgba(255,255,255,0.06) 70%, transparent)' }} />
-                    <div aria-hidden className="pointer-events-none absolute right-[10%] bottom-[8%] h-[1.5px] w-[90px] rotate-[8deg]" style={{ background: 'linear-gradient(90deg, transparent, rgba(30,26,16,0.32) 40%, transparent)' }} />
-                    <div aria-hidden className="pointer-events-none absolute left-[128px] top-[120px] h-[2px] w-[40px] rotate-[24deg] rounded-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2) 45%, rgba(20,18,12,0.25) 55%, transparent)' }} />
+                    <div aria-hidden className="pointer-events-none absolute start-[34%] top-[55%] h-[1.5px] w-[130px] -rotate-[13deg]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.24) 30%, rgba(255,255,255,0.06) 70%, transparent)' }} />
+                    <div aria-hidden className="pointer-events-none absolute end-[10%] bottom-[8%] h-[1.5px] w-[90px] rotate-[8deg]" style={{ background: 'linear-gradient(90deg, transparent, rgba(30,26,16,0.32) 40%, transparent)' }} />
+                    <div aria-hidden className="pointer-events-none absolute start-[128px] top-[120px] h-[2px] w-[40px] rotate-[24deg] rounded-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2) 45%, rgba(20,18,12,0.25) 55%, transparent)' }} />
                     {/* ghost of a peeled-off sticker on the lower door */}
-                    <div aria-hidden className="pointer-events-none absolute bottom-[168px] right-[30px] h-[34px] w-[58px] rotate-[4deg] rounded-[3px]" style={{ background: 'rgba(232,234,237,0.26)', boxShadow: 'inset 0 0 6px rgba(60,52,30,0.35)' }} />
+                    <div aria-hidden className="pointer-events-none absolute bottom-[168px] end-[30px] h-[34px] w-[58px] rotate-[4deg] rounded-[3px]" style={{ background: 'rgba(232,234,237,0.26)', boxShadow: 'inset 0 0 6px rgba(60,52,30,0.35)' }} />
                     {/* shallow dent in the skirt */}
-                    <div aria-hidden className="pointer-events-none absolute bottom-[58px] right-[74px] h-[26px] w-[42px] rounded-[50%]" style={{ background: 'radial-gradient(ellipse at 40% 35%, rgba(0,0,0,0.16), transparent 70%)', boxShadow: 'inset 1px 2px 3px rgba(0,0,0,0.22), inset -1px -1px 2px rgba(255,255,255,0.16)' }} />
+                    <div aria-hidden className="pointer-events-none absolute bottom-[58px] end-[74px] h-[26px] w-[42px] rounded-[50%]" style={{ background: 'radial-gradient(ellipse at 40% 35%, rgba(0,0,0,0.16), transparent 70%)', boxShadow: 'inset 1px 2px 3px rgba(0,0,0,0.22), inset -1px -1px 2px rgba(255,255,255,0.16)' }} />
                     {/* mounting screws */}
-                    {([['left-2 top-2', 40], ['left-2 bottom-2', -25], ['right-2 bottom-2', 75]] as const).map(([pos, angle]) => (
+                    {([['start-2 top-2', 40], ['start-2 bottom-2', -25], ['end-2 bottom-2', 75]] as const).map(([pos, angle]) => (
                         <span
                             key={pos}
                             aria-hidden
@@ -661,13 +661,13 @@ export function PayphoneUI() {
                         type="button"
                         onClick={close}
                         aria-label={t('payphone.leave', 'Leave payphone')}
-                        className="absolute right-2.5 top-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full text-black/35 hover:text-black/65 active:opacity-60"
+                        className="absolute end-2.5 top-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full text-black/35 hover:text-black/65 active:opacity-60"
                     >
                         <X className="h-[18px] w-[18px]" strokeWidth={2.6} />
                     </button>
 
                     {/* The handset, seated in its housing on the face. */}
-                    <div className="absolute left-3 top-5 z-10 select-none">
+                    <div className="absolute start-3 top-5 z-10 select-none">
                         <HandsetAssembly lifted={inCall} onHangup={hangup} />
                     </div>
 
@@ -693,10 +693,10 @@ export function PayphoneUI() {
                             boxShadow: '0 2px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6)',
                         }}
                     >
-                        <Rivet className="left-1.5 top-1.5" />
-                        <Rivet className="right-1.5 top-1.5" />
-                        <Rivet className="bottom-1.5 left-1.5" />
-                        <Rivet className="bottom-1.5 right-1.5" />
+                        <Rivet className="start-1.5 top-1.5" />
+                        <Rivet className="end-1.5 top-1.5" />
+                        <Rivet className="bottom-1.5 start-1.5" />
+                        <Rivet className="bottom-1.5 end-1.5" />
                         <div className="flex items-center gap-3">
                             <div className="grid w-[132px] shrink-0 grid-cols-3 gap-1.5" style={{ color: '#41454e' }}>
                                 {[Coins, Hash, Phone].map((Icon, i) => (
@@ -881,7 +881,7 @@ export function PayphoneUI() {
                                             $1
                                         </div>
                                         <div
-                                            className="pointer-events-none absolute inset-y-0 left-0 w-[55%]"
+                                            className="pointer-events-none absolute inset-y-0 start-0 w-[55%]"
                                             style={{
                                                 background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)',
                                                 animation: `ppCoinShine ${COIN_DROP_S} ease-out forwards`,
@@ -949,7 +949,7 @@ export function PayphoneUI() {
                                         key={f.phone}
                                         type="button"
                                         onClick={() => { if (phase === 'idle') setDigits(f.phone); }}
-                                        className="flex w-full items-baseline justify-between gap-2 text-left active:opacity-60"
+                                        className="flex w-full items-baseline justify-between gap-2 text-start active:opacity-60"
                                     >
                                         <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold leading-[21px] text-[#3f3627]" style={NOTE_LABEL}>{f.name}</span>
                                         <span className="shrink-0 text-[14.5px] font-semibold leading-[21px] text-[#27357f]" style={NOTE_NUMBER}>{formatPhone(f.phone)}</span>

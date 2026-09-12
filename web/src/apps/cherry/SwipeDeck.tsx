@@ -3,6 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, TransitionEvent 
 import { Cherry as CherryGlyph, Heart, RotateCcw, X } from 'lucide-react';
 
 import { t } from '@/i18n';
+import { dirSign } from '@/stores/directionStore';
 import { portalToPhoneScreen } from '@/ui/portal';
 import { CHERRY, type Match, type SwipeProfile } from './data';
 
@@ -102,7 +103,7 @@ export function SwipeDeck({ profiles, canReset, lockedIds, onSwipe, onRewind, on
     }
     function onPointerMove(e: ReactPointerEvent) {
         if (!dragging.current) return;
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         const dy = e.clientY - start.current.y;
         moved.current = Math.max(moved.current, Math.abs(dx) + Math.abs(dy));
         setPos({ dx, dy: dy * 0.4 });
@@ -110,12 +111,13 @@ export function SwipeDeck({ profiles, canReset, lockedIds, onSwipe, onRewind, on
     function onPointerUp(e: ReactPointerEvent) {
         if (!dragging.current) return;
         dragging.current = false;
-        const dx = e.clientX - start.current.x;
+        const dx = (e.clientX - start.current.x) * dirSign();
         if (moved.current < 10) {
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const right = (e.clientX - rect.left) > rect.width * 0.4;
+            const frac = (e.clientX - rect.left) / Math.max(1, rect.width);
+            const forward = (dirSign() > 0 ? frac : 1 - frac) > 0.4;
             const count = top?.photos.length ?? 1;
-            setPhotoIdx(i => right ? Math.min(i + 1, count - 1) : Math.max(i - 1, 0));
+            setPhotoIdx(i => forward ? Math.min(i + 1, count - 1) : Math.max(i - 1, 0));
             setPos({ dx: 0, dy: 0 });
             return;
         }
@@ -169,7 +171,7 @@ export function SwipeDeck({ profiles, canReset, lockedIds, onSwipe, onRewind, on
                 <div
                     className="absolute inset-0 z-20 touch-none select-none"
                     style={{
-                        transform:  `translate(${pos.dx}px, ${pos.dy}px) rotate(${rot}deg)`,
+                        transform:  `translate(calc(var(--dir-x, 1) * ${pos.dx}px), ${pos.dy}px) rotate(calc(var(--dir-x, 1) * ${rot}deg))`,
                         transition: animating ? 'transform 0.32s cubic-bezier(0.22,1,0.36,1)' : 'none',
                     }}
                     onPointerDown={onPointerDown}
@@ -262,10 +264,10 @@ function Card({ profile, photoIdx, onPickPhoto }: {
 
             <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-5 pb-5 pt-24">
                 <div className="flex items-end gap-2.5">
-                    <span className="text-[34px] font-bold leading-none text-white">{profile.name}</span>
+                    <span dir="auto" className="text-[34px] font-bold leading-none text-white">{profile.name}</span>
                     <span className="text-[28px] font-medium leading-none text-white/95">{profile.age}</span>
                 </div>
-                <p className="mt-2 text-[18px] font-semibold leading-snug text-white/95" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                <p dir="auto" className="mt-2 text-[18px] font-semibold leading-snug text-white/95" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                     {profile.bio}
                 </p>
             </div>
@@ -276,11 +278,11 @@ function Card({ profile, photoIdx, onPickPhoto }: {
 function Stamp({ side, opacity }: { side: 'like' | 'nope'; opacity: number }) {
     const like = side === 'like';
     const style: CSSProperties = {
-        transform:   `rotate(${like ? -16 : 16}deg)`,
+        transform:   `rotate(calc(var(--dir-x, 1) * ${like ? -16 : 16}deg))`,
         borderColor: like ? CHERRY.like : CHERRY.nope,
         color:       like ? CHERRY.like : CHERRY.nope,
         opacity,
-        ...(like ? { left: 22 } : { right: 22 }),
+        ...(like ? { insetInlineStart: 22 } : { insetInlineEnd: 22 }),
     };
     return (
         <div className="pointer-events-none absolute top-10 rounded-lg border-[3.5px] px-3 py-0.5 text-[30px] font-extrabold uppercase tracking-wide" style={style}>
@@ -382,7 +384,7 @@ export function MatchOverlay({ profile, onSend, onClose }: {
                     <div className="relative -mt-2">
                         <p
                             aria-hidden
-                            className="absolute left-0 top-[34%] w-full select-none text-[84px] font-black uppercase italic leading-none"
+                            className="absolute start-0 top-[34%] w-full select-none text-[84px] font-black uppercase italic leading-none"
                             style={{ WebkitTextStroke: '2px rgba(0,0,0,0.35)', color: 'transparent', padding: '0 0.1em' }}
                         >
                             {t('cherry.matchExclaim', 'Match!')}
@@ -407,7 +409,7 @@ export function MatchOverlay({ profile, onSend, onClose }: {
 
                 <p className="text-[24px] font-semibold italic text-white">{t('cherry.likedYouBack', '{name} liked you back', { name: profile.name })}</p>
 
-                <div className="mt-6 flex w-full items-center rounded-[14px] bg-white pr-2.5">
+                <div className="mt-6 flex w-full items-center rounded-[14px] bg-white pe-2.5">
                     <input
                         value={text}
                         onChange={e => setText(e.target.value)}

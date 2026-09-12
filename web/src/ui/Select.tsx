@@ -141,7 +141,7 @@ export function Select<T extends string = string>({
                 maxHeight:       style?.maxHeight,
                 minWidth:        style?.minWidth,
                 opacity:         style ? 1 : 0,
-                transformOrigin: style?.origin ?? 'top left',
+                transformOrigin: style?.origin ?? 'top var(--dir-start, left)',
                 animation:       style ? 'ios-alert-in 0.16s cubic-bezier(0.32,0.72,0,1)' : undefined,
             }}
         >
@@ -159,7 +159,7 @@ export function Select<T extends string = string>({
                             onPointerEnter={() => !option.disabled && setActive(index)}
                             onClick={() => commit(index)}
                             className={[
-                                'flex w-full items-center gap-2 text-left transition-colors duration-100',
+                                'flex w-full items-center gap-2 text-start transition-colors duration-100',
                                 ROW[size],
                                 option.disabled
                                     ? 'text-black/30 dark:text-white/30'
@@ -192,7 +192,7 @@ export function Select<T extends string = string>({
                 onKeyDown={onKeyDown}
                 className={[
                     TRIGGER[size],
-                    'flex items-center gap-1.5 text-left',
+                    'flex items-center gap-1.5 text-start',
                     disabled ? 'opacity-50' : '',
                     className,
                 ].join(' ')}

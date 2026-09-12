@@ -114,10 +114,10 @@ function Preview() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <div className="max-w-[78%] self-start rounded-[16px] rounded-bl-[5px] bg-elevated px-3.5 py-2 text-[14px] text-white">
+                    <div className="max-w-[78%] self-start rounded-[16px] rounded-es-[5px] bg-elevated px-3.5 py-2 text-[14px] text-white">
                         {t('settings.previewBubbleIn', 'How does this shade look?')}
                     </div>
-                    <div className="max-w-[78%] self-end rounded-[16px] rounded-br-[5px] bg-ios-blue px-3.5 py-2 text-[14px] text-white">
+                    <div className="max-w-[78%] self-end rounded-[16px] rounded-ee-[5px] bg-ios-blue px-3.5 py-2 text-[14px] text-white">
                         {t('settings.previewBubbleOut', 'Nice, much better')}
                     </div>
                 </div>

@@ -213,7 +213,7 @@ export function Flappy({ onClose: _onClose }: Props) {
                             <button
                                 type="button"
                                 onClick={toMenu}
-                                className="absolute left-4 flex items-center text-white active:opacity-60"
+                                className="absolute start-4 flex items-center text-white active:opacity-60"
                                 aria-label={t('games.back', 'Back')}
                             >
                                 <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
@@ -241,6 +241,7 @@ export function Flappy({ onClose: _onClose }: Props) {
 
                         <div className="flex flex-1 items-start justify-center">
                             <div
+                                dir="ltr"
                                 onPointerDown={(e) => { e.preventDefault(); flap(); }}
                                 className="relative overflow-hidden rounded-[26px]"
                                 style={{
@@ -252,9 +253,9 @@ export function Flappy({ onClose: _onClose }: Props) {
                                     cursor: 'pointer',
                                 }}
                             >
-                                <div className="pointer-events-none absolute left-7 top-12 h-7 w-16 rounded-full bg-white/55" />
-                                <div className="pointer-events-none absolute right-10 top-24 h-6 w-14 rounded-full bg-white/45" />
-                                <div className="pointer-events-none absolute left-24 top-40 h-5 w-12 rounded-full bg-white/35" />
+                                <div className="pointer-events-none absolute start-7 top-12 h-7 w-16 rounded-full bg-white/55" />
+                                <div className="pointer-events-none absolute end-10 top-24 h-6 w-14 rounded-full bg-white/45" />
+                                <div className="pointer-events-none absolute start-24 top-40 h-5 w-12 rounded-full bg-white/35" />
 
                                 {pipes.map(p => (
                                     <PipePair key={p.id} x={p.x} gapY={p.gapY} skyHeight={ground} />
@@ -372,11 +373,11 @@ function PipePair({ x, gapY, skyHeight }: { x: number; gapY: number; skyHeight: 
 
     return (
         <div className="pointer-events-none absolute top-0 z-10" style={{ left: x, width: PIPE_W }}>
-            <div className="absolute left-0 top-0" style={{ width: PIPE_W, height: Math.max(0, topH) }}>
+            <div className="absolute start-0 top-0" style={{ width: PIPE_W, height: Math.max(0, topH) }}>
                 <div className="absolute inset-x-0 top-0 rounded-b-none" style={{ height: '100%', background: body, borderRight: '2px solid rgba(0,0,0,0.08)' }} />
                 <div className="absolute inset-x-[-4px] bottom-0 rounded-[4px]" style={{ height: 18, background: body, boxShadow: lipShadow, border: '1px solid rgba(0,0,0,0.08)' }} />
             </div>
-            <div className="absolute left-0" style={{ top: botY, width: PIPE_W, height: Math.max(0, botH) }}>
+            <div className="absolute start-0" style={{ top: botY, width: PIPE_W, height: Math.max(0, botH) }}>
                 <div className="absolute inset-x-0 top-0" style={{ height: '100%', background: body, borderRight: '2px solid rgba(0,0,0,0.08)' }} />
                 <div className="absolute inset-x-[-4px] top-0 rounded-[4px]" style={{ height: 18, background: body, boxShadow: lipShadow, border: '1px solid rgba(0,0,0,0.08)' }} />
             </div>

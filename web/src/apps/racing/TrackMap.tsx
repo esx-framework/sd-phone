@@ -33,7 +33,7 @@ export function TrackMap({ track, onBack }: { track: TrackMapTrack; onBack: () =
             <button
                 type="button"
                 onClick={onBack}
-                className="-ml-1.5 flex shrink-0 items-center gap-0.5 py-1 pr-2 text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
+                className="-ms-1.5 flex shrink-0 items-center gap-0.5 py-1 pe-2 text-[15px] font-semibold text-ios-blue transition-opacity duration-150 hover:opacity-85 active:opacity-60"
             >
                 <ChevronLeft className="h-[20px] w-[20px]" strokeWidth={2.4} />
                 {t('racing.backToTrack', 'Track')}

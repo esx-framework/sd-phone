@@ -29,6 +29,7 @@ import { WidgetGallery } from './widgets/WidgetGallery';
 import { WidgetStack } from './widgets/WidgetStack';
 import { addCard, cardsOf, patchCard, removeCard } from './widgets/stack';
 import { t, appLabel } from '@/i18n';
+import { dirSign, useIsRtl } from '@/stores/directionStore';
 
 
 const { w: SCREEN_W, h: SCREEN_H } = device.screen;
@@ -167,6 +168,8 @@ export interface HomescreenProps {
 export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, onUninstall, savedLayout, onLayoutChange, onEditingChange, homeActive = true, bloomOnMount = true }: HomescreenProps) {
     const { blurHome, dockStyle, wallpaperParallax } = useTheme('blurHome', 'dockStyle', 'wallpaperParallax');
     const grid = useGrid();
+    const rtl = useIsRtl();
+    const glassX = (x: number, w: number) => (rtl ? SCREEN_W - x - w : x);
     const { cols: COLS, rows: ROWS, icon: ICON, rowY0: ROW_Y0, rowStride: ROW_STRIDE, stripTop } = grid;
     const TILE = ICON;
     const dockHidden = dockStyle === 'hidden';
@@ -401,7 +404,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
         function move(e: PointerEvent) {
             const g = dragWStart.current;
-            const x = g.x + (e.clientX - g.px) / g.zoom;
+            const x = g.x + ((e.clientX - g.px) * dirSign()) / g.zoom;
             const y = g.y + (e.clientY - g.py) / g.zoom;
             setDragW(d => (d && d.uid === uid ? { uid, x, y } : d));
             // Which visible page the tile is over, so it can be dropped on the second one rather
@@ -690,12 +693,13 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         if (dragId) { onIconMove(e); return; }
         if (!isDraggingRef.current) return;
         longPressMove(e);
-        const dx = e.clientX - startXRef.current, dy = e.clientY - startYRef.current;
+        const sign = dirSign();
+        const dx = (e.clientX - startXRef.current) * sign, dy = e.clientY - startYRef.current;
         if (!lockedAxis.current && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) lockedAxis.current = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
         if (lockedAxis.current !== 'h') return;
         if (!capturedRef.current) { capturedRef.current = true; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }
         const dt = e.timeStamp - lastTRef.current;
-        if (dt > 0) velRef.current = (e.clientX - lastXRef.current) / dt;
+        if (dt > 0) velRef.current = ((e.clientX - lastXRef.current) * sign) / dt;
         lastXRef.current = e.clientX; lastTRef.current = e.timeStamp;
         const pg = pageRef.current;
         const clamped = Math.max(-(lastPage - pg) * SCREEN_W, Math.min(pg * SCREEN_W, dx));
@@ -772,7 +776,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     function onIconMove(e: ReactPointerEvent) {
         if (!dragId) return;
         const z = grabZoom.current;
-        const x = grabSlot.current.x + (e.clientX - startClient.current.x) / z;
+        const x = grabSlot.current.x + ((e.clientX - startClient.current.x) * dirSign()) / z;
         const y = grabSlot.current.y + (e.clientY - startClient.current.y) / z;
         setDragPos({ x, y });
         const onDock = isFolderId(dragId) ? null : dockHitAt(e.clientX, e.clientY);
@@ -940,7 +944,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
     const parallaxOn = wallpaperParallax;
     const fracPage = page - dragX / SCREEN_W;
     const parallaxSpan = Math.max(1, visiblePages - 1);
-    const parallaxTransform = `translateX(${(1 - (fracPage / parallaxSpan) * 2) * PARALLAX_SHIFT}px) scale(${blurHome ? 1.08 : PARALLAX_SCALE})`;
+    const parallaxTransform = `translateX(calc(var(--dir-x, 1) * ${(1 - (fracPage / parallaxSpan) * 2) * PARALLAX_SHIFT}px)) scale(${blurHome ? 1.08 : PARALLAX_SCALE})`;
 
     const parallaxReady = useRef(false);
     useEffect(() => { parallaxReady.current = parallaxOn; }, [parallaxOn]);
@@ -959,7 +963,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
         // centring itself on the seam.
         <div
             ref={rootRef}
-            className="absolute inset-y-0 left-0 select-none"
+            className="absolute inset-y-0 start-0 select-none"
             style={{
                 left:  splitPane && splitSide === 'left'  ? '50%' : 0,
                 right: splitPane && splitSide === 'right' ? '50%' : 0,
@@ -996,7 +1000,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             })()}
 
             {editing && (
-                <div className="absolute left-0 right-0 top-[10px] z-50 flex items-center justify-between px-5">
+                <div className="absolute start-0 end-0 top-[10px] z-50 flex items-center justify-between px-5">
                     <div className="flex items-center gap-2">
                         <button type="button" aria-label={t('shell.getApps','Get apps')} onClick={openAppStore} className="flex h-[34px] w-[42px] items-center justify-center rounded-full border border-white/25 bg-white/20 backdrop-blur-md active:opacity-70">
                             <Plus className="h-5 w-5 text-white" strokeWidth={2.6} />
@@ -1025,7 +1029,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                     style={{
                         display: 'flex',
                         width: `${renderPages.length * SCREEN_W}px`,
-                        transform: `translateX(${tx}px)`,
+                        transform: `translateX(calc(var(--dir-x, 1) * ${tx}px))`,
                         transition: isDraggingRef.current ? 'none' : 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
                         willChange: 'transform',
                     }}
@@ -1035,7 +1039,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                             {editing && dragId && pi === overPage && padCell !== null && !(pi === fromPageRef.current && padCell === fromCell.current) && (
                                 <div
                                     className="pointer-events-none absolute rounded-[18px] border border-white/40 bg-white/15"
-                                    style={{ left: 0, top: 0, width: ICON, height: ICON, transform: `translate(${slot(padCell).x}px, ${slot(padCell).y}px)` }}
+                                    style={{ insetInlineStart: 0, top: 0, width: ICON, height: ICON, transform: `translate(calc(var(--dir-x, 1) * ${slot(padCell).x}px), ${slot(padCell).y}px)` }}
                                 />
                             )}
                             {/* Landing pad under the dragged widget, so the snap target is visible. */}
@@ -1043,8 +1047,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                 <div
                                     className="pointer-events-none absolute rounded-[22px] border border-white/40 bg-white/10"
                                     style={{
-                                        left: 0, top: 0, width: dragWidgetBox.width, height: dragWidgetBox.height,
-                                        transform: `translate(${slot(dropPreview.row * COLS + dropPreview.col).x}px, ${slot(dropPreview.row * COLS + dropPreview.col).y}px)`,
+                                        insetInlineStart: 0, top: 0, width: dragWidgetBox.width, height: dragWidgetBox.height,
+                                        transform: `translate(calc(var(--dir-x, 1) * ${slot(dropPreview.row * COLS + dropPreview.col).x}px), ${slot(dropPreview.row * COLS + dropPreview.col).y}px)`,
                                     }}
                                 />
                             )}
@@ -1060,8 +1064,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                     <div
                                         onPointerDown={e => onWidgetDown(e, w)}
                                         style={{
-                                            position: 'absolute', left: 0, top: 0,
-                                            transform: `translate(${pos.x}px, ${pos.y}px)`,
+                                            position: 'absolute', insetInlineStart: 0, top: 0,
+                                            transform: `translate(calc(var(--dir-x, 1) * ${pos.x}px), ${pos.y}px)`,
                                             transition: 'transform 0.26s cubic-bezier(0.2,0.8,0.3,1)',
                                             zIndex: 1,
                                             touchAction: 'none',
@@ -1072,7 +1076,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                             '--glass-img': `url(${resolveWallpaper(wallpaper)})`,
                                             '--glass-w': `${SCREEN_W}px`,
                                             '--glass-h': `${SCREEN_H}px`,
-                                            '--glass-x': `${-pos.x}px`,
+                                            '--glass-x': `${-glassX(pos.x, width)}px`,
                                             '--glass-y': `${-(stripTop + pos.y)}px`,
                                         } as CSSProperties}
                                     >
@@ -1133,7 +1137,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                                 aria-label={cards.length > 1 ? t('widgets.removeCard', 'Remove from stack') : t('widgets.remove', 'Remove widget')}
                                                 onPointerDown={e => e.stopPropagation()}
                                                 onClick={e => { e.stopPropagation(); dropCard(w.uid, at); }}
-                                                className="absolute -left-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
+                                                className="absolute -start-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
                                                 style={{ border: '0.5px solid rgba(255,255,255,0.25)' }}
                                             >
                                                 <Minus className="h-[15px] w-[15px]" strokeWidth={3} />
@@ -1143,7 +1147,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                                 aria-label={t('widgets.addToStack', 'Add to stack')}
                                                 onPointerDown={e => e.stopPropagation()}
                                                 onClick={e => { e.stopPropagation(); setStackFor(w.uid); }}
-                                                className="absolute -right-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
+                                                className="absolute -end-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
                                                 style={{ border: '0.5px solid rgba(255,255,255,0.25)' }}
                                             >
                                                 <Plus className="h-[15px] w-[15px]" strokeWidth={3} />
@@ -1166,7 +1170,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
                                 if (!editing) {
                                     return (
-                                        <div key={id} style={{ position: 'absolute', left: 0, top: 0, width: ICON, transform: `translate(${s.x}px, ${s.y}px)` }}>
+                                        <div key={id} style={{ position: 'absolute', insetInlineStart: 0, top: 0, width: ICON, transform: `translate(calc(var(--dir-x, 1) * ${s.x}px), ${s.y}px)` }}>
                                             {/* Scale/opacity live on this inner div so the positioned parent's translate is untouched. */}
                                             <div style={bloom ? { animation: `${folder ? 'home-folder-in' : 'home-icon-in'} 0.38s cubic-bezier(0.34,1.3,0.64,1) both`, animationDelay: `${li * 20}ms` } : undefined}>
                                                 {folder
@@ -1188,7 +1192,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                         <div
                                             key={id}
                                             onPointerDown={e => onIconDown(e, id, li, pi)}
-                                            style={{ position: 'absolute', left: 0, top: 0, width: ICON, transform: `translate(${pos.x}px, ${pos.y}px)`, transition: 'transform 0.26s cubic-bezier(0.2,0.8,0.3,1)', zIndex: isMergeTarget ? 2 : 1 }}
+                                            style={{ position: 'absolute', insetInlineStart: 0, top: 0, width: ICON, transform: `translate(calc(var(--dir-x, 1) * ${pos.x}px), ${pos.y}px)`, transition: 'transform 0.26s cubic-bezier(0.2,0.8,0.3,1)', zIndex: isMergeTarget ? 2 : 1 }}
                                         >
                                             <div className="animate-app-jiggle" style={{ animationDelay: `${jiggleDelay(id)}ms` }}>
                                                 <FolderTile label={def!.name} apps={folderApps(fkey)} badge={folderBadge(fkey)} merging={isMergeTarget} onOpen={() => { /* edit mode: drag, don't open */ }} />
@@ -1207,8 +1211,8 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                                         key={id}
                                         onPointerDown={e => onIconDown(e, id, li, pi)}
                                         style={{
-                                            position: 'absolute', left: 0, top: 0, width: ICON,
-                                            transform: `translate(${pos.x}px, ${pos.y}px)`,
+                                            position: 'absolute', insetInlineStart: 0, top: 0, width: ICON,
+                                            transform: `translate(calc(var(--dir-x, 1) * ${pos.x}px), ${pos.y}px)`,
                                             transition: 'transform 0.26s cubic-bezier(0.2,0.8,0.3,1)',
                                             zIndex: 1,
                                         }}
@@ -1223,9 +1227,9 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
                 {pillAt && (
                     <div
-                        className="pointer-events-none absolute left-0 top-0 z-[60] whitespace-nowrap rounded-full bg-black/85 px-3.5 py-2 font-sf text-[14px] font-semibold leading-none tracking-[-0.01em] text-white backdrop-blur-xl"
+                        className="pointer-events-none absolute start-0 top-0 z-[60] whitespace-nowrap rounded-full bg-black/85 px-3.5 py-2 font-sf text-[14px] font-semibold leading-none tracking-[-0.01em] text-white backdrop-blur-xl"
                         style={{
-                            transform: `translate(${pillAt.x}px, ${pillAt.y}px) translateX(-50%)`,
+                            transform: `translate(calc(var(--dir-x, 1) * ${pillAt.x}px), ${pillAt.y}px) translateX(calc(var(--dir-x, 1) * -50%))`,
                             border: '0.5px solid rgba(255,255,255,0.28)',
                             boxShadow: '0 6px 20px rgba(0,0,0,0.45)',
                         }}
@@ -1239,7 +1243,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             </div>
 
             {editing && dragId && (
-                <div className="pointer-events-none absolute left-0 top-0 z-[60]" style={{ width: ICON, transform: `translate(${dragPos.x}px, ${stripTop + dragPos.y}px)` }}>
+                <div className="pointer-events-none absolute start-0 top-0 z-[60]" style={{ width: ICON, transform: `translate(calc(var(--dir-x, 1) * ${dragPos.x}px), ${stripTop + dragPos.y}px)` }}>
                     {isFolderId(dragId)
                         ? <div style={{ transform: 'scale(1.1)' }}><FolderTile label={folders[folderKeyOf(dragId)]?.name ?? ''} apps={folderApps(folderKeyOf(dragId))} badge={folderBadge(folderKeyOf(dragId))} onOpen={() => { /* lifted */ }} /></div>
                         : appMap.get(dragId) && <EditTile app={appMap.get(dragId)!} dragging swapTarget={false} plopping={false} removable={false} merging={false} onRemove={() => { /* lifted */ }} />}
@@ -1248,15 +1252,15 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
 
             {dragW && dragWidget && dragWidgetDef && dragWidgetBox && dragWidgetPos && (
                 <div
-                    className="absolute left-0 top-0 z-[60]"
+                    className="absolute start-0 top-0 z-[60]"
                     style={{
-                        transform: `translate(${dragW.x}px, ${stripTop + dragW.y}px) scale(1.06)`,
+                        transform: `translate(calc(var(--dir-x, 1) * ${dragW.x}px), ${stripTop + dragW.y}px) scale(1.06)`,
                         touchAction: 'none',
                         filter: 'drop-shadow(0 12px 22px rgba(0,0,0,0.45))',
                         '--glass-img': `url(${resolveWallpaper(wallpaper)})`,
                         '--glass-w': `${SCREEN_W}px`,
                         '--glass-h': `${SCREEN_H}px`,
-                        '--glass-x': `${-dragWidgetPos.x}px`,
+                        '--glass-x': `${-glassX(dragWidgetPos.x, dragWidgetBox.width)}px`,
                         '--glass-y': `${-(stripTop + dragWidgetPos.y)}px`,
                     } as CSSProperties}
                 >
@@ -1270,7 +1274,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                             aria-label={t('widgets.remove', 'Remove widget')}
                             onPointerDown={e => e.stopPropagation()}
                             onClick={e => { e.stopPropagation(); removeWidget(dragWidget.uid); }}
-                            className="absolute -left-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
+                            className="absolute -start-1.5 -top-1.5 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#1c1c1e] text-white shadow-lg"
                             style={{ border: '0.5px solid rgba(255,255,255,0.25)' }}
                         >
                             <Minus className="h-[15px] w-[15px]" strokeWidth={3} />
@@ -1279,7 +1283,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
                 </div>
             )}
 
-            <div className="absolute left-0 right-0 z-10 flex justify-center" style={{ bottom: DOTS_BOTTOM }}>
+            <div className="absolute start-0 end-0 z-10 flex justify-center" style={{ bottom: DOTS_BOTTOM }}>
                 {lastPage > 0 && (
                     <div className="flex items-center gap-[7px] rounded-full bg-black/35 px-2.5 py-[7px] shadow-sm backdrop-blur-md">
                         {renderPages.map((_, i) => {
@@ -1301,7 +1305,7 @@ export function Homescreen({ apps, dock, firstPageApps, wallpaper, onLaunchApp, 
             <div
                 ref={dockRef}
                 className={DOCK_FILL
-                    ? 'absolute bottom-5 left-4 right-4 z-10'
+                    ? 'absolute bottom-5 start-4 end-4 z-10'
                     : 'absolute bottom-5 left-1/2 z-10 -translate-x-1/2'}
                 onPointerDown={armLongPress}
                 onPointerMove={longPressMove}
@@ -1432,7 +1436,7 @@ function EditTile({ app, dragging, swapTarget, plopping, removable, merging, bad
                 </div>
                 {!dragging && <AppBadge count={badge} />}
                 {removable && (
-                    <button type="button" aria-label={t('shell.removeApp','Remove {label}', { label: appLabel(app) })} onPointerDown={e => e.stopPropagation()} onClick={onRemove} className="absolute -left-[7px] -top-[7px] flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90">
+                    <button type="button" aria-label={t('shell.removeApp','Remove {label}', { label: appLabel(app) })} onPointerDown={e => e.stopPropagation()} onClick={onRemove} className="absolute -start-[7px] -top-[7px] flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90">
                         <Minus className="h-[16px] w-[16px] text-black/75" strokeWidth={3} />
                     </button>
                 )}
@@ -1629,7 +1633,7 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
             </div>
 
             {localEdit && (
-                <button type="button" onPointerDown={e => e.stopPropagation()} onClick={() => setLocalEdit(false)} className="absolute right-5 top-[58px] z-20 rounded-full border border-white/25 bg-white/20 px-4 py-1.5 text-[15px] font-semibold text-white backdrop-blur-md active:opacity-70">
+                <button type="button" onPointerDown={e => e.stopPropagation()} onClick={() => setLocalEdit(false)} className="absolute end-5 top-[58px] z-20 rounded-full border border-white/25 bg-white/20 px-4 py-1.5 text-[15px] font-semibold text-white backdrop-blur-md active:opacity-70">
                     {t('shell.done','Done')}
                 </button>
             )}
@@ -1693,7 +1697,7 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
                                 }}
                             >
                                 {isOver && (
-                                    <div className="pointer-events-none absolute left-0 top-0" style={{ width: TILE, height: TILE, borderRadius: '27.6%', boxShadow: '0 0 0 3.5px rgba(255,255,255,0.92), 0 2px 12px rgba(0,0,0,0.42)' }} />
+                                    <div className="pointer-events-none absolute start-0 top-0" style={{ width: TILE, height: TILE, borderRadius: '27.6%', boxShadow: '0 0 0 3.5px rgba(255,255,255,0.92), 0 2px 12px rgba(0,0,0,0.42)' }} />
                                 )}
                                 <div
                                     className={plopIds.has(a.id) ? 'animate-plop' : (jiggle ? 'animate-app-jiggle' : '')}
@@ -1707,7 +1711,7 @@ function FolderOverlay({ name, apps, badges, editing: homeEditing, autoEdit, wal
                                         aria-label={t('shell.removeFromFolder','Remove {label} from folder', { label: a.label })}
                                         onPointerDown={e => e.stopPropagation()}
                                         onClick={() => onEject(a.id)}
-                                        className="absolute -left-[6px] -top-[6px] z-10 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90"
+                                        className="absolute -start-[6px] -top-[6px] z-10 flex h-[24px] w-[24px] items-center justify-center rounded-full bg-[#e4e4e6] shadow-[0_1px_3px_rgba(0,0,0,0.4)] active:scale-90"
                                     >
                                         <Minus className="h-[16px] w-[16px] text-black/75" strokeWidth={3} />
                                     </button>

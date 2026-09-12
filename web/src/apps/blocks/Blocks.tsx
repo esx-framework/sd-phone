@@ -306,7 +306,7 @@ export function Blocks({ onClose: _onClose }: Props) {
                             <button
                                 type="button"
                                 onClick={toMenu}
-                                className="absolute left-3 flex items-center active:opacity-60"
+                                className="absolute start-3 flex items-center active:opacity-60"
                                 style={{ color: pal.sub }}
                                 aria-label={t('games.back', 'Back')}
                             >
@@ -320,7 +320,7 @@ export function Blocks({ onClose: _onClose }: Props) {
                                 <button
                                     type="button"
                                     onClick={togglePause}
-                                    className="absolute right-4 flex h-9 w-9 items-center justify-center rounded-full active:opacity-60"
+                                    className="absolute end-4 flex h-9 w-9 items-center justify-center rounded-full active:opacity-60"
                                     style={{ color: pal.sub, background: 'rgba(255,255,255,0.06)' }}
                                     aria-label={phase === 'paused' ? t('blocks.resume', 'Resume') : t('blocks.pause', 'Pause')}
                                 >
@@ -341,6 +341,7 @@ export function Blocks({ onClose: _onClose }: Props) {
                         <div className="flex flex-1 items-center justify-center px-5">
                             <div className="relative" style={{ width: boardW, height: boardH }}>
                                 <div
+                                    dir="ltr"
                                     className="grid h-full w-full rounded-[14px]"
                                     style={{
                                         gridTemplateColumns: `repeat(${COLS}, ${CELL}px)`,
@@ -443,7 +444,7 @@ export function Blocks({ onClose: _onClose }: Props) {
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col gap-2.5 px-5" style={{ paddingBottom: 24, paddingTop: 8 }}>
+                        <div dir="ltr" className="flex shrink-0 flex-col gap-2.5 px-5" style={{ paddingBottom: 24, paddingTop: 8 }}>
                             <div className="flex items-stretch justify-center gap-2.5">
                                 <CtrlBtn onPress={() => move(-1)} accent={pal.accent} label={t('blocks.left', 'Left')}>
                                     <ArrowLeft className="h-[26px] w-[26px]" strokeWidth={2.6} />

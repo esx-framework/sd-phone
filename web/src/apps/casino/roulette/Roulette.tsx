@@ -230,7 +230,7 @@ export function Roulette({ chips, onChips, onBack, onCashier }: CasinoGameProps)
                     <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(chips)}</span>
                     <span className="text-[12px] font-semibold text-white/50">{t('casino.chips', 'chips')}</span>
                 </button>
-                <div className="ml-auto flex min-w-0 items-center gap-1.5 overflow-hidden">
+                <div className="ms-auto flex min-w-0 items-center gap-1.5 overflow-hidden">
                     {recent.length > 0 && (
                         <span className="text-[11px] font-bold uppercase tracking-wide text-white/40">{t('roulette.recent', 'Recent')}</span>
                     )}
@@ -317,7 +317,7 @@ export function Roulette({ chips, onChips, onBack, onCashier }: CasinoGameProps)
                     <ToolButton label={t('roulette.rebet', 'Rebet')} disabled={!idle || !lastBets.length} onClick={rebet}>
                         <Repeat className="h-[17px] w-[17px]" strokeWidth={2.3} />
                     </ToolButton>
-                    <div className="ml-auto flex flex-col items-end">
+                    <div className="ms-auto flex flex-col items-end">
                         <span className="text-[12px] font-bold uppercase tracking-wide text-white/45">{t('roulette.totalStake', 'Total stake')}</span>
                         <span className="text-[18px] font-extrabold tabular-nums" style={{ color: TABLE.chip }}>{fmtChips(stake)}</span>
                     </div>

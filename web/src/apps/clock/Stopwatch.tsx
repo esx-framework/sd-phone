@@ -26,7 +26,7 @@ export function Stopwatch({ isDark }: { isDark: boolean }) {
         <div className="flex flex-1 flex-col overflow-hidden">
             <div className="shrink-0" style={{ height: 56 }} />
 
-            <div className="shrink-0 flex items-baseline justify-center" style={{ paddingBottom: 8, paddingLeft: 20, paddingRight: 20 }}>
+            <div dir="ltr" className="shrink-0 flex items-baseline justify-center" style={{ paddingBottom: 8, paddingInlineStart: 20, paddingInlineEnd: 20 }}>
                 <span className="tabular-nums text-black dark:text-white leading-none" style={{ fontSize: 86, fontWeight: 100, letterSpacing: '-0.03em' }}>
                     {main}
                 </span>

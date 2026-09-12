@@ -66,6 +66,7 @@ export function Board({ game, humanColor, locked, lastMove, status, flipped, onM
 
     return (
         <div
+            dir="ltr"
             className="relative overflow-hidden rounded-[10px]"
             style={{ width: BOARD, height: BOARD, boxShadow: '0 14px 34px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(0,0,0,0.25)' }}
         >
@@ -95,8 +96,8 @@ export function Board({ game, humanColor, locked, lastMove, status, flipped, onM
                         {overlay && <span className="absolute inset-0" style={{ background: overlay }} />}
                         {isDest && !isCapture && <span className="absolute rounded-full" style={{ width: CELL * 0.3, height: CELL * 0.3, background: 'rgba(20,20,20,0.32)' }} />}
                         {isCapture && <span className="absolute rounded-full" style={{ inset: 3, border: '3px solid rgba(20,20,20,0.32)' }} />}
-                        {dc === 0 && <span className="absolute left-[2px] top-[1px] text-[9px] font-bold" style={{ color: dark ? LIGHT : DARK }}>{rankLabel}</span>}
-                        {dr === 7 && <span className="absolute bottom-[0px] right-[2px] text-[9px] font-bold" style={{ color: dark ? LIGHT : DARK }}>{fileLabel}</span>}
+                        {dc === 0 && <span className="absolute start-[2px] top-[1px] text-[9px] font-bold" style={{ color: dark ? LIGHT : DARK }}>{rankLabel}</span>}
+                        {dr === 7 && <span className="absolute bottom-[0px] end-[2px] text-[9px] font-bold" style={{ color: dark ? LIGHT : DARK }}>{fileLabel}</span>}
                         {piece && <PieceGlyph piece={piece} />}
                     </button>
                 );

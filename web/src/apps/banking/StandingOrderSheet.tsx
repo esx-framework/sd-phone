@@ -127,6 +127,7 @@ export function StandingOrderSheet({ order, onClose, onSaved }: {
                         ) : (
                             <div className="mb-6 flex items-center gap-3">
                                 <input
+                                    dir="ltr"
                                     type="tel"
                                     inputMode="tel"
                                     aria-label={t('banking.recipientNumber', 'Recipient number')}
@@ -157,7 +158,7 @@ export function StandingOrderSheet({ order, onClose, onSaved }: {
                         />
 
                         <FieldLabel>{t('banking.amount', 'Amount')}</FieldLabel>
-                        <div className="mb-6 flex items-center gap-1.5 rounded-[14px] bg-surface px-4 py-4">
+                        <div dir="ltr" className="mb-6 flex items-center gap-1.5 rounded-[14px] bg-surface px-4 py-4">
                             <span className="text-[18px] font-medium text-black/45 dark:text-white/45">$</span>
                             <input
                                 value={amount ? amountNum.toLocaleString('en-US') : ''}

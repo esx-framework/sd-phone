@@ -46,7 +46,7 @@ export function Article({ article, onBack, animateIn = true }: { article: Articl
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
                     <span
-                        className="absolute left-4 top-4 rounded-[6px] px-3 py-1.5 text-[14px] font-bold uppercase tracking-wide text-white"
+                        className="absolute start-4 top-4 rounded-[6px] px-3 py-1.5 text-[14px] font-bold uppercase tracking-wide text-white"
                         style={{ background: WEAZEL_RED }}
                     >
                         {article.category}
@@ -54,11 +54,11 @@ export function Article({ article, onBack, animateIn = true }: { article: Articl
                 </div>
 
                 <div className="px-5 pb-10 pt-4">
-                    <h1 className="text-[27px] font-extrabold leading-[1.12] tracking-tight">
+                    <h1 dir="auto" className="text-[27px] font-extrabold leading-[1.12] tracking-tight">
                         {article.headline}
                     </h1>
 
-                    <p className={`mt-3 text-[18.5px] font-medium leading-snug ${dark ? 'text-white/80' : 'text-black/70'}`}>
+                    <p dir="auto" className={`mt-3 text-[18.5px] font-medium leading-snug ${dark ? 'text-white/80' : 'text-black/70'}`}>
                         {article.dek}
                     </p>
 
@@ -70,7 +70,7 @@ export function Article({ article, onBack, animateIn = true }: { article: Articl
                             {initials(article.author)}
                         </div>
                         <div className="min-w-0 flex-1 leading-tight">
-                            <div className="truncate text-[19px] font-bold">{article.author}</div>
+                            <div dir="auto" className="truncate text-[19px] font-bold">{article.author}</div>
                             <div className="mt-1 text-[15px] font-medium text-ios-gray">
                                 {t('weazelnews.weazelNews', 'Weazel News')} &middot; {article.time === 'now' ? t('weazelnews.justNow', 'Just now') : t('weazelnews.timeAgo', '{time} ago', { time: article.time })}
                             </div>
@@ -85,6 +85,7 @@ export function Article({ article, onBack, animateIn = true }: { article: Articl
                         {article.body.map((para, i) => (
                             <p
                                 key={i}
+                                dir="auto"
                                 className={`text-[17.5px] leading-[1.7] ${dark ? 'text-white/90' : 'text-black/85'}`}
                             >
                                 {i === 0 ? <FirstLetter text={para} red={WEAZEL_RED} /> : para}
@@ -112,7 +113,7 @@ function FirstLetter({ text, red }: { text: string; red: string }) {
     return (
         <>
             <span
-                className="float-left mr-2 mt-1 text-[46px] font-extrabold leading-[0.78]"
+                className="float-start me-2 mt-1 text-[46px] font-extrabold leading-[0.78]"
                 style={{ color: red }}
             >
                 {first}

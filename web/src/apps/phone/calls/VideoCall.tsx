@@ -238,7 +238,7 @@ export function VideoCall({ peerName, initiator, muted, canMute, onToggleMute, o
                 <span className="rounded-full bg-black/40 px-4 py-1.5 text-[16px] font-semibold text-white backdrop-blur-md">{peerName}</span>
             </div>
 
-            <div className="absolute right-3 top-[96px] h-[150px] w-[112px] overflow-hidden rounded-[16px] ring-1 ring-white/20 shadow-lg">
+            <div className="absolute end-3 top-[96px] h-[150px] w-[112px] overflow-hidden rounded-[16px] ring-1 ring-white/20 shadow-lg">
                 <canvas ref={localCanvas} className="h-full w-full object-cover" style={{ transform: front ? 'scaleX(-1)' : undefined }} />
             </div>
 

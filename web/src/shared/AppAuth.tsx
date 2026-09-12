@@ -154,7 +154,7 @@ export function AppAuth({ appName, tagline, icon, theme, fields, onAuthed, onDis
         >
             <div
                 className="flex h-full w-[200%] transition-transform duration-300 ease-out"
-                style={{ transform: showingDetail ? 'translateX(-50%)' : 'translateX(0)' }}
+                style={{ transform: showingDetail ? 'translateX(calc(var(--dir-x, 1) * -50%))' : 'translateX(0)' }}
             >
                 <div className="h-full w-1/2 shrink-0">
                     <Welcome
@@ -263,7 +263,7 @@ function SavedAccounts({ accounts, theme, light, ctaWhite, picking, pickError, o
                             type="button"
                             onClick={() => onPick(a.username)}
                             disabled={!!picking}
-                            className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-opacity active:bg-black/[0.03]"
+                            className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-opacity active:bg-black/[0.03]"
                             style={{
                                 opacity: dimmed ? 0.45 : 1,
                                 ...(i > 0 ? { borderTop: `0.5px solid ${hair}` } : {}),
@@ -337,7 +337,7 @@ function Welcome({ appName, tagline, icon, theme, onCreate, onLogin, onForgot, o
                     type="button"
                     onClick={onDismiss}
                     aria-label={t('common.close', 'Close')}
-                    className="absolute right-4 top-[60px] z-10 flex h-9 w-9 items-center justify-center rounded-full active:opacity-70"
+                    className="absolute end-4 top-[60px] z-10 flex h-9 w-9 items-center justify-center rounded-full active:opacity-70"
                     style={{ background: light ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.06)' }}
                 >
                     <X className="h-5 w-5" strokeWidth={2.2} />
@@ -647,7 +647,7 @@ function AuthForm({ mode, appName, icon, theme, fields, notice, myNumber, myEmai
             <header className="flex items-center px-3 py-2">
                 <button type="button" onClick={onBack} className="flex items-center active:opacity-60" style={{ color: theme.accent }}>
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('common.back', 'Back')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('common.back', 'Back')}</span>
                 </button>
                 <div className="flex-1" aria-hidden />
                 <div className="w-9" aria-hidden />
@@ -829,7 +829,7 @@ function ResetForm({ phase, appName, icon, theme, identity, onIdentity, myNumber
             <header className="flex items-center px-3 py-2">
                 <button type="button" onClick={() => { setError(null); onBack(); }} className="flex items-center active:opacity-60" style={{ color: theme.accent }}>
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('common.back', 'Back')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('common.back', 'Back')}</span>
                 </button>
                 <div className="flex-1" aria-hidden />
                 <div className="w-9" aria-hidden />
@@ -1026,7 +1026,7 @@ export function ChangePasswordForm({ appName, icon, theme, identity, savedPasswo
             <header className="flex items-center px-3 py-2">
                 <button type="button" onClick={goBack} className="flex items-center active:opacity-60" style={{ color: theme.accent }}>
                     <ChevronLeft className="h-[28px] w-[28px]" strokeWidth={2.4} />
-                    <span className="-ml-0.5 text-[18px]">{t('common.back', 'Back')}</span>
+                    <span className="-ms-0.5 text-[18px]">{t('common.back', 'Back')}</span>
                 </button>
                 <div className="flex-1" aria-hidden />
                 <div className="w-9" aria-hidden />
@@ -1121,7 +1121,7 @@ function Field({ label, value, onChange, type, last, suffix, onFocus, onBlur, re
                     {label}
                     {required && <span className="text-[#e0245e]" aria-hidden> *</span>}
                 </span>
-                {error && <span className="text-right text-[13px] font-semibold leading-tight text-[#e0245e]">{error}</span>}
+                {error && <span className="text-end text-[13px] font-semibold leading-tight text-[#e0245e]">{error}</span>}
             </div>
             <div className="flex items-baseline">
                 <input
@@ -1140,14 +1140,14 @@ function Field({ label, value, onChange, type, last, suffix, onFocus, onBlur, re
                     aria-invalid={bad ? true : undefined}
                     className="min-w-0 flex-1 bg-transparent pt-1 text-[17px] text-black outline-none"
                 />
-                {suffix && <span className="shrink-0 pl-0.5 text-[16px] font-medium text-black/40">{suffix}</span>}
+                {suffix && <span className="shrink-0 ps-0.5 text-[16px] font-medium text-black/40">{suffix}</span>}
                 {isPassword && (
                     <button
                         type="button"
                         onMouseDown={e => e.preventDefault()}
                         onClick={() => setRevealed(r => !r)}
                         aria-label={revealed ? t('common.hidePassword', 'Hide password') : t('common.showPassword', 'Show password')}
-                        className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full bg-black/[0.06] active:opacity-70"
+                        className="ms-2 flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full bg-black/[0.06] active:opacity-70"
                     >
                         {revealed
                             ? <EyeOff className="h-[18px] w-[18px] text-black/45" strokeWidth={2.1} />
@@ -1201,7 +1201,7 @@ function SuggestionBar({ show, icon, main, sub, accent, onPick, onCycle }: {
                     onMouseDown={e => e.preventDefault()}
                     onClick={onCycle}
                     disabled={!onCycle}
-                    className="min-w-0 flex-1 text-left disabled:active:opacity-100 active:opacity-60"
+                    className="min-w-0 flex-1 text-start disabled:active:opacity-100 active:opacity-60"
                 >
                     <span className="block truncate text-[18px] font-bold text-black">{c.main}</span>
                     <span className="block text-[14.5px] font-medium text-black/55">{c.sub}</span>

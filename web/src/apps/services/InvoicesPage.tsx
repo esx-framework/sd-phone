@@ -93,12 +93,12 @@ export function InvoicesPage({ onClose }: { onClose: () => void }) {
                                     {card ? <ContactAvatar contact={card} size={46} /> : <PlaceholderAvatar size={46} />}
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-baseline gap-1.5">
-                                            <span className="truncate text-[18px] font-semibold text-black dark:text-white">{card ? card.name : phone(inv.toNumber)}</span>
-                                            {inv.code && <span className="shrink-0 text-[13px] font-semibold tracking-wide text-ios-gray">#{inv.code}</span>}
+                                            <span className="truncate text-[18px] font-semibold text-black dark:text-white">{card ? card.name : <span dir="ltr">{phone(inv.toNumber)}</span>}</span>
+                                            {inv.code && <span dir="ltr" className="shrink-0 text-[13px] font-semibold tracking-wide text-ios-gray">#{inv.code}</span>}
                                         </div>
                                         {(inv.note || card) && (
-                                            <div className="truncate text-[16px] font-medium text-ios-gray">
-                                                {inv.note || phone(inv.toNumber)}
+                                            <div dir={inv.note ? 'auto' : undefined} className="truncate text-[16px] font-medium text-ios-gray">
+                                                {inv.note || <span dir="ltr">{phone(inv.toNumber)}</span>}
                                             </div>
                                         )}
                                     </div>

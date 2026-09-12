@@ -12,7 +12,7 @@ export function ProfileCard() {
     const avatar = '#8e8e93';
 
     return (
-        <div className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center gap-3 overflow-hidden rounded-[10px] bg-surface px-3 py-3 text-left">
+        <div className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center gap-3 overflow-hidden rounded-[10px] bg-surface px-3 py-3 text-start">
             <div
                 className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full text-[24px] font-semibold text-white shadow-sm"
                 style={{ background: `linear-gradient(135deg, ${avatar} 0%, ${shade(avatar, -20)} 100%)` }}

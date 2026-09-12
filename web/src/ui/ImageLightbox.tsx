@@ -31,7 +31,7 @@ export function ImageLightbox({ src, onClose, action }: {
                 type="button"
                 onClick={e => { e.stopPropagation(); close(); }}
                 aria-label={t('common.close', 'Close')}
-                className="absolute right-4 top-14 flex h-9 w-9 items-center justify-center rounded-full text-white/85 active:opacity-60"
+                className="absolute end-4 top-14 flex h-9 w-9 items-center justify-center rounded-full text-white/85 active:opacity-60"
             >
                 <X className="h-6 w-6" strokeWidth={2.2} />
             </button>

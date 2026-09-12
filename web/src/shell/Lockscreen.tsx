@@ -19,6 +19,7 @@ import { coverUrl } from '@/apps/music/data';
 import { apiMedicalId } from '@/apps/health/medicalApi';
 import { MedicalIdSheet } from '@/apps/health/MedicalIdSheet';
 import { t } from '@/i18n';
+import { dirSign } from '@/stores/directionStore';
 
 const NOW_PLAYING_H = 84;
 
@@ -140,7 +141,7 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
                     backgroundImage: `url(${resolveWallpaper(wallpaper)})`,
                     filter:    blurLock ? 'blur(28px) saturate(0.85)' : undefined,
                     transform: blurLock || wallpaperParallax
-                        ? `translateX(${wallpaperParallax ? PARALLAX_SHIFT : 0}px) scale(${blurLock ? 1.08 : PARALLAX_SCALE})`
+                        ? `translateX(calc(var(--dir-x, 1) * ${wallpaperParallax ? PARALLAX_SHIFT : 0}px)) scale(${blurLock ? 1.08 : PARALLAX_SCALE})`
                         : undefined,
                 }}
             />
@@ -148,7 +149,7 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-black/5 to-black/55" />
 
             <div className={`absolute inset-0 ${exiting ? 'animate-unlock-pull' : ''}`}>
-                <div className={`relative z-10 flex pt-28 ${lockClock.layout === 'left' ? 'justify-start pl-9' : lockClock.layout === 'right' ? 'justify-end pr-9' : 'justify-center'}`}>
+                <div className={`relative z-10 flex pt-28 ${lockClock.layout === 'left' ? 'justify-start ps-9' : lockClock.layout === 'right' ? 'justify-end pe-9' : 'justify-center'}`}>
                     <div
                         onPointerDown={onClockDown}
                         onPointerMove={onClockMove}
@@ -184,7 +185,7 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
                 )}
             </div>
 
-            <div className="absolute bottom-[46px] left-0 right-0 z-10 flex items-center justify-between px-10">
+            <div className="absolute bottom-[46px] start-0 end-0 z-10 flex items-center justify-between px-10">
                 <QuickAction label={t('shell.flashlight','Flashlight')} active={flashlightOn} onClick={(e) => { e.stopPropagation(); onToggleFlashlight(); }}>
                     <Flashlight
                         className={`h-[29px] w-[29px] ${flashlightOn ? 'text-black' : 'text-white'}`}
@@ -210,7 +211,13 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
 
             {authMode && (
                 <div className={`absolute inset-0 z-[80] ${exiting ? 'animate-faceid-veil-out' : ''}`}>
-                    {authMode === 'face' && <FaceScan exiting={exiting} onSuccess={() => latest.current.runPending()} />}
+                    {authMode === 'face' && (
+                        <FaceScan
+                            exiting={exiting}
+                            onSuccess={() => latest.current.runPending()}
+                            onFail={() => setAuthMode('passcode')}
+                        />
+                    )}
                     {authMode === 'passcode' && passcode && (
                         <PasscodeEntry
                             wallpaper={wallpaper}
@@ -232,15 +239,33 @@ export function Lockscreen({ use24h, showDate, wallpaper, unlockTrigger, onUnloc
 }
 
 
-function FaceScan({ exiting, onSuccess }: { exiting: boolean; onSuccess: () => void }) {
+function FaceScan({ exiting, onSuccess, onFail }: { exiting: boolean; onSuccess: () => void; onFail: () => void }) {
     const [done, setDone] = useState(false);
+    const [covered, setCovered] = useState(false);
     const cb = useRef(onSuccess);
     cb.current = onSuccess;
+    const failCb = useRef(onFail);
+    failCb.current = onFail;
 
     useEffect(() => {
-        const toDone   = window.setTimeout(() => setDone(true), 740);
-        const toUnlock = window.setTimeout(() => cb.current(), 1240);
-        return () => { window.clearTimeout(toDone); window.clearTimeout(toUnlock); };
+        let alive = true;
+        const timers: number[] = [];
+        // The face is read in the game, not here: a mask over it fails the scan, and the unlock
+        // falls back to the passcode the same as the real thing.
+        void fetchNui<{ covered?: boolean }>('sd-phone:face:check')
+            .then(res => res?.covered === true)
+            .catch(() => false)
+            .then(isCovered => {
+                if (!alive) return;
+                if (isCovered) {
+                    timers.push(window.setTimeout(() => setCovered(true), 740));
+                    timers.push(window.setTimeout(() => failCb.current(), 1500));
+                    return;
+                }
+                timers.push(window.setTimeout(() => setDone(true), 740));
+                timers.push(window.setTimeout(() => cb.current(), 1240));
+            });
+        return () => { alive = false; timers.forEach(t => window.clearTimeout(t)); };
     }, []);
 
     return (
@@ -264,13 +289,15 @@ function FaceScan({ exiting, onSuccess }: { exiting: boolean; onSuccess: () => v
 
                     <div className="relative h-[108px] w-[108px]">
                         <div className={`absolute inset-0 transition-opacity duration-150 ${done ? 'opacity-0' : 'opacity-100'}`}>
-                            <ScanFace className="h-[108px] w-[108px] text-white" strokeWidth={1.4} />
-                            <div className="absolute inset-[16px] overflow-hidden">
-                                <div
-                                    className="absolute inset-x-0 top-0 h-[2px] animate-faceid-scanline"
-                                    style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 50%, transparent)', boxShadow: '0 0 12px 1px rgba(255,255,255,0.7)' }}
-                                />
-                            </div>
+                            <ScanFace className={`h-[108px] w-[108px] ${covered ? 'text-ios-red' : 'text-white'}`} strokeWidth={1.4} />
+                            {!covered && (
+                                <div className="absolute inset-[16px] overflow-hidden">
+                                    <div
+                                        className="absolute inset-x-0 top-0 h-[2px] animate-faceid-scanline"
+                                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 50%, transparent)', boxShadow: '0 0 12px 1px rgba(255,255,255,0.7)' }}
+                                    />
+                                </div>
+                            )}
                         </div>
                         {done && (
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -280,8 +307,8 @@ function FaceScan({ exiting, onSuccess }: { exiting: boolean; onSuccess: () => v
                     </div>
                 </div>
 
-                <p className={`mt-2 text-[15px] font-medium text-white/90 transition-opacity duration-200 ${done ? 'opacity-0' : 'opacity-100'}`}>
-                    {t('shell.faceScan','Face Scan')}
+                <p className={`mt-2 text-[15px] font-medium transition-opacity duration-200 ${done ? 'opacity-0' : 'opacity-100'} ${covered ? 'text-ios-red' : 'text-white/90'}`}>
+                    {covered ? t('shell.faceScanCovered', 'Face Not Recognised') : t('shell.faceScan','Face Scan')}
                 </p>
             </div>
         </div>
@@ -490,7 +517,7 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
     }
     function onMove(e: ReactPointerEvent) {
         if (!dragging.current) return;
-        const rdx = e.clientX - start.current.x;
+        const rdx = (e.clientX - start.current.x) * dirSign();
         const rdy = e.clientY - start.current.y;
         if (!axis.current && (Math.abs(rdx) > 6 || Math.abs(rdy) > 6)) {
             axis.current = Math.abs(rdx) > Math.abs(rdy) ? 'h' : 'v';
@@ -502,7 +529,7 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
     function onUp(e: ReactPointerEvent) {
         if (!dragging.current) return;
         dragging.current = false;
-        const rdx = e.clientX - start.current.x;
+        const rdx = (e.clientX - start.current.x) * dirSign();
         if (axis.current === 'h' && rdx < -90) {
             setExiting(true);
             window.setTimeout(onDismiss, 230);
@@ -514,9 +541,9 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
     }
 
     const dragStyle: CSSProperties = exiting
-        ? { transform: 'translateX(-115%)', opacity: 0, transition: 'transform 0.24s cubic-bezier(0.4,0,1,1), opacity 0.24s ease-in' }
+        ? { transform: 'translateX(calc(var(--dir-x, 1) * -115%))', opacity: 0, transition: 'transform 0.24s cubic-bezier(0.4,0,1,1), opacity 0.24s ease-in' }
         : dx
-        ? { transform: `translateX(${dx}px)`, opacity: Math.max(0.2, 1 + dx / 280), transition: dragging.current ? 'none' : 'transform 0.24s cubic-bezier(0.2,0.8,0.3,1), opacity 0.2s' }
+        ? { transform: `translateX(calc(var(--dir-x, 1) * ${dx}px))`, opacity: Math.max(0.2, 1 + dx / 280), transition: dragging.current ? 'none' : 'transform 0.24s cubic-bezier(0.2,0.8,0.3,1), opacity 0.2s' }
         : {};
 
     return (
@@ -528,7 +555,7 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
             onPointerCancel={onUp}
             style={{ touchAction: 'pan-y', ...dragStyle }}
             className={[
-                'flex w-full animate-notif-drop touch-pan-y select-none items-start gap-3 rounded-[27px] px-[18px] py-4 text-left shadow-[0_6px_24px_rgba(0,0,0,0.16)]',
+                'flex w-full animate-notif-drop touch-pan-y select-none items-start gap-3 rounded-[27px] px-[18px] py-4 text-start shadow-[0_6px_24px_rgba(0,0,0,0.16)]',
                 frostedWallpaper ? 'bg-white/70' : 'bg-white/55 backdrop-blur-2xl backdrop-saturate-150',
                 item.emergency ? 'ring-[1.5px] ring-inset ring-ios-red/75' : 'ring-1 ring-black/[0.04]',
             ].join(' ')}
@@ -541,11 +568,11 @@ export function LockNotifCard({ item, onOpen, onDismiss }: { item: NotificationI
                     </span>
                 )}
                 <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[17px] font-semibold text-black/90">{item.title}</span>
+                    <span dir="auto" className="truncate text-[17px] font-semibold text-black/90">{item.title}</span>
                     <span className="shrink-0 text-[13.5px] text-black/45">{item.time ?? t('shell.now','now')}</span>
                 </div>
                 {item.body && (
-                    <p className="mt-[3px] line-clamp-4 text-[15.5px] leading-snug text-black/[0.72]">
+                    <p dir="auto" className="mt-[3px] line-clamp-4 text-[15.5px] leading-snug text-black/[0.72]">
                         {hidePreview ? t('shell.notificationHidden', 'Notification hidden') : item.body}
                     </p>
                 )}

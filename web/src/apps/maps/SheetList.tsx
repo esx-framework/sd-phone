@@ -32,14 +32,14 @@ export function SheetRow({ rowRef, asButton = false, selected = false, disabled 
         </span>
     );
     const hairline = divider && (
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-hairline/[0.08]" />
+        <div className="absolute bottom-0 start-0 end-0 h-px bg-hairline/[0.08]" />
     );
     if (asButton) {
         return (
             <button
                 disabled={disabled}
                 onClick={onPress}
-                className={'relative flex h-[78px] w-full items-center gap-3.5 pl-3.5 pr-4 text-left ' +
+                className={'relative flex h-[78px] w-full items-center gap-3.5 ps-3.5 pe-4 text-start ' +
                     (disabled ? 'opacity-55' : 'active:bg-black/5 dark:active:bg-white/5')}
             >
                 {leading}
@@ -52,10 +52,10 @@ export function SheetRow({ rowRef, asButton = false, selected = false, disabled 
     return (
         <div
             ref={rowRef}
-            className={'relative flex h-[78px] items-center gap-3.5 pl-3.5 pr-2 ' +
+            className={'relative flex h-[78px] items-center gap-3.5 ps-3.5 pe-2 ' +
                 (selected ? 'bg-ios-blue/10' : 'active:bg-black/5 dark:active:bg-white/5')}
         >
-            <button onClick={onPress} disabled={disabled} className="flex min-w-0 flex-1 items-center gap-3.5 text-left disabled:cursor-default">
+            <button onClick={onPress} disabled={disabled} className="flex min-w-0 flex-1 items-center gap-3.5 text-start disabled:cursor-default">
                 {leading}
                 {text}
             </button>

@@ -73,10 +73,10 @@ export function SavedChannels({ saved, currentFreq, canSave, activeFreq, onTune,
                                     <button
                                         type="button"
                                         onClick={() => onTune(s.freq)}
-                                        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-[18px] text-left active:bg-black/[0.04] dark:active:bg-white/[0.05]"
+                                        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-[18px] text-start active:bg-black/[0.04] dark:active:bg-white/[0.05]"
                                     >
                                         <span className={`h-[10px] w-[10px] shrink-0 rounded-full ${activeFreq === s.freq ? 'bg-[#34c759]' : 'bg-black/20 dark:bg-white/25'}`} />
-                                        <span className="min-w-0 flex-1 truncate text-[20px] font-semibold">{s.label}</span>
+                                        <span dir="auto" className="min-w-0 flex-1 truncate text-[20px] font-semibold">{s.label}</span>
                                         <span className="shrink-0 text-[18px] tabular-nums text-ios-gray">{fmtFreq(s.freq)}</span>
                                     </button>
                                     <button

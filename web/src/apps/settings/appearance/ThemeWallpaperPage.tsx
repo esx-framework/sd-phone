@@ -107,7 +107,7 @@ function WallGrid({ sources, isOn, onPick }: {
                     >
                         <img src={src} alt="" draggable={false} className="block aspect-[9/16] w-full object-cover" />
                         {on && (
-                            <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ios-blue">
+                            <span className="absolute end-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ios-blue">
                                 <Check className="h-[11px] w-[11px] text-white" strokeWidth={3} />
                             </span>
                         )}

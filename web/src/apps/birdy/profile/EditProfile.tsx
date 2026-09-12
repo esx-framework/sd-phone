@@ -100,7 +100,7 @@ export function EditProfile({ profile, onCancel, onSaved, onSignOut, onSignOutAl
                     <button type="button" onClick={() => setPicking('banner')} aria-label={t('squawk.changeCover', 'Change cover')} className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white" style={{ background: 'rgba(0,0,0,0.4)' }}>
                         <Camera className="h-[22px] w-[22px]" />
                     </button>
-                    <button type="button" onClick={() => setPicking('avatar')} aria-label={t('squawk.changeAvatar', 'Change avatar')} className="absolute -bottom-10 left-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 text-white" style={{ borderColor: BG, background: AVATAR_EMPTY }}>
+                    <button type="button" onClick={() => setPicking('avatar')} aria-label={t('squawk.changeAvatar', 'Change avatar')} className="absolute -bottom-10 start-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 text-white" style={{ borderColor: BG, background: AVATAR_EMPTY }}>
                         {avatar
                             ? <img src={avatar} alt="" draggable={false} className="h-full w-full object-cover" />
                             : <Camera className="h-7 w-7" />}
@@ -273,7 +273,7 @@ function ActionRow({ label, tint, left, value, chevron = true, divider, onPress 
     onPress:  () => void;
 }) {
     return (
-        <button type="button" onClick={onPress} className="relative flex w-full items-center gap-3 px-4 py-3 text-left active:bg-hairline/[0.04]">
+        <button type="button" onClick={onPress} className="relative flex w-full items-center gap-3 px-4 py-3 text-start active:bg-hairline/[0.04]">
             {left}
             <span className="flex-1 text-[17px]" style={{ color: tint ?? TEXT }}>{label}</span>
             {value && <span className="shrink-0 text-[17px]" style={{ color: META }}>{value}</span>}

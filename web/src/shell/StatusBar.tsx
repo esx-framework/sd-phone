@@ -32,7 +32,7 @@ export function StatusBar({ use24h, signal, showWifi, wifiBars = null, battery, 
                 </span>
             )}
 
-            <div className="relative flex items-center gap-[6px]" style={{ marginRight: 5, visibility: editing ? 'hidden' : undefined }}>
+            <div className="relative flex items-center gap-[6px]" style={{ marginInlineEnd: 5, visibility: editing ? 'hidden' : undefined }}>
                 {airplane ? (
                     <Airplane size={23} />
                 ) : noSim ? (

@@ -148,7 +148,7 @@ export function VoicemailLayer({ wallpaper }: { wallpaper?: string }) {
                             {t('phone.voicemail', 'Voicemail')}
                         </span>
                     </div>
-                    <div className="text-[34px] font-semibold leading-tight text-white">{title}</div>
+                    <div dir={offer.name ? undefined : 'ltr'} className="text-[34px] font-semibold leading-tight text-white">{title}</div>
                     <div className="mt-1 text-[18px] font-light text-white/60">
                         {stage === 'record'
                             ? (recording

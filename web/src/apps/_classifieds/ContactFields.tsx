@@ -20,6 +20,7 @@ export function ContactFields({ number, email, onNumber, onEmail }: {
             <Label>{t('classifieds.contactNumber', 'Contact number')}</Label>
             <FieldRow useMine={self.number ? () => onNumber(formatPhone(self.number)) : undefined} mineLabel={t('classifieds.useMyNumber', 'Use my number')} mineIcon={<UserRound className="h-[19px] w-[19px]" strokeWidth={2.3} />}>
                 <input
+                    dir="ltr"
                     value={number}
                     onChange={e => onNumber(e.target.value)}
                     inputMode="tel"

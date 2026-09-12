@@ -25,6 +25,7 @@ export function NicknameSheet({ initial, onClose, onPick }: {
                     <SheetField
                         label={t('darkchat.displayedInRoom', 'Displayed in the room')}
                         hint={t('darkchat.anonymousHint', 'Stay anonymous — pick anything you like.')}
+                        dir="auto"
                         value={name}
                         onChange={e => setName(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') go(); }}

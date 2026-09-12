@@ -47,7 +47,7 @@ export function SavedEmailsSheet({ emails, onPick, onClose }: {
                                         <button
                                             type="button"
                                             onClick={() => { onPick(email); close(); }}
-                                            className="flex w-full min-w-0 items-center gap-3 px-4 py-3.5 text-left active:opacity-60"
+                                            className="flex w-full min-w-0 items-center gap-3 px-4 py-3.5 text-start active:opacity-60"
                                         >
                                             <BookUser className="h-[20px] w-[20px] shrink-0 text-ios-gray" strokeWidth={2} />
                                             <span className="truncate text-[17px] text-black dark:text-white">{email}</span>
@@ -102,7 +102,7 @@ export function SavedEmailsPage({ emails, onAdd, onRemove, onBack }: {
                     type="button"
                     onClick={() => setAdding(true)}
                     aria-label={t('mail.addEmail', 'Add Email')}
-                    className="ml-auto pr-3 text-ios-blue active:opacity-60"
+                    className="ms-auto pe-3 text-ios-blue active:opacity-60"
                 >
                     <Plus className="h-[24px] w-[24px]" strokeWidth={2.2} />
                 </button>

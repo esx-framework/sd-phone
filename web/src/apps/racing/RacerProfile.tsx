@@ -161,11 +161,11 @@ function PastRaceRow({ race }: { race: PastRace }) {
             </span>
 
             <span
-                className={`w-14 shrink-0 text-right text-[14.5px] font-bold tabular-nums ${
+                className={`w-14 shrink-0 text-end text-[14.5px] font-bold tabular-nums ${
                     race.delta === null ? 'text-ios-gray' : race.delta >= 0 ? GAIN_TEXT : LOSS_TEXT
                 }`}
             >
-                {race.delta === null ? '' : formatMmrDelta(race.delta)}
+                {race.delta === null ? '' : <span dir="ltr">{formatMmrDelta(race.delta)}</span>}
             </span>
         </div>
     );

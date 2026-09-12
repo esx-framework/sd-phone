@@ -133,9 +133,9 @@ export function WeatherWidget({ size, width, height, align = 'left' }: {
                             <div key={i} className="flex items-center gap-2.5">
                                 <span className="w-[42px] shrink-0 truncate text-[13px] font-medium opacity-90">{d.label}</span>
                                 <WeatherIcon code={d.code} className="h-[18px] w-[18px] shrink-0 opacity-95" />
-                                <span className="w-[30px] shrink-0 text-right text-[13px] tabular-nums opacity-70">{d.low}&deg;</span>
+                                <span className="w-[30px] shrink-0 text-end text-[13px] tabular-nums opacity-70">{d.low}&deg;</span>
                                 <TempBar day={d} min={min} max={max} />
-                                <span className="w-[30px] shrink-0 text-right text-[13px] font-medium tabular-nums">{d.high}&deg;</span>
+                                <span className="w-[30px] shrink-0 text-end text-[13px] font-medium tabular-nums">{d.high}&deg;</span>
                             </div>
                         ))}
                     </div>

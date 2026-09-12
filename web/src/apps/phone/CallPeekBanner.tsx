@@ -5,7 +5,7 @@ import { useMaskedPhone } from '@/stores/themeStore';
 
 export function CallPeekBanner({ name, number }: { name?: string; number: string }) {
     const phone = useMaskedPhone();
-    const who = name || phone(number) || t('phone.unknown', 'Unknown');
+    const who = name || (number ? <span dir="ltr">{phone(number)}</span> : t('phone.unknown', 'Unknown'));
 
     return (
         <div className="pointer-events-none absolute inset-x-0 top-[52px] z-[55] flex flex-col items-center px-2.5 font-sf">

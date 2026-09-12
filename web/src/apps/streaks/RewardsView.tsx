@@ -43,7 +43,7 @@ export function RewardsView({ state, config, dark, onBack }: {
                     type="button"
                     onClick={goBack}
                     aria-label={t('streaks.back', 'Back')}
-                    className="flex h-9 items-center pl-1 pr-2 text-[16px] font-semibold active:opacity-60"
+                    className="flex h-9 items-center ps-1 pe-2 text-[16px] font-semibold active:opacity-60"
                     style={{ color: STREAK_ORANGE }}
                 >
                     <ChevronLeft className="h-[22px] w-[22px]" strokeWidth={2.6} />

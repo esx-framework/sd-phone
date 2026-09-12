@@ -130,7 +130,7 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
 
             <div className="relative z-20 flex shrink-0 items-start justify-between px-4 pt-[62px]">
                 <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-black/45 py-[3px] pl-[3px] pr-2.5 backdrop-blur-sm">
+                    <span className="flex items-center gap-1.5 rounded-full bg-black/45 py-[3px] ps-[3px] pe-2.5 backdrop-blur-sm">
                         <img src={host.avatar} alt="" draggable={false} className="h-[26px] w-[26px] rounded-full object-cover" />
                         <span className="inline-flex items-center gap-1 text-[14px] font-semibold">
                             {host.handle}
@@ -191,7 +191,7 @@ export function LiveViewer({ liveId, host, onClose }: { liveId: string; host: VU
                             onAnimationEnd={() => setHearts(prev => prev.filter(x => x.id !== h.id))}
                             className="absolute bottom-0 h-[26px] w-[26px]"
                             fill="currentColor"
-                            style={{ color: HEART, left: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
+                            style={{ color: HEART, insetInlineStart: `${30 + h.left}%`, ['--drift' as string]: `${h.drift}px`, animation: 'live-heart-rise 1.8s ease-out forwards' }}
                         />
                     ))}
                 </div>

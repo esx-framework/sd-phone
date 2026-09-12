@@ -128,8 +128,8 @@ function NowPlaying({ music }: { music: ReturnType<typeof useMusic> }) {
 
             <div className="mt-[22px]">
                 <div className="relative h-[6px] w-full rounded-full bg-white/20">
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-white/45" style={{ width: `${pct}%` }} />
-                    <div className="absolute top-1/2 h-[13px] w-[13px] -translate-y-1/2 rounded-full bg-white shadow" style={{ left: `calc(${pct}% - 6.5px)` }} />
+                    <div className="absolute inset-y-0 start-0 rounded-full bg-white/45" style={{ width: `${pct}%` }} />
+                    <div className="absolute top-1/2 h-[13px] w-[13px] -translate-y-1/2 rounded-full bg-white shadow" style={{ insetInlineStart: `calc(${pct}% - 6.5px)` }} />
                 </div>
                 <div className="mt-2 flex justify-between text-[13px] font-medium text-white/55">
                     <span>{fmtTime(time)}</span>
@@ -190,8 +190,8 @@ function HSlider({ value, onChange, icon: Icon, label }: { value: number; onChan
             onPointerUp={() => { dragging.current = false; setDrag(null); }}
             onPointerCancel={() => { dragging.current = false; setDrag(null); }}
         >
-            <div className="pointer-events-none absolute inset-y-0 left-0 bg-white" style={{ width: `${shown}%` }} />
-            <div className="pointer-events-none absolute inset-y-0 left-[18px] flex items-center">
+            <div className="pointer-events-none absolute inset-y-0 start-0 bg-white" style={{ width: `${shown}%` }} />
+            <div className="pointer-events-none absolute inset-y-0 start-[18px] flex items-center">
                 <Icon className="h-[22px] w-[22px]" style={{ color: shown > 10 ? '#3a3a3c' : '#ffffff' }} />
             </div>
         </div>
@@ -209,7 +209,7 @@ export function ControlCenterHotzone({ onOpen }: { onOpen: () => void }) {
     const start = useRef<{ x: number; y: number } | null>(null);
     return (
         <div
-            className="absolute right-0 top-0 z-[400]"
+            className="absolute end-0 top-0 z-[400]"
             style={{ width: '46%', height: 'calc(var(--safe-top) + 6px)' }}
             onPointerDown={e => { start.current = { x: e.clientX, y: e.clientY }; (e.target as Element).setPointerCapture?.(e.pointerId); }}
             onPointerMove={e => {

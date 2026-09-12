@@ -32,7 +32,7 @@ export function Keypad({ variant = 'pin', onPress, onDelete, canDelete = true, c
     });
 
     return (
-        <div className={`grid grid-cols-3 gap-x-3 gap-y-2.5 ${className}`}>
+        <div dir="ltr" className={`grid grid-cols-3 gap-x-3 gap-y-2.5 ${className}`}>
             {PAD_KEYS.map(k => (
                 <button key={k.digit} type="button" aria-label={k.digit} onClick={() => onPress(k.digit)} className={`flex flex-col items-center justify-center ${KEY_CLS}`}>
                     <span className={DIGIT_CLS}>{k.digit}</span>

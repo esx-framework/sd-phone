@@ -26,6 +26,7 @@ export function JoinCodeSheet({ onClose, onJoin, error }: {
                         label={t('darkchat.roomCodeField', 'Room code')}
                         hint={t('darkchat.askForCode', "Ask the room's creator for the 6-character code.")}
                         error={error}
+                        dir="ltr"
                         value={code}
                         onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
                         onKeyDown={e => { if (e.key === 'Enter') go(); }}

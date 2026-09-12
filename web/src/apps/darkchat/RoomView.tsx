@@ -94,13 +94,13 @@ export function RoomView({ room, nickname, onBack, onSend, onReact, onLeave, onM
                 </button>
 
                 <div className="pointer-events-none absolute inset-x-0 flex flex-col items-center">
-                    <span className="max-w-[58%] truncate text-[19px] font-semibold leading-tight text-white">{room.name}</span>
+                    <span dir="auto" className="max-w-[58%] truncate text-[19px] font-semibold leading-tight text-white">{room.name}</span>
                     <span className="flex items-center gap-1 text-[13px] text-white/45">
                         <Users className="h-[12px] w-[12px]" strokeWidth={2.4} />
                         {room.isPrivate
                             ? <>{room.members === 1
                                 ? t('darkchat.memberOne', '{count} member', { count: room.members })
-                                : t('darkchat.memberOther', '{count} members', { count: room.members })} <span className="text-white/25">·</span> {t('darkchat.codeLabel', 'Code')} {room.code}</>
+                                : t('darkchat.memberOther', '{count} members', { count: room.members })} <span className="text-white/25">·</span> {t('darkchat.codeLabel', 'Code')} <span dir="ltr">{room.code}</span></>
                             : <>{room.members} {t('darkchat.activeLabel', 'Active')}</>}
                     </span>
                 </div>
@@ -127,7 +127,7 @@ export function RoomView({ room, nickname, onBack, onSend, onReact, onLeave, onM
                             <div key={m.id} className={`flex ${isLast ? 'mb-3' : 'mb-[2px]'} ${m.mine ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`flex flex-col ${m.mine ? 'max-w-[78%] items-end' : 'max-w-[80%] items-start'}`}>
                                     {showName && (
-                                        <span className="mb-0.5 ml-1 text-[12px] font-semibold" style={{ color: authorColor(m.author) }}>
+                                        <span dir="auto" className="mb-0.5 ms-1 text-[12px] font-semibold" style={{ color: authorColor(m.author) }}>
                                             {m.author}
                                         </span>
                                     )}
@@ -152,7 +152,7 @@ export function RoomView({ room, nickname, onBack, onSend, onReact, onLeave, onM
                                     />
 
                                     {!m.mine && isLast && (
-                                        <span className="ml-1 mt-1 text-[11px] text-white/30">{m.at}</span>
+                                        <span className="ms-1 mt-1 text-[11px] text-white/30">{m.at}</span>
                                     )}
                                 </div>
                             </div>

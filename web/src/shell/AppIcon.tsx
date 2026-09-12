@@ -79,7 +79,7 @@ export function AppIcon({ app, label = true, onOpen, badge }: AppIconProps) {
                                 width:           ART,
                                 height:          ART,
                                 transform:       `scale(${TILE / ART})`,
-                                transformOrigin: '0 0',
+                                transformOrigin: 'top var(--dir-start, left)',
                             }}
                         >
                             <AppIconSVG icon={app.icon} />

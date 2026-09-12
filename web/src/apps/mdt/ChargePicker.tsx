@@ -167,7 +167,7 @@ export function ChargePicker({ lines, onChange, subjects = [], className = '' }:
                                         </span>
                                     </span>
 
-                                    <span className="ml-auto flex shrink-0 items-center gap-2">
+                                    <span className="ms-auto flex shrink-0 items-center gap-2">
                                         {subjects.length > 1 && (
                                             <Select
                                                 value={line.citizenid ?? ''}
@@ -259,7 +259,7 @@ export function ChargePicker({ lines, onChange, subjects = [], className = '' }:
                                 <button
                                     type="button"
                                     onClick={() => add(offence)}
-                                    className={`flex w-full items-center gap-3 px-4 py-2 text-left ${mdtRowHover}`}
+                                    className={`flex w-full items-center gap-3 px-4 py-2 text-start ${mdtRowHover}`}
                                 >
                                     <span className="w-[64px] shrink-0 text-[12.5px] font-bold uppercase tabular-nums tracking-wide text-ios-gray">
                                         {offence.code}

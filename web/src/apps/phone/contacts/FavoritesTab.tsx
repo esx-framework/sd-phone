@@ -80,8 +80,8 @@ function FavoriteRow({ contact, editing, onRemove, onInfo, onCall }: {
 }) {
     const phone = useMaskedPhone();
     return (
-        <div className="flex items-center py-3.5 pl-3.5 pr-3.5">
-            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'mr-3 w-[28px] opacity-100' : 'w-0 opacity-0'}`}>
+        <div className="flex items-center py-3.5 ps-3.5 pe-3.5">
+            <div className={`flex items-center overflow-hidden transition-all duration-300 ${editing ? 'me-3 w-[28px] opacity-100' : 'w-0 opacity-0'}`}>
                 <button
                     type="button"
                     aria-label={t('phone.removeFromFavoritesAria','Remove {name} from favorites',{ name: contact.name })}
@@ -95,12 +95,12 @@ function FavoriteRow({ contact, editing, onRemove, onInfo, onCall }: {
             <button
                 type="button"
                 onClick={() => { if (!editing) onCall(); }}
-                className="flex min-w-0 flex-1 items-center gap-3.5 text-left active:opacity-60"
+                className="flex min-w-0 flex-1 items-center gap-3.5 text-start active:opacity-60"
             >
                 <ContactAvatar contact={contact} size={56} />
                 <div className="min-w-0 flex-1">
                     <div className="truncate text-[20px] text-black dark:text-white">{contact.name}</div>
-                    <div className="truncate text-[17px] text-black/50 dark:text-white/50">{phone(contact.phone)}</div>
+                    <div className="truncate text-[17px] text-black/50 dark:text-white/50"><span dir="ltr">{phone(contact.phone)}</span></div>
                 </div>
             </button>
 

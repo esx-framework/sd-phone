@@ -26,7 +26,7 @@ export function NavBar({ backLabel, onBack, title, right, hairline = false, clas
                     <span className="max-w-[60%] truncate text-[17px] font-semibold text-black dark:text-white">{title}</span>
                 </div>
             )}
-            {right && <div className="ml-auto flex items-center pr-2 text-ios-blue">{right}</div>}
+            {right && <div className="ms-auto flex items-center pe-2 text-ios-blue">{right}</div>}
             {hairline && <div className="absolute inset-x-0 bottom-0 h-[0.5px] bg-control" />}
         </div>
     );

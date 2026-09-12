@@ -91,7 +91,7 @@ export function TripDriver() {
                 <h1 className="text-[28px] font-extrabold tracking-tight text-black dark:text-white">{t('ryde.drive', 'Drive')}</h1>
             </div>
 
-            <div className="relative min-h-0 flex-1 overflow-hidden">
+            <div dir="ltr" className="relative min-h-0 flex-1 overflow-hidden">
                 <MapView>
                     <Pin x={r.pickup.x} y={r.pickup.y}><PickupDot /></Pin>
                     <Pin x={r.dropoff.x} y={r.dropoff.y}><DropoffPin /></Pin>
@@ -122,7 +122,7 @@ export function TripDriver() {
                                 <p className="text-[16px] font-semibold text-black dark:text-white">{t('ryde.awaitingResponse', 'Awaiting response')}</p>
                                 <p className="truncate text-[14px] text-ios-gray">{t('ryde.waitingForRiderToAcceptFare', 'Waiting for {name} to accept your fare…', { name: r.riderName ?? t('ryde.rider', 'Rider') })}</p>
                             </div>
-                            <div className="shrink-0 text-right">
+                            <div className="shrink-0 text-end">
                                 <p className="text-[22px] font-extrabold tracking-tight text-[#22c55e]">{money(taxed ? net : r.fare)}</p>
                                 {taxed && <p className="text-[12px] text-ios-gray">{t('ryde.fromFareAmount', 'from {amount} fare', { amount: money(r.fare) })}</p>}
                             </div>
@@ -138,7 +138,7 @@ export function TripDriver() {
                                 <p className="truncate text-[18px] font-bold text-black dark:text-white">{r.riderName}</p>
                                 <p className="truncate text-[15px] text-ios-gray">{sub[r.status]}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-end">
                                 <p className="text-[13px] text-ios-gray">{t('ryde.youEarn', 'You earn')}</p>
                                 <p className="text-[18px] font-bold text-[#22c55e]">{money(Math.round(r.fare * driverCut * 100) / 100)}</p>
                             </div>

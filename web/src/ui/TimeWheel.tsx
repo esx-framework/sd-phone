@@ -122,6 +122,7 @@ function WheelColumn({ items, index, onChange, width, itemH, fontSize, align = '
     return (
         <div
             ref={rootRef}
+            dir="ltr"
             className="relative select-none"
             style={{ width, height: winH, perspective: 1000, touchAction: 'none' }}
             onPointerDown={down}
@@ -144,7 +145,7 @@ function WheelColumn({ items, index, onChange, width, itemH, fontSize, align = '
                     return (
                         <div
                             key={i}
-                            className="absolute left-0 right-0 flex items-center px-3"
+                            className="absolute start-0 end-0 flex items-center px-3"
                             style={{
                                 top:              '50%',
                                 height:           itemH,
@@ -209,7 +210,7 @@ export function TimeWheel({ value, onChange, open, itemHeight = ITEM_H, fontSize
         >
             <div data-testid="timewheel" className="relative flex items-center justify-center px-4 pb-1" style={{ height: winH }}>
                 <div
-                    className="pointer-events-none absolute left-4 right-4 rounded-[8px]"
+                    className="pointer-events-none absolute start-4 end-4 rounded-[8px]"
                     style={{
                         top:       '50%',
                         height:    itemHeight,

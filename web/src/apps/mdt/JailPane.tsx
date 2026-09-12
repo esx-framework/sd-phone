@@ -40,12 +40,12 @@ function ArrestListRow({ arrest, selected, onPress }: {
         <button
             type="button"
             onClick={onPress}
-            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-left ${
+            className={`flex w-full flex-col gap-1 rounded-[10px] px-3 py-2.5 text-start ${
                 selected ? 'bg-ios-blue/10' : mdtRowHover
             }`}
         >
             <span className="flex w-full items-center gap-2">
-                <span className={`shrink-0 ${mdtRef}`}>{arrest.ref}</span>
+                <span dir="ltr" className={`shrink-0 ${mdtRef}`}>{arrest.ref}</span>
                 <span className={`min-w-0 flex-1 truncate ${mdtRowTitle}`}>{arrest.subject}</span>
                 <span className={`shrink-0 tabular-nums ${mdtRowMeta}`}>
                     {arrest.months > 0 ? sentenceLabel(arrest.months) : t('mdt.fineOnly', 'Fine only')}
@@ -160,7 +160,7 @@ function ArrestDetail({ arrest }: { arrest: ArrestRow }) {
 
     return (
         <Scroller className={`h-full ${mdtPanePad}`}>
-            <span className={mdtRef}>{arrest.ref}</span>
+            <span dir="ltr" className={mdtRef}>{arrest.ref}</span>
             <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-ios-display text-black dark:text-white">
                 {arrest.subject}
             </h1>
@@ -183,7 +183,7 @@ function ArrestDetail({ arrest }: { arrest: ArrestRow }) {
             <button
                 type="button"
                 onClick={() => open('profiles', arrest.citizenid)}
-                className="mt-4 flex w-full items-center gap-3 rounded-[16px] bg-ios-blue/10 px-4 py-3 text-left active:opacity-70"
+                className="mt-4 flex w-full items-center gap-3 rounded-[16px] bg-ios-blue/10 px-4 py-3 text-start active:opacity-70"
             >
                 <InitialsAvatar name={arrest.subject} color={colorFor(arrest.citizenid)} size={40} />
                 <span className="min-w-0 flex-1">
@@ -216,7 +216,7 @@ function ArrestDetail({ arrest }: { arrest: ArrestRow }) {
                 <button
                     type="button"
                     onClick={() => open('reports', arrest.reportRef ?? null)}
-                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-left active:opacity-70"
+                    className="mt-4 flex w-full items-center gap-2 rounded-[12px] bg-ios-blue/10 px-3 py-2 text-start active:opacity-70"
                 >
                     <FileText className="h-[15px] w-[15px] shrink-0 text-ios-blue" strokeWidth={2.25} />
                     <span className="text-[14.5px] font-medium text-ios-blue">

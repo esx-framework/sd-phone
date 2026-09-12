@@ -95,10 +95,10 @@ export function TransferMonitor({
                         </div>
                         <div className="mt-1 font-mono text-[26px] font-bold leading-none text-zinc-100 tabular-nums">
                             {comma(totalPlanned)}
-                            <span className="ml-2 font-sf text-[13px] font-semibold text-zinc-500">rows</span>
+                            <span className="ms-2 font-sf text-[13px] font-semibold text-zinc-500">rows</span>
                         </div>
                     </div>
-                    <div className="text-right text-[12px] text-zinc-500">
+                    <div className="text-end text-[12px] text-zinc-500">
                         across {plan.length} domain{plan.length === 1 ? '' : 's'}
                     </div>
                 </div>
@@ -163,7 +163,7 @@ export function TransferMonitor({
                         <span className="text-[13px] font-semibold text-zinc-500">rows/sec</span>
                     </div>
                 </div>
-                <div className="flex gap-6 text-right">
+                <div className="flex gap-6 text-end">
                     <Readout label="Moved" value={comma(state.doneRows ?? 0)} />
                     <Readout label="Peak" value={`${comma(peak)}/s`} />
                     <Readout label="Elapsed" value={duration(elapsed)} />
@@ -252,7 +252,7 @@ export function TransferMonitor({
                     </div>
                 )}
 
-                <span className="pointer-events-none absolute bottom-1.5 right-2 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 tabular-nums">
+                <span className="pointer-events-none absolute bottom-1.5 end-2 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 tabular-nums">
                     {windowed ? `last ${WINDOW_SECONDS / 60}m · ` : ''}{compact(yMax)}/s full scale
                 </span>
             </div>

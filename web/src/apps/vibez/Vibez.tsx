@@ -369,7 +369,7 @@ export function Vibez({ onClose: _onClose }: { onClose: () => void }) {
                                 type="button"
                                 aria-label={t('vibez.back', 'Back')}
                                 onClick={() => close()}
-                                className="absolute left-3 top-[58px] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm active:opacity-70"
+                                className="absolute start-3 top-[58px] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm active:opacity-70"
                             >
                                 <ChevronLeft className="h-5 w-5 text-white" strokeWidth={2.6} />
                             </button>

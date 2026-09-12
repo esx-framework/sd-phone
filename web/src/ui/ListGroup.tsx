@@ -92,15 +92,15 @@ export function ListRow({ label, sub, value, chevron, divider, destructive, disa
             onClick={disabled ? undefined : onPress}
             disabled={disabled}
             aria-disabled={disabled}
-            className={`relative flex w-full items-center px-4 text-left ${disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5'} ${large ? 'py-3.5' : 'py-3'}`}
+            className={`relative flex w-full items-center px-4 text-start ${disabled ? 'opacity-40' : 'active:bg-black/5 dark:active:bg-white/5'} ${large ? 'py-3.5' : 'py-3'}`}
         >
             {left !== undefined && (
-                <span className="mr-3 flex shrink-0 items-center">{left}</span>
+                <span className="me-3 flex shrink-0 items-center">{left}</span>
             )}
             {sub !== undefined ? (
                 <span className="min-w-0 flex-1">
                     <span className={`block truncate ${labelSize} font-normal ${labelColor}`}>{label}</span>
-                    <span className={`block truncate ${subSize} text-ios-gray`}>{sub}</span>
+                    <span dir="auto" className={`block truncate ${subSize} text-ios-gray`}>{sub}</span>
                 </span>
             ) : (
                 <span className={`flex-1 ${labelSize} font-normal ${labelColor}`}>
@@ -108,10 +108,10 @@ export function ListRow({ label, sub, value, chevron, divider, destructive, disa
                 </span>
             )}
             {value && (
-                <span className="mr-1 shrink-0 text-[17px] font-normal text-ios-gray">{value}</span>
+                <span dir="auto" className="me-1 shrink-0 text-[17px] font-normal text-ios-gray">{value}</span>
             )}
             {right !== undefined && (
-                <span className="mr-1 flex shrink-0 items-center">{right}</span>
+                <span className="me-1 flex shrink-0 items-center">{right}</span>
             )}
             {selected && (
                 <Check className="h-[17px] w-[17px] shrink-0 text-ios-blue" strokeWidth={2.5} />
@@ -145,7 +145,7 @@ export function ToggleRow({ label, defaultOn = false, divider, on: controlledOn,
         <button
             type="button"
             onClick={() => { if (onToggle) onToggle(); else setInternalOn(o => !o); }}
-            className="relative flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+            className="relative flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
         >
             <span className="flex-1 text-[17px] font-normal text-black dark:text-white">{label}</span>
             {/* The 31px switch exceeds the text line; the negative margin keeps it from

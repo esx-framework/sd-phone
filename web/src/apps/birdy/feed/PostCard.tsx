@@ -47,7 +47,7 @@ export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, on
                     <button
                         type="button"
                         onClick={openReposter}
-                        className="flex min-w-0 items-center gap-1.5 text-left active:opacity-60"
+                        className="flex min-w-0 items-center gap-1.5 text-start active:opacity-60"
                     >
                         <Avatar size={20} src={post.repostedBy.avatar} />
                         <span className="truncate">{t('squawk.userReposted', '{name} reposted', { name: post.repostedBy.name })}</span>
@@ -62,18 +62,18 @@ export function PostCard({ post, isOwn, onToggleLike, onToggleRepost, onOpen, on
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1 leading-tight">
-                    <button type="button" onClick={openAuthor} className="flex min-w-0 items-baseline gap-1 text-left">
-                        <span className="min-w-0 truncate text-[19px] font-bold text-label">{post.author.name}</span>
+                    <button type="button" onClick={openAuthor} className="flex min-w-0 items-baseline gap-1 text-start">
+                        <span dir="auto" className="min-w-0 truncate text-[19px] font-bold text-label">{post.author.name}</span>
                         {post.author.verified && (
                             <span className="shrink-0 self-center"><VerifiedBadge size={18} type={post.author.verifiedType} /></span>
                         )}
-                        <span className="max-w-[16ch] shrink-0 truncate text-[15px]" style={{ color: META }}>@{post.author.handle}</span>
+                        <span dir="ltr" className="max-w-[16ch] shrink-0 truncate text-[15px]" style={{ color: META }}>@{post.author.handle}</span>
                     </button>
-                    <span className="ml-auto shrink-0 pl-2 text-[15px]" style={{ color: META }}>{relativeTime(post.createdAt)}</span>
+                    <span className="ms-auto shrink-0 ps-2 text-[15px]" style={{ color: META }}>{relativeTime(post.createdAt)}</span>
                 </div>
 
                 {post.body && (
-                    <p className="mt-1 whitespace-pre-wrap break-words text-[19px] leading-snug text-label">
+                    <p dir="auto" className="mt-1 whitespace-pre-wrap break-words text-[19px] leading-snug text-label">
                         <RichText text={post.body} />
                     </p>
                 )}
@@ -165,7 +165,7 @@ function ActionButton({ icon, count, color, tone, disabled, label, onClick }: {
             <span className={`-m-1.5 flex h-10 w-10 items-center justify-center rounded-full transition-colors ${t.bg}`}>
                 {icon}
             </span>
-            <span className="min-w-[1.5rem] text-left text-[16px] tabular-nums">{compactCount(count)}</span>
+            <span className="min-w-[1.5rem] text-start text-[16px] tabular-nums">{compactCount(count)}</span>
         </button>
     );
 }

@@ -18,7 +18,7 @@ export function ResultsView({ pal, dk, state, outcome, onRematch, onMenu, rematc
         <div className="flex flex-1 flex-col px-4 pt-3 pb-7">
             <div className="mb-1 text-center text-[20px] font-extrabold" style={{ color: outcome.color }}>{outcome.text}</div>
             <div className="mb-2.5 text-center text-[14px] font-semibold" style={{ color: pal.sub }}>
-                {t('wordle.theWordWas', 'The word was')} <span style={{ color: pal.correct }}>{state.word}</span>
+                {t('wordle.theWordWas', 'The word was')} <span dir="ltr" style={{ color: pal.correct }}>{state.word}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -32,14 +32,14 @@ export function ResultsView({ pal, dk, state, outcome, onRematch, onMenu, rematc
                                     {rank === 1 && prog.solved ? <Crown className="h-[18px] w-[18px]" strokeWidth={2.5} /> : rank}
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <div className="truncate text-[18px] font-bold" style={{ color: player.you ? '#fff' : pal.text }}>{player.name}</div>
+                                    <div dir="auto" className="truncate text-[18px] font-bold" style={{ color: player.you ? '#fff' : pal.text }}>{player.name}</div>
                                     <div className="mt-0.5 flex items-center gap-1 text-[13.5px] font-semibold" style={{ color: player.you ? 'rgba(255,255,255,0.9)' : (prog.solved ? pal.correct : pal.danger) }}>
                                         {prog.solved
                                             ? <><Check className="h-[14px] w-[14px]" strokeWidth={3} /> {prog.tries} {prog.tries === 1 ? t('wordle.try', 'try') : t('wordle.tries', 'tries')} · {Math.round(prog.finishMs / 1000)}s</>
                                             : <><X className="h-[14px] w-[14px]" strokeWidth={3} /> {t('wordle.didNotSolve', 'Did not solve')}</>}
                                     </div>
                                 </div>
-                                <div className="flex shrink-0 flex-col gap-[3px]">
+                                <div dir="ltr" className="flex shrink-0 flex-col gap-[3px]">
                                     {Array.from({ length: ROWS }).map((_, r) => {
                                         const row = prog.rows[r];
                                         return (

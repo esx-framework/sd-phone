@@ -184,7 +184,7 @@ function JobRow({ job, disabled, onSwitch, onRemove }: {
                 type="button"
                 disabled={disabled || job.active}
                 onClick={onSwitch}
-                className="flex min-w-0 flex-1 items-center gap-3.5 py-4 pl-4 pr-2 text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 disabled:hover:bg-transparent disabled:active:bg-transparent dark:hover:bg-white/[0.07] dark:active:bg-white/10"
+                className="flex min-w-0 flex-1 items-center gap-3.5 py-4 ps-4 pe-2 text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 disabled:hover:bg-transparent disabled:active:bg-transparent dark:hover:bg-white/[0.07] dark:active:bg-white/10"
             >
                 <Tile active={job.active}>
                     <BriefcaseBusiness className="h-[20px] w-[20px] text-white" strokeWidth={2.1} />

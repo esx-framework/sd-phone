@@ -101,7 +101,7 @@ export function EditBreaking({ initial, dark, onClose, onSave }: {
                         <div
                             key={i}
                             data-row={i}
-                            className={`flex items-center gap-2 rounded-xl pl-1.5 pr-2 transition-shadow ${card} ${
+                            className={`flex items-center gap-2 rounded-xl ps-1.5 pe-2 transition-shadow ${card} ${
                                 dragging === i ? 'shadow-lg ring-2 ring-inset' : ''
                             }`}
                             style={dragging === i ? { boxShadow: `0 6px 18px rgba(0,0,0,0.25)`, ['--tw-ring-color' as string]: WEAZEL_RED } : undefined}

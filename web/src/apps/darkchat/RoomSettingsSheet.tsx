@@ -172,7 +172,7 @@ export function RoomSettingsSheet({ room, nickname, onClose, onLeave, onMemberRe
                             <KeyRound className="h-[20px] w-[20px] shrink-0 text-white/70" strokeWidth={2} />
                             <div className="min-w-0">
                                 <p className="text-[16px] font-medium text-white">{t('darkchat.roomCode', 'Room Code')}</p>
-                                <p className="truncate font-mono text-[15px] tracking-[0.2em] text-white/70">{code || '—'}</p>
+                                <p dir="ltr" className="truncate font-mono text-[15px] tracking-[0.2em] text-white/70">{code || '—'}</p>
                             </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
@@ -215,7 +215,7 @@ export function RoomSettingsSheet({ room, nickname, onClose, onLeave, onMemberRe
                                             >
                                                 {initials(label)}
                                             </div>
-                                            <span className="min-w-0 flex-1 truncate text-[16px] text-white">{label}</span>
+                                            <span dir="auto" className="min-w-0 flex-1 truncate text-[16px] text-white">{label}</span>
                                             {m.creator ? (
                                                 <span className="shrink-0 rounded-md bg-white/10 px-2 py-[3px] text-[11px] font-semibold uppercase tracking-wide text-white/55">{t('darkchat.creatorTag', 'Creator')}</span>
                                             ) : (
@@ -256,7 +256,7 @@ export function RoomSettingsSheet({ room, nickname, onClose, onLeave, onMemberRe
                                             <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-white/10 text-white/50">
                                                 <Ban className="h-[18px] w-[18px]" strokeWidth={2} />
                                             </div>
-                                            <span className="min-w-0 flex-1 truncate text-[16px] text-white/70">{label}</span>
+                                            <span dir="auto" className="min-w-0 flex-1 truncate text-[16px] text-white/70">{label}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => void unbanMember(b)}

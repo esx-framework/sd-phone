@@ -139,7 +139,7 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                                 onClick={() => setAuto(a => !a)}
                                 className="flex w-full items-center px-4 py-3 active:bg-black/5 dark:active:bg-white/5"
                             >
-                                <span className="flex-1 text-left text-[17px] font-normal text-black dark:text-white">
+                                <span className="flex-1 text-start text-[17px] font-normal text-black dark:text-white">
                                     {t('settings.automatic', 'Automatic')}
                                 </span>
                                 <div className="pointer-events-none">
@@ -154,14 +154,14 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                             <button
                                 type="button"
                                 onClick={() => (isDark ? setDarkAppearanceOpen(true) : setLightAppearanceOpen(true))}
-                                className="flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                                     {isDark
                                         ? t('settings.darkAppearance', 'Dark Appearance')
                                         : t('settings.lightAppearance', 'Light Appearance')}
                                 </span>
-                                <span className="mr-1 text-[17px] font-normal text-ios-gray">
+                                <span className="me-1 text-[17px] font-normal text-ios-gray">
                                     {appearanceValue}
                                 </span>
                                 <ChevronRight className="h-[17px] w-[17px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
@@ -172,13 +172,13 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                             <button
                                 type="button"
                                 onClick={() => setAccentOpen(true)}
-                                className="flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                className="flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                             >
                                 <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                                     {t('settings.accentColour', 'Accent Colour')}
                                 </span>
                                 <span
-                                    className="mr-2 h-[20px] w-[20px] shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
+                                    className="me-2 h-[20px] w-[20px] shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
                                     style={{ background: accentCss(isDark ? 'dark' : 'light', accent) }}
                                 />
                                 <ChevronRight className="h-[17px] w-[17px] shrink-0 text-ios-gray3" strokeWidth={2.5} />
@@ -190,7 +190,7 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                                     <button
                                         type="button"
                                         onClick={() => setShellOpen(true)}
-                                        className="flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                        className="flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                     >
                                         <span className="flex-1 text-[17px] font-normal text-black dark:text-white">
                                             {t('settings.phoneShell', 'Phone Shell')}
@@ -297,14 +297,14 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                                     <button
                                         type="button"
                                         onClick={() => setOpenAnim(a)}
-                                        className="flex w-full items-center px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/5"
+                                        className="flex w-full items-center px-4 py-3 text-start active:bg-black/5 dark:active:bg-white/5"
                                     >
                                         <span className="flex min-w-0 flex-1 flex-col">
                                             <span className="text-[17px] font-normal text-black dark:text-white">{ANIM_LABEL[a]}</span>
                                             <span className="text-[13px] leading-snug text-ios-gray">{ANIM_HINT[a]}</span>
                                         </span>
                                         {openAnim === a && (
-                                            <Check className="ml-3 h-[18px] w-[18px] shrink-0 text-ios-blue" strokeWidth={3} />
+                                            <Check className="ms-3 h-[18px] w-[18px] shrink-0 text-ios-blue" strokeWidth={3} />
                                         )}
                                     </button>
                                 </div>
@@ -322,13 +322,13 @@ export function DisplayBrightnessPage({ onBack }: { onBack: () => void }) {
                         <div className="overflow-hidden rounded-[12px] bg-surface">
                             <div className="flex flex-col gap-2 px-4 pb-4 pt-4">
                                 <div
-                                    className="max-w-[78%] self-start rounded-2xl rounded-bl-md px-[14px] py-[8px] leading-[1.3]"
+                                    className="max-w-[78%] self-start rounded-2xl rounded-es-md px-[14px] py-[8px] leading-[1.3]"
                                     style={{ background: isDark ? 'rgb(var(--control))' : 'rgb(var(--surface))', color: isDark ? '#fff' : '#000', fontSize: 'calc(19px * var(--chat-text-scale, 1))' }}
                                 >
                                     {t('settings.howsThisSize', "How's this size?")}
                                 </div>
                                 <div
-                                    className="max-w-[78%] self-end rounded-2xl rounded-br-md px-[14px] py-[8px] leading-[1.3] text-white"
+                                    className="max-w-[78%] self-end rounded-2xl rounded-ee-md px-[14px] py-[8px] leading-[1.3] text-white"
                                     style={{ background: 'rgb(var(--ios-blue))', fontSize: 'calc(19px * var(--chat-text-scale, 1))' }}
                                 >
                                     {t('settings.looksGood', 'Looks good 👍')}
@@ -410,6 +410,7 @@ function PositionPicker({
 }) {
     return (
         <div
+            dir="ltr"
             className="relative rounded-[10px] border"
             style={{
                 width:      240,
@@ -479,6 +480,7 @@ function TiltSliderRow({ label, value, trackEmpty, onChange }: {
         <div className="flex items-center gap-3 px-4 py-3">
             <span className="w-[46px] shrink-0 text-[17px] font-normal text-black dark:text-white">{label}</span>
             <input
+                dir="ltr"
                 type="range"
                 min={-TILT_LIMIT} max={TILT_LIMIT}
                 value={value}
@@ -486,7 +488,7 @@ function TiltSliderRow({ label, value, trackEmpty, onChange }: {
                 className="ios-slider ios-slider-center flex-1"
                 style={{ '--sp': `${fill}%`, '--se': trackEmpty } as React.CSSProperties}
             />
-            <span className="w-[38px] shrink-0 text-right text-[15px] tabular-nums text-ios-gray">{value}°</span>
+            <span className="w-[38px] shrink-0 text-end text-[15px] tabular-nums text-ios-gray"><span dir="ltr">{value}°</span></span>
         </div>
     );
 }
@@ -518,12 +520,12 @@ function TiltPreview({ tilt, isDark }: { tilt: PhoneTilt; isDark: boolean }) {
                     <div className="relative h-full w-full overflow-hidden rounded-[12px]" style={{ background: screen }}>
                         <div className="absolute left-1/2 top-[5px] h-[5px] w-[22px] -translate-x-1/2 rounded-full bg-black/85" />
                         <div
-                            className="absolute left-0 right-0 top-[24px] text-center text-[15px] font-semibold leading-none"
+                            className="absolute start-0 end-0 top-[24px] text-center text-[15px] font-semibold leading-none"
                             style={{ color: isDark ? '#fff' : '#1C1C1E' }}
                         >
                             9:41
                         </div>
-                        <div className="absolute bottom-[10px] left-0 right-0 flex justify-center gap-[6px]">
+                        <div className="absolute bottom-[10px] start-0 end-0 flex justify-center gap-[6px]">
                             {[0, 1, 2, 3].map(i => (
                                 <span
                                     key={i}

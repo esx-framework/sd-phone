@@ -19,7 +19,7 @@ export function InvoicesSection() {
                 <button
                     type="button"
                     onClick={() => setComposing(true)}
-                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
+                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
                 >
                     <Tile color="#0A84FF"><FileText className="h-[18px] w-[18px] text-white" strokeWidth={2.25} /></Tile>
                     <div className="min-w-0 flex-1">
@@ -34,7 +34,7 @@ export function InvoicesSection() {
                 <button
                     type="button"
                     onClick={() => setViewing(true)}
-                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
+                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors hover:bg-black/[0.06] active:bg-black/10 dark:hover:bg-white/[0.07] dark:active:bg-white/10"
                 >
                     <Tile color="#30d158"><ReceiptText className="h-[18px] w-[18px] text-white" strokeWidth={2.25} /></Tile>
                     <div className="min-w-0 flex-1">

@@ -33,7 +33,7 @@ export function Profile({ profile, posts, onEdit, onOpenPost, onOpenFollows }: {
             <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-0.5">
                 <div className="flex items-center gap-1.5">
                     {profile.isPrivate && <Lock className="h-[22px] w-[22px] text-black" strokeWidth={2.4} />}
-                    <span className="text-[28px] font-bold text-black">{profile.username}</span>
+                    <span dir="auto" className="text-[28px] font-bold text-black">{profile.username}</span>
                     {profile.verified && <VerifiedCheck size={26} />}
                 </div>
             </div>
@@ -49,8 +49,8 @@ export function Profile({ profile, posts, onEdit, onOpenPost, onOpenFollows }: {
                 </div>
 
                 <div className="px-4 pb-4">
-                    <div className="text-[21px] font-semibold text-black">{profile.name}</div>
-                    {profile.bio !== '' && <div className="mt-1 whitespace-pre-line text-[20px] leading-snug text-black">{profile.bio}</div>}
+                    <div dir="auto" className="text-[21px] font-semibold text-black">{profile.name}</div>
+                    {profile.bio !== '' && <div dir="auto" className="mt-1 whitespace-pre-line text-[20px] leading-snug text-black">{profile.bio}</div>}
                 </div>
 
                 <div className="flex gap-2.5 px-4 pb-3">

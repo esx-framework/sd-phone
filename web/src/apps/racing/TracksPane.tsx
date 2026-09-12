@@ -73,7 +73,7 @@ function TrackListRow({ track, selected, onPress, onWaypoint }: {
             <button
                 type="button"
                 onClick={onPress}
-                className={`flex min-w-0 flex-1 items-center gap-2.5 text-left ${cardRowPad}`}
+                className={`flex min-w-0 flex-1 items-center gap-2.5 text-start ${cardRowPad}`}
             >
                 <span className="min-w-0 flex-1">
                     <span className="flex min-w-0 items-center gap-1.5">
@@ -101,7 +101,7 @@ function TrackListRow({ track, selected, onPress, onWaypoint }: {
                 disabled={!track.coords}
                 onClick={onWaypoint}
                 aria-label={t('racing.setWaypoint', 'Set waypoint')}
-                className="mr-1.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors duration-150 hover:bg-black/[0.06] hover:text-black active:opacity-60 disabled:cursor-default disabled:opacity-30 dark:hover:bg-white/[0.10] dark:hover:text-white"
+                className="me-1.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-ios-gray transition-colors duration-150 hover:bg-black/[0.06] hover:text-black active:opacity-60 disabled:cursor-default disabled:opacity-30 dark:hover:bg-white/[0.10] dark:hover:text-white"
             >
                 <MapPin className="h-[15px] w-[15px]" strokeWidth={2.2} />
             </button>
@@ -193,6 +193,7 @@ function ImportSheet({ onClose, onDone }: { onClose: () => void; onDone: () => v
                         {t('racing.importHint', 'Paste a single track, or a whole list of them. To get this format, open any track and tap JSON.')}
                     </p>
                     <textarea
+                        dir="ltr"
                         value={text}
                         onChange={e => setText(e.target.value)}
                         spellCheck={false}
